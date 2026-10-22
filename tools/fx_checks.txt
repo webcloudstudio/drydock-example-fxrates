@@ -1,0 +1,43 @@
+# ── A. Command line: initialize and load ───────────────────────────────────────────────
+cli A1 init
+cli A2 load $DATA/eurofxref-hist_2025-01.csv
+cli A3 load $DATA/eurofxref-hist_2025-01.csv
+cli A4 load $DATA/eurofxref-hist_bad.csv
+cli A5 load $WORK/no-such-file.csv
+
+# ── U. Command-line usage errors ─────────────────────────────────────────────────────────
+cli U1
+cli U2 frobnicate
+cli U3 load
+cli U4 serve --port notaport
+
+start S1
+# ── H. HTTP over January 2025 ────────────────────────────────────────────────────────────
+http H1 /health
+http H2 /stats
+http H3 /currencies
+http H4 /rates/2025-01-17
+http H5 /rates/2025-01-18
+http H6 /rates/2024-12-31
+http H7 /rates/2025-13-01
+http H8 /rates/latest
+http H9 /convert?from=USD&to=GBP&amount=100&date=2025-01-17
+http H10 /convert?from=EUR&to=JPY&amount=250.25&date=2025-01-05
+http H11 /convert?from=GBP&to=EUR&amount=1000
+http H12 /convert?from=SEK&to=CNY&amount=12345.67&date=2025-01-20
+http H13 /convert?from=USD&to=XXX&amount=1
+http H14 /convert?from=USD&to=GBP
+http H15 /convert?from=USD&to=GBP&amount=abc
+http H16 /convert?from=USD&to=GBP&amount=10&date=2024-12-01
+http H17 /history/USD?start=2025-01-20&end=2025-01-24
+http H18 /history/CHF?start=2025-01-27
+http H19 /history/HRK
+http H20 /history/USD?start=2025-02-01
+http H21 /history/GBP?start=2025-01-31-x
+
+# ── L. A load while the server runs is visible to the next request ───────────────────────
+cli L1 load $DATA/eurofxref-hist_2025-02-03_04.csv
+http L2 /stats
+http L3 /rates/latest
+http L4 /rates/2025-02-01
+http L5 /history/AUD?start=2025-01-30

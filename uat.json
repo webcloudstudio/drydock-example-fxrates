@@ -1,0 +1,24 @@
+{
+  "target": "FxRates",
+  "expect": {
+    "verdict": "PASSED"
+  },
+  "sources": [
+    "sources/INSTRUCTIONS.md",
+    "sources/eurofxref-hist_2025-01.csv",
+    "sources/eurofxref-hist_2025-02-03_04.csv",
+    "sources/eurofxref-hist_bad.csv",
+    "bin/run.sh"
+  ],
+  "updates": [],
+  "sea_trials": "inputs/SEA_TRIALS.md",
+  "technology_stack": "inputs/TECHNOLOGY_STACK.md",
+  "compass": "inputs/COMPASS.md",
+  "metadata": "inputs/METADATA.md",
+  "acceptance": {
+    "full": [
+      "sh",
+      "sources/run.sh"
+    ]
+  }
+}
