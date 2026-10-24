@@ -55,7 +55,7 @@ One table:
 
 | Table | Columns | Keys |
 |---|---|---|
-| `rates` | `date` text `YYYY-MM-DD`, `currency` text, `rate` text | primary key (`date`, `currency`) |
+| `rates` | `date` text `YYYY-MM-DD`, `currency` text, `rate` text | unique (`date`, `currency`) |
 
 A rate is stored exactly as the ECB publishes it, as text. `0.943` stays `0.943`, never `0.9430`
 and never a float. Arithmetic on rates uses Python's `decimal` module.
