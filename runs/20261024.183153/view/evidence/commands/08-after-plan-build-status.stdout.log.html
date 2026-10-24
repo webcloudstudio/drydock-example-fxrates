@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/commands/08-after-plan-build-status.stdout.log</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/commands/08-after-plan-build-status.stdout.log</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/commands/08-after-plan-build-status.stdout.log">Raw file</a></div></header>
+<article class="doc"><pre>Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
+Next: drydock build FxRates
+
+Blueprint: FxRates
+Target: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261024.183153/workspace/targets/FxRates
+Rows: &lt;state&gt; &lt;type&gt;  &lt;Name&gt;  [&lt;id&gt;]   — pass [&lt;id&gt;] to --step
+
+Block: Build Block 1 · Foundational  [block-1]   — 0/1 stories complete
+  [pending] story  Establish the application module boundaries and runtime configuration.  [architecture]  &lt;- next
+
+Block: Build Block 2 · Foundational  [block-2]   — 0/1 stories complete
+  [pending] story  Declare the rates persistence contract.  [database]
+
+Block: Build Block 3 · Service  [block-3]   — 0/9 stories complete
+  [pending] story  Initialize the rates database from the command line.  [cli_initialize]
+  [pending] story  Validate and load ECB history files atomically.  [cli_load]
+  [pending] story  Fetch and load the ECB reference history archive.  [cli_fetch]
+  [pending] story  Retrieve rates by effective publication date.  [api_rates]
+  [pending] story  Report stored-rate statistics and available currencies.  [api_statistics]
+  [pending] story  Convert amounts between currencies.  [conversion]
+  [pending] story  Retrieve currency history and summary statistics.  [history]
+  [pending] story  Expose the service health endpoint.  [api_health]
+  [pending] story  Start the HTTP service from the command line.  [cli_serve]
+
+Block: Build Block 4 · Foundational  [block-4]   — 0/1 stories complete
+  [pending] story  Provide the automated project test runner and deterministic tests.  [project_tests]
+
+Block: Build Block 5 · Service  [block-5]   — 0/1 stories complete
+  [pending] story  Run the supplied grader as the final conformance gate.  [verification]
+
+Steps: 13 total — 0 done, 0 built (await verify), 0 in review, 13 pending, 0 blocked by questions, 0 failed (0% complete)
+Buildable now: block-1
+Target - committed project workspace git store
+</pre></article>
+</main>
+</body>
+</html>

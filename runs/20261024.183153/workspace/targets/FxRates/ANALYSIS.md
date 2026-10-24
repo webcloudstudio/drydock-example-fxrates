@@ -1,0 +1,141 @@
+# Blueprint Analysis: FxRates
+
+## Commander Expectations
+
+- assert the product loads ECB euro reference rate history and serves date-based rates, conversions, and currency history through a JSON API.
+
+## Crew
+
+| Crew | Charge |
+|---|---|
+| Commander | Defines intent and decides what done means. |
+| Team Lead | Confirms epic completeness and stakeholder expectations. |
+| Planning Crew | Authors atomic specifications and the ordered Manifest. |
+| Shipyard Crew | Builds the tickets without synchronous Commander access. |
+
+## Story List
+
+### Feature: Command Line Operations
+
+| ID | Story | High-level AC |
+|---|---|---|
+| CLI-001 | Initialize the rates database | `fxrates init` creates an empty rates table and prints nothing. |
+| CLI-002 | Load an ECB history file | Valid files load atomically, preserve published rate text, replace matching rates, report date and rate counts, and reject invalid files without writing. |
+| CLI-003 | Fetch the ECB history file | `fxrates fetch` downloads and loads the ECB history file, reporting the load counts and returning an operational error on download failure. |
+| CLI-004 | Serve the API | `fxrates serve` starts the API on the requested local port, defaulting to port 8000. |
+
+### Feature: Rate Discovery API
+
+| ID | Story | High-level AC |
+|---|---|---|
+| API-001 | Report service health | `GET /health` returns the service health JSON. |
+| API-002 | Report database statistics and currencies | `GET /stats` reports dates, rates, and date bounds; `GET /currencies` returns currencies with stored rates in ascending order. |
+| API-003 | Retrieve rates by effective date | Date and latest rate requests return all available rates for the latest publication on or before the requested date, or 404 when none exists. |
+
+### Feature: Currency Conversion and History API
+
+| ID | Story | High-level AC |
+|---|---|---|
+| CONV-001 | Convert amounts between currencies | `/convert` returns the effective date, requested currencies and amount, and rate and result strings rounded with exact decimal arithmetic and half-even rounding. |
+| CONV-002 | Retrieve currency history | `/history/{code}` returns ordered points and exact summary statistics for the requested inclusive date range, or empty statistics when there are no points. |
+
+### Feature: Quality and Request Handling
+
+| ID | Story | High-level AC |
+|---|---|---|
+| QUAL-001 | Reject invalid requests | Malformed dates, amounts, and missing required parameters return 422; unknown currencies return 404. |
+| QUAL-002 | Run the project test suite | `bin/test.sh` exits zero only when every automated test passes; fetch tests use a stubbed download without network access. |
+
+## Story Guidance
+
+Named stories planning must produce. Authoritative record: `STORY_GUIDANCE.json`.
+
+None.
+
+## Surfaced Acceptance Criteria
+
+| ID | Story ID | Criterion |
+|---|---|---|
+| AC-001 | CLI-001 | The command provides help text for initialization. |
+| AC-002 | CLI-002 | The command provides help text for loading a file. |
+| AC-003 | CLI-003 | The command provides help text for fetching data. |
+| AC-004 | CLI-004 | The command provides help text for serving the API. |
+
+## Source Inventory
+
+| Path | Content kind | Disposition | Reason |
+|---|---|---|---|
+| `sources/INSTRUCTIONS.md` | markdown | analyzed | readable UTF-8 |
+| `sources/eurofxref-hist_2025-01.csv` | text | analyzed | readable UTF-8 |
+| `sources/eurofxref-hist_2025-02-03_04.csv` | text | analyzed | readable UTF-8 |
+| `sources/eurofxref-hist_bad.csv` | text | analyzed | readable UTF-8 |
+| `sources/run.sh` | code | analyzed | readable UTF-8 |
+
+## Relationship Model
+
+| Source or group | Relationship type | Related source or group | Evidence | Delivery implication |
+|---|---|---|---|---|
+| `sources/INSTRUCTIONS.md` | instruction-to-test | `sources/run.sh` | The instructions define CLI and HTTP behavior; the harness exercises CLI commands and API responses. | Implement the stated interfaces and use the harness as the final conformance check. |
+| `sources/eurofxref-hist_2025-01.csv` | test-kit-to-implementation | CLI-002, API-002, API-003, CONV-001, CONV-002 | January data supplies published rates, N/A values, and known API answers. | Stage the fixture and load it through the CLI for acceptance. |
+| `sources/eurofxref-hist_2025-02-03_04.csv` | test-kit-to-implementation | CLI-002, API-002, API-003, CONV-002 | February data verifies additional dates, live reload, and history across files. | Stage the fixture and verify new data is visible to subsequent requests. |
+| `sources/eurofxref-hist_bad.csv` | test-kit-to-implementation | CLI-002 | The fixture contains a valid row followed by an invalid rate. | Stage the fixture and verify rejection leaves stored data unchanged. |
+| `sources/run.sh` | conformance harness | CLI-001–004, API-001–003, CONV-001–002, QUAL-001 | The script checks command output and exit codes plus HTTP statuses and successful JSON bodies. | Stage the harness and its CSV inputs; its full run is the terminal conformance gate. |
+
+## Source Roles
+
+| Path | Role | Plan disposition | Build disposition |
+|---|---|---|---|
+| `sources/INSTRUCTIONS.md` | normative specification and conformance test suite | prompt-only | none |
+| `sources/eurofxref-hist_2025-01.csv` | asset | context | stage |
+| `sources/eurofxref-hist_2025-02-03_04.csv` | asset | context | stage |
+| `sources/eurofxref-hist_bad.csv` | asset | context | stage |
+| `sources/run.sh` | conformance harness | context | stage |
+
+## Planning Instructions
+
+### Delivery Shape
+
+Build a Python command-line application backed by the configured SQLite database and a FastAPI JSON service. The execution flow initializes the database, loads one or more ECB CSV files, then serves health, rate discovery, conversion, and history requests. Fetch downloads the ECB history archive and passes its CSV through the same load behavior. The service must observe completed loads while it is running.
+
+### Story Realization Map
+
+| Story ID | Durable Blueprint scope | Evidence | Related files | Requirement |
+|---|---|---|---|---|
+| CLI-001 | Database initialization command | `sources/INSTRUCTIONS.md` — Command line | `fxrates` | Capability |
+| CLI-002 | CSV validation and load command | `sources/INSTRUCTIONS.md` — ECB history file rules | `sources/eurofxref-hist_2025-01.csv`, `sources/eurofxref-hist_bad.csv` | Capability, fixture |
+| CLI-003 | ECB fetch command | `sources/INSTRUCTIONS.md` — Command line and fetch rules | Stubbed download in tests | Capability, integration |
+| CLI-004 | API server command | `sources/INSTRUCTIONS.md` — Command line | `fxrates` | Capability |
+| API-001 | Health endpoint | `sources/INSTRUCTIONS.md` — HTTP API | `sources/run.sh` | Capability |
+| API-002 | Statistics and currency endpoints | `sources/INSTRUCTIONS.md` — HTTP API | CSV fixtures, `sources/run.sh` | Capability |
+| API-003 | Effective-date rate endpoints | `sources/INSTRUCTIONS.md` — HTTP API | CSV fixtures, `sources/run.sh` | Capability |
+| CONV-001 | Currency conversion endpoint | `sources/INSTRUCTIONS.md` — HTTP API values and errors | CSV fixtures, `sources/run.sh` | Capability |
+| CONV-002 | Currency history endpoint | `sources/INSTRUCTIONS.md` — HTTP API values and errors | CSV fixtures, `sources/run.sh` | Capability |
+| QUAL-001 | API request validation and status behavior | `sources/INSTRUCTIONS.md` — HTTP API errors | `sources/run.sh` | Capability |
+| QUAL-002 | Automated project test runner | `sources/INSTRUCTIONS.md` — Tests | `bin/test.sh` | Test harness, acceptance contract |
+
+### Test and Acceptance Strategy
+
+Use focused tests for CSV validation, atomic loading, CLI behavior, endpoints, effective-date resolution, decimal rounding, history statistics, and error statuses. Stub fetch downloads so automated tests do not open network connections. The terminal verification story runs the complete supplied grader; the Sea Trial uses its exit status as the acceptance verdict.
+
+### Sequencing and Dependencies
+
+Implement the configured persistence boundary and database schema before CLI load and API data consumers. Complete CSV validation and loading before rate, conversion, and history behavior. Implement API request validation alongside its routes. Stub the fetch download in tests. Run the supplied grader after all implementation stories; its fixtures and harness must be staged at their stated paths.
+
+### Source Conflicts and Gaps
+
+The source defines a combined CLI and programmatic API product. It gives no human-facing screens or protected-resource requirements. It names Python, FastAPI, uvicorn, SQLite, pytest, and Decimal arithmetic, and requires persistence through the shipped library and generated relational layer.
+
+## Analysis Notes
+generated: 2026-10-24
+blueprint: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261024.183153/workspace/targets/FxRates/blueprint
+
+Quality: Ready
+  blockers: 0
+  questions: 0
+  features: 4
+  stories: 11
+  stack: Python, FastAPI, uvicorn, SQLite, pytest, Decimal, shipped persistence library
+  display_name: not proposed
+  short_description: not proposed
+
+Project type signals are mixed: the sources describe both CLI commands and programmatic HTTP endpoints.

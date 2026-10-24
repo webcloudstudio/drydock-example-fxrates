@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-API-Health.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-API-Health.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-API-Health.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: API Health</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Exposes a health endpoint for the FxRates service.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md</td></tr><tr><td>Provides</td><td>GET /health</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Provide <code>GET /health</code> as a lightweight service health check.</p>
+<h2>Route</h2>
+<p><code>GET /health</code> returns status <code>200</code> and the JSON object <code>{&quot;status&quot;: &quot;ok&quot;}</code>.</p>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC health-endpoint ===<br>Intent: The health route is reachable and returns success.</p>
+<p>from app_server.testing import web_client</p>
+<p>client = web_client() response = client.get(&quot;/health&quot;) assert response.status_code == 200 === END AC health-endpoint ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Return JSON from the HTTP API.</li></ul></article>
+</main>
+</body>
+</html>

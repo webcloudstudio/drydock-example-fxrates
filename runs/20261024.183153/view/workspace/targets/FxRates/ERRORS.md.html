@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/ERRORS.md</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/ERRORS.md</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../workspace/targets/FxRates/ERRORS.md">Raw file</a></div></header>
+<article class="doc"><h1>BIG ERRORS — action required</h1>
+<ul><li>Command: <code>plan</code></li><li>Phase: plan verify</li><li>State: Error</li><li>Timestamp: 2026-10-24T18:36:18+00:00</li><li>Execution ID: 20261024.183251.657Z-bc03c7b9</li><li>Challenge Execution ID: -</li><li>Classification: plan cannot be built as written</li><li>Evidence / logs: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261024.183153/workspace/logs</li></ul>
+<h2>Diagnostic</h2>
+<p>plan verify: FxRates 1 criterion cannot run as written ✗  FEATURE-CLI-Load.md [load-rejected-file-is-atomic]: criterion launches a process and opens the store; a launched process cannot see the criterion&#x27;s rolled-back transaction, so exercise stored behavior in-process through <code>web_client()</code> or <code>cli_runner()</code>, or drop the store setup<br>Run: drydock plan repair FxRates</p>
+<h2>Recovery</h2>
+<p>Run: drydock plan repair FxRates</p></article>
+</main>
+</body>
+</html>

@@ -1,0 +1,373 @@
+# DATABASE: FxRates
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Declares the rates store and the typed persistence operations used by FxRates. |
+| Depends On  | ARCHITECTURE.md |
+| Provides    | rates persistence operations |
+
+## Persistence Boundary
+
+| Boundary | Rule |
+|----------|------|
+| Raw storage access | Only the generated `persistence/` package reaches the store. |
+| Caller dependency | Features use declared access patterns and DTOs, not schemas or SQL. |
+| Implementation | Generated from this file at the DATABASE build step; application code does not open a database driver directly. |
+
+The configured database location resolves from `DATABASE_URL`, then `DATABASE_PATH`, then `data/app.db`. Rates are stored as their ECB-published text. Arithmetic is performed by application services with Python `decimal`.
+
+## Access Patterns
+
+### FEATURE-RATE-001 — List all stored rates
+
+| Field | Value |
+|-------|-------|
+| Owner | DATABASE.md |
+| Access | read |
+| Repository operation | `rates.list_all` |
+| Kind | list |
+| Order | `date` asc, `currency` asc |
+| Compatibility | unchanged |
+
+Input: `RateListAllInput`
+
+| Field | Type |
+|-------|------|
+| None | |
+
+Output: `RateRow`
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+| rate | str |
+
+### FEATURE-RATE-002 — Find the latest publication on or before a date
+
+| Field | Value |
+|-------|-------|
+| Owner | DATABASE.md |
+| Access | read |
+| Repository operation | `rates.latest_on_or_before` |
+| Kind | list |
+| Match | `date <= cutoff_date` |
+| Order | `date` desc |
+| Compatibility | unchanged |
+
+Input: `RateLatestInput`
+
+| Field | Type |
+|-------|------|
+| cutoff_date | str |
+
+Output: `RateRow`
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+| rate | str |
+
+### FEATURE-RATE-003 — Find rates for one publication date
+
+| Field | Value |
+|-------|-------|
+| Owner | DATABASE.md |
+| Access | read |
+| Repository operation | `rates.for_date` |
+| Kind | get |
+| Match | `date`, `currency` |
+| Compatibility | unchanged |
+
+Input: `RateForDateInput`
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+
+Output: `RateRow`
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+| rate | str |
+
+### FEATURE-RATE-004 — List rates for a currency
+
+| Field | Value |
+|-------|-------|
+| Owner | DATABASE.md |
+| Access | read |
+| Repository operation | `rates.for_currency` |
+| Kind | list |
+| Match | `currency` |
+| Order | `date` asc |
+| Compatibility | unchanged |
+
+Input: `RateForCurrencyInput`
+
+| Field | Type |
+|-------|------|
+| currency | str |
+
+Output: `RateRow`
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+| rate | str |
+
+### FEATURE-RATE-005 — List rates in a currency and inclusive date range
+
+| Field | Value |
+|-------|-------|
+| Owner | DATABASE.md |
+| Access | read |
+| Repository operation | `rates.history` |
+| Kind | list |
+| Match | `currency`, `date >= start_date`, `date <= end_date` |
+| Order | `date` asc |
+| Compatibility | unchanged |
+
+Input: `RateHistoryInput`
+
+| Field | Type |
+|-------|------|
+| currency | str |
+| start_date | str |
+| end_date | str |
+
+Output: `RateRow`
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+| rate | str |
+
+### FEATURE-RATE-006 — Insert or replace a published rate
+
+| Field | Value |
+|-------|-------|
+| Owner | DATABASE.md |
+| Access | write |
+| Repository operation | `rates.replace_rate` |
+| Kind | upsert |
+| Match | `date`, `currency` |
+| Compatibility | unchanged |
+
+Input: `RateUpsertInput`
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+| rate | str |
+
+Output: `RateRow`
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+| rate | str |
+
+### FEATURE-RATE-007 — Delete one stored rate
+
+| Field | Value |
+|-------|-------|
+| Owner | DATABASE.md |
+| Access | write |
+| Repository operation | `rates.delete` |
+| Kind | delete |
+| Match | `date`, `currency` |
+| Compatibility | unchanged |
+
+Input: `RateDeleteInput`
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+
+Output: `RateRow`
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+
+## Schemas
+
+## `rates`
+
+| Field | Type | Notes |
+|-------|------|-------|
+| id | INTEGER PK | Generated row key. |
+| date | TEXT NOT NULL | ECB publication date in `YYYY-MM-DD` form. |
+| currency | TEXT NOT NULL | Three-letter uppercase currency code. |
+| rate | TEXT NOT NULL | ECB-published rate text, never a floating-point value. |
+
+- UNIQUE (date, currency)
+
+## Migrations
+
+| Access Pattern | Revision | State |
+|----------------|----------|-------|
+| FEATURE-RATE-001–007 | Initial schema | planned |
+
+## Config (.env)
+
+| Key | Type | Required | Notes |
+|-----|------|----------|-------|
+| DATABASE_URL | str | No | Preferred database location; takes precedence over `DATABASE_PATH`. |
+| DATABASE_PATH | str | No | Database location used when `DATABASE_URL` is unset. |
+
+## File Stores
+
+| Store | Root dir | Notes |
+|-------|----------|-------|
+| None | — | No application-managed file store. |
+
+## External Services
+
+| Service | Wrapper | Notes |
+|---------|---------|-------|
+| None | — | ECB download is handled by the CLI integration, not by persistence. |
+
+## External Libraries
+
+| Library | Ownership | Distribution | Consumer Contract |
+|---------|-----------|--------------|-------------------|
+| Shipped persistence library | `persistence/` | Supplied and generated by Drydock | Call `open_database` and declared `db.rates` operations; do not access the driver directly. |
+
+## Programmatic Acceptance
+
+=== AC rates-list-all ===
+Intent: Listing rates returns rows with the declared fields through the generated persistence interface.
+
+from persistence.testing import db_session
+
+with db_session() as db:
+    date = "2098-12-30"
+    currency = "QZX"
+    rate_text = "8.765"
+    db.rates.replace_rate(date=date, currency=currency, rate=rate_text)
+    rows = db.rates.list_all()
+    assert any(row.date == date and row.currency == currency and row.rate == rate_text for row in rows)
+=== END AC rates-list-all ===
+
+=== AC rates-latest-on-or-before ===
+Intent: The date-bounded listing returns the most recent matching publication first.
+
+from persistence.testing import db_session
+
+with db_session() as db:
+    date = "2098-12-30"
+    currency = "QZY"
+    rate_text = "7.654"
+    db.rates.replace_rate(date=date, currency=currency, rate=rate_text)
+    rows = db.rates.latest_on_or_before(cutoff_date="2098-12-31")
+    assert rows
+    assert rows[0].date <= "2098-12-31"
+    assert any(row.date == date and row.currency == currency and row.rate == rate_text for row in rows)
+=== END AC rates-latest-on-or-before ===
+
+=== AC rates-for-date ===
+Intent: A composite date and currency lookup reads back the stored published text.
+
+from persistence.testing import db_session
+
+with db_session() as db:
+    date = "2098-12-29"
+    currency = "QZW"
+    rate_text = "6.543"
+    db.rates.replace_rate(date=date, currency=currency, rate=rate_text)
+    row = db.rates.for_date(date=date, currency=currency)
+    assert row is not None
+    assert row.date == date
+    assert row.currency == currency
+    assert row.rate == rate_text
+=== END AC rates-for-date ===
+
+=== AC rates-for-currency ===
+Intent: Currency listing returns the inserted rate in ascending publication-date order.
+
+from persistence.testing import db_session
+
+with db_session() as db:
+    date = "2098-12-28"
+    currency = "QZV"
+    rate_text = "5.432"
+    db.rates.replace_rate(date=date, currency=currency, rate=rate_text)
+    rows = db.rates.for_currency(currency=currency)
+    assert any(row.date == date and row.currency == currency and row.rate == rate_text for row in rows)
+    dates = [row.date for row in rows]
+    assert dates == sorted(dates)
+=== END AC rates-for-currency ===
+
+=== AC rates-history ===
+Intent: Inclusive currency history returns the inserted point in ascending date order.
+
+from persistence.testing import db_session
+
+with db_session() as db:
+    date = "2098-12-27"
+    currency = "QZU"
+    rate_text = "4.321"
+    db.rates.replace_rate(date=date, currency=currency, rate=rate_text)
+    rows = db.rates.history(currency=currency, start_date=date, end_date=date)
+    assert len(rows) == 1
+    assert rows[0].date == date
+    assert rows[0].currency == currency
+    assert rows[0].rate == rate_text
+=== END AC rates-history ===
+
+=== AC rates-replace-rate ===
+Intent: Upserting the same date and currency replaces the stored rate text.
+
+from persistence.testing import db_session
+
+with db_session() as db:
+    date = "2098-12-26"
+    currency = "QZT"
+    first_rate = "3.210"
+    replacement_rate = "3.211"
+    db.rates.replace_rate(date=date, currency=currency, rate=first_rate)
+    db.rates.replace_rate(date=date, currency=currency, rate=replacement_rate)
+    row = db.rates.for_date(date=date, currency=currency)
+    assert row is not None
+    assert row.rate == replacement_rate
+=== END AC rates-replace-rate ===
+
+=== AC rates-delete ===
+Intent: Deleting a rate removes the matching row from subsequent reads.
+
+from persistence.testing import db_session
+
+with db_session() as db:
+    date = "2098-12-25"
+    currency = "QZS"
+    rate_text = "2.109"
+    db.rates.replace_rate(date=date, currency=currency, rate=rate_text)
+    deleted = db.rates.delete(date=date, currency=currency)
+    assert deleted is not None
+    assert deleted.date == date
+    assert deleted.currency == currency
+    assert db.rates.for_date(date=date, currency=currency) is None
+=== END AC rates-delete ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Preserve rate values as ECB-published text; never store or compute a rate as floating point.
+- All database access goes through the shipped persistence library.
+- Do not read or depend on the supplied grader or source data from application code.

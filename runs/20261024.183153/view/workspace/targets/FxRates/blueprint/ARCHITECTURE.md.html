@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/ARCHITECTURE.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/ARCHITECTURE.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/ARCHITECTURE.md">Raw file</a></div></header>
+<article class="doc"><h1>ARCHITECTURE: FxRates</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Defines the application modules, runtime configuration, and service boundaries for FxRates.</td></tr><tr><td>Provides</td><td>application module boundaries</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>FxRates loads ECB euro reference rates into the configured SQLite store and serves them through a JSON API. The root <code>fxrates</code> executable provides <code>init</code>, <code>load</code>, <code>fetch</code>, and <code>serve</code>.</p>
+<h2>Module Boundaries</h2>
+<div class="scroll"><table><thead><tr><th>Module</th><th>Owns</th><th>Allowed low-level access</th></tr></thead><tbody><tr><td><code>cli</code></td><td>Argument parsing and command dispatch</td><td>Calls application services and the ASGI application; does not access a database driver.</td></tr><tr><td>Rate loading service</td><td>CSV validation and atomic load workflow</td><td>Calls declared <code>persistence</code> operations.</td></tr><tr><td>Fetch service</td><td>ECB archive download and CSV extraction</td><td>Passes extracted CSV content to the rate loading service.</td></tr><tr><td>API application</td><td>FastAPI routes and request handling</td><td>Calls rate and conversion/history services.</td></tr><tr><td>Rate services</td><td>Effective-date lookup, conversion, and history calculations</td><td>Call declared <code>persistence</code> operations; use <code>decimal.Decimal</code> for arithmetic.</td></tr><tr><td><code>persistence</code></td><td>Database connections and declared rate operations</td><td>Sole owner of database driver access.</td></tr></tbody></table></div>
+<h2>Runtime Configuration</h2>
+<p>Resolve the database location in this order: <code>DATABASE_URL</code>, <code>DATABASE_PATH</code>, then <code>data/app.db</code>. Store published rates as text. Do not use floating-point arithmetic for rates.</p>
+<h2>Technology Stack</h2>
+<ul><li>Python 3.11 or newer implements the CLI, application services, API, and tests.</li><li>FastAPI defines the JSON API; uvicorn serves it on <code>127.0.0.1</code>.</li><li>SQLite is accessed through the generated persistence package.</li><li>pytest runs the project test suite, with FastAPI <code>TestClient</code> for API tests.</li><li>The <code>fxrates</code> CLI is the application entry point, and POSIX shell is used by test and conformance runners.</li><li>Python <code>decimal</code> provides exact rate arithmetic.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC architecture-imports ===<br>Intent: The application boundary module imports successfully.</p>
+<p>import importlib.util</p>
+<p>assert importlib.util.find_spec(&quot;app_server.main&quot;) is not None === END AC architecture-imports ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>All database access goes through the shipped persistence library.</li><li>Resolve database configuration from <code>DATABASE_URL</code>, then <code>DATABASE_PATH</code>, then <code>data/app.db</code>.</li><li>Preserve rate text and use Decimal rather than floating point for arithmetic.</li><li>Application code must not read <code>sources/run.sh</code> or supplied data files directly.</li></ul></article>
+</main>
+</body>
+</html>

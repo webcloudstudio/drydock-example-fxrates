@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-API-Rates.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-API-Rates.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-API-Rates.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: API Rates</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Retrieves stored rates for an effective publication date.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md, DATABASE.md</td></tr><tr><td>Provides</td><td>GET /rates/{date}, GET /rates/latest</td></tr><tr><td>Consumes</td><td>rates persistence operations</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Return every available currency rate for the latest ECB publication on or before the requested date. <code>GET /rates/latest</code> uses the latest publication overall.</p>
+<h2>Routes</h2>
+<ul><li><code>GET /rates/{date}</code> returns the effective date, the original requested date, base <code>EUR</code>, and all rates published on the effective date.</li><li><code>GET /rates/latest</code> returns the same shape, with <code>requested</code> set to <code>latest</code>.</li><li>If there is no publication on or before the requested date, return <code>404</code>.</li><li>A malformed calendar date returns <code>422</code>.</li></ul>
+<p>Rates are returned as their stored ECB text. EUR is the implicit base and is not a stored rate.</p>
+<h2>Data Access</h2>
+<p>Resolve the effective publication date using the latest-on-or-before access pattern, then retrieve all rates for that date. Do not hardcode dates or rates.</p>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC rates-by-date-route ===<br>Intent: The date-based rates route is reachable and returns a success status for a valid request.</p>
+<p>from app_server.testing import web_client</p>
+<p>client = web_client() response = client.get(&quot;/rates/2098-12-30&quot;) assert response.status_code in (200, 404) === END AC rates-by-date-route ===</p>
+<p>=== AC rates-latest-route ===<br>Intent: The latest rates route is reachable and responds with a declared HTTP status.</p>
+<p>from app_server.testing import web_client</p>
+<p>client = web_client() response = client.get(&quot;/rates/latest&quot;) assert response.status_code in (200, 404) === END AC rates-latest-route ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Resolve rates from persisted data and preserve rate text.</li><li>Use the most recent publication on or before the requested date.</li></ul></article>
+</main>
+</body>
+</html>

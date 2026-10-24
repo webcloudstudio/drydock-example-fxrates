@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-API-Statistics.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-API-Statistics.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-API-Statistics.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: API Statistics</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Reports stored-rate statistics and currencies available in the store.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md, DATABASE.md</td></tr><tr><td>Provides</td><td>GET /stats, GET /currencies</td></tr><tr><td>Consumes</td><td>rates persistence operations</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Expose database-derived publication statistics and the set of currencies with at least one stored rate.</p>
+<h2>Routes</h2>
+<h3><code>GET /stats</code></h3>
+<p>Return the number of distinct publication dates, total stored rates, and the earliest and latest stored dates. When no rates exist, the date bounds are <code>null</code>.</p>
+<h3><code>GET /currencies</code></h3>
+<p>Return base currency EUR and all currencies with stored rates in ascending order.</p>
+<h2>Data Access</h2>
+<p>Use the declared rates persistence operations. Derive counts, date bounds, and currency membership from stored records. Do not hardcode values.</p>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC stats-route ===<br>Intent: The statistics route is reachable and returns the declared response fields.</p>
+<p>from app_server.testing import web_client</p>
+<p>client = web_client() response = client.get(&quot;/stats&quot;) assert response.status_code == 200 body = response.json() assert {&quot;dates&quot;, &quot;rates&quot;, &quot;first&quot;, &quot;last&quot;} &lt;= body.keys() assert isinstance(body[&quot;dates&quot;], int) assert isinstance(body[&quot;rates&quot;], int) === END AC stats-route ===</p>
+<p>=== AC currencies-route ===<br>Intent: The currencies route is reachable and returns the declared base and currency collection fields.</p>
+<p>from app_server.testing import web_client</p>
+<p>client = web_client() response = client.get(&quot;/currencies&quot;) assert response.status_code == 200 body = response.json() assert body[&quot;base&quot;] == &quot;EUR&quot; assert isinstance(body[&quot;currencies&quot;], list) assert body[&quot;currencies&quot;] == sorted(body[&quot;currencies&quot;]) === END AC currencies-route ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Counts, bounds, and currencies must come from the configured database through the persistence boundary.</li><li>Currency codes are returned in ascending order.</li></ul></article>
+</main>
+</body>
+</html>

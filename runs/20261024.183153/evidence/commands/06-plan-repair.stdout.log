@@ -1,0 +1,13 @@
+Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
+repair: FEATURE-CLI-Load.md · 1 criterion · 1 of 1 attempt
+2026-10-24 14:37:15 EDT  Calling CODEX/gpt-6-luna (plan repair)...
+  Completed CODEX/gpt-6-luna (plan repair)  rc=0
+  ✗  FEATURE-CLI-Load.md [load-rejected-file-is-atomic]: impossible — The criterion needs an in-process runner that invokes the load command and shares the acceptance transaction, but its import and call interface are not provided; guessing them could leave it unrunnable or change what it tests.
+plan repair: FxRates
+  0 repaired, 1 outstanding, 0 files changed
+  ✗  FEATURE-CLI-Load.md [load-rejected-file-is-atomic]: impossible — The criterion needs an in-process runner that invokes the load command and shares the acceptance transaction, but its import and call interface are not provided; guessing them could leave it unrunnable or change what it tests.
+plan verify: FxRates
+  1 criterion cannot run as written
+  ✗  FEATURE-CLI-Load.md [load-rejected-file-is-atomic]: criterion launches a process and opens the store; a launched process cannot see the criterion's rolled-back transaction, so exercise stored behavior in-process through `web_client()` or `cli_runner()`, or drop the store setup
+  Run: drydock plan repair FxRates
+Target - committed project workspace git store
