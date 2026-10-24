@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/VERIFICATION.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/VERIFICATION.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/VERIFICATION.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Full Verification</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Gates the completed application on the supplied full conformance grader.</td></tr><tr><td>Depends On</td><td>FEATURE-Rate-Loading.md, FEATURE-CLI.md, FEATURE-API-Overview.md, FEATURE-Rate-Queries.md, FEATURE-Currency-Conversion.md, FEATURE-Currency-History.md, FEATURE-Rate-Fetch.md, FEATURE-Test-Suite.md</td></tr><tr><td>Provides</td><td>full conformance verification</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Run the supplied grader from the completed application root as the terminal verification gate. It loads the staged ECB fixtures, launches the executable and API, and exercises the complete command and HTTP behavior. Its exit status is the verdict.</p>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC full-conformance ===<br>Intent: The supplied FxRates grader passes all 35 checks.<br>Suite: full</p>
+<p>import subprocess</p>
+<p>result = subprocess.run( [&quot;sh&quot;, &quot;sources/run.sh&quot;], capture_output=True, text=True, ) print(result.stdout) print(result.stderr) assert result.returncode == 0 === END AC full-conformance ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Run the staged grader unmodified from the application root.</li><li>Treat its exit status as the full verification verdict.</li></ul></article>
+</main>
+</body>
+</html>

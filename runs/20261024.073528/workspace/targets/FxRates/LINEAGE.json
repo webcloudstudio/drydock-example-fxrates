@@ -1,0 +1,212 @@
+{
+  "version": 1,
+  "import": {
+    "root": "/mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261024.073528/sources",
+    "format": "markdown"
+  },
+  "sources": {
+    "INSTRUCTIONS.md": {
+      "state": "current",
+      "versions": [
+        {
+          "commit": "435a905",
+          "date": "2026-10-24",
+          "hash": "f762e7650270073d828bdee60efe9c2cbaf4479a375598dc2b0ecbec9d762f3b",
+          "release": "",
+          "state": "consumed",
+          "via": "plan",
+          "ticket": null,
+          "requirements": [
+            {
+              "name": "build-service-stack",
+              "text": "Implement in Python 3.11 or newer with FastAPI, served by uvicorn, over SQLite.",
+              "stories": [
+                "foundation"
+              ]
+            },
+            {
+              "name": "rates-schema",
+              "text": "| `rates` | `date` text `YYYY-MM-DD`, `currency` text, `rate` text | primary key (`date`, `currency`) |",
+              "stories": [
+                "data_schema"
+              ]
+            },
+            {
+              "name": "load-ecb-history",
+              "text": "`fxrates load <csv>` | Loads an ECB history file (rules below). | `dates,rates`, then the number of dates and of rates stored from the file.",
+              "stories": [
+                "data_load"
+              ]
+            },
+            {
+              "name": "fetch-ecb-history",
+              "text": "`fxrates fetch` | Downloads `https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist.zip`, extracts `eurofxref-hist.csv`, and loads it as `load`. | As `load`.",
+              "stories": [
+                "data_fetch"
+              ]
+            },
+            {
+              "name": "provide-cli-commands",
+              "text": "The product is an executable named `fxrates` at the application root.",
+              "stories": [
+                "cli_interface"
+              ]
+            },
+            {
+              "name": "serve-health-stats-currencies",
+              "text": "| `GET /health` | `{\"status\": \"ok\"}` |",
+              "stories": [
+                "api_overview"
+              ]
+            },
+            {
+              "name": "query-effective-and-latest-rates",
+              "text": "**Effective date.** The ECB publishes on working days only. A request for date `D` uses the latest publication date on or before `D`. If none exists, the response is `404`.",
+              "stories": [
+                "api_rates"
+              ]
+            },
+            {
+              "name": "convert-currency",
+              "text": "`GET /convert?from=<code>&to=<code>&amount=<amount>[&date=<date>]` | `{\"date\": <effective date>, \"from\": <code>, \"to\": <code>, \"amount\": <amount>, \"rate\": <rate>, \"result\": <result>}`. Without `date`, the latest publication date is used.",
+              "stories": [
+                "api_conversion"
+              ]
+            },
+            {
+              "name": "return-currency-history",
+              "text": "`GET /history/{code}[?start=<date>][&end=<date>]` | `{\"currency\": <code>, \"base\": \"EUR\", \"count\": <n>, \"min\": <rate>, \"max\": <rate>, \"mean\": <mean>, \"points\": [{\"date\": <date>, \"rate\": <rate>}, ...]}` for the publication dates from `start` through `end` inclusive, ascending. Both bounds are optional. With no points, `count` is `0`, `min`, `max`, and `mean` are `null`, and `points` is `[]`.",
+              "stories": [
+                "api_history"
+              ]
+            },
+            {
+              "name": "provide-project-test-suite",
+              "text": "The completed application provides a POSIX-compatible `bin/test.sh` that runs its own pytest suite from the application root and exits zero only when every test passes.",
+              "stories": [
+                "project_tests"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "eurofxref-hist_2025-01.csv": {
+      "state": "current",
+      "versions": [
+        {
+          "commit": "435a905",
+          "date": "2026-10-24",
+          "hash": "a77de17e0b3c0b73f16805c200496298dae39e44c01bf6726f6c413d1634decf",
+          "release": "",
+          "state": "consumed",
+          "via": "plan",
+          "ticket": null,
+          "requirements": []
+        }
+      ]
+    },
+    "eurofxref-hist_2025-02-03_04.csv": {
+      "state": "current",
+      "versions": [
+        {
+          "commit": "435a905",
+          "date": "2026-10-24",
+          "hash": "91c942eee600dc1dccaffd15bd2917625813d2050487be5de720ead2fc3e0d05",
+          "release": "",
+          "state": "consumed",
+          "via": "plan",
+          "ticket": null,
+          "requirements": []
+        }
+      ]
+    },
+    "eurofxref-hist_bad.csv": {
+      "state": "current",
+      "versions": [
+        {
+          "commit": "435a905",
+          "date": "2026-10-24",
+          "hash": "91c5c0ffeacc455ee6e2e4f6c33996985d91f8a1bb6a1f35897660f3037d7b5e",
+          "release": "",
+          "state": "consumed",
+          "via": "plan",
+          "ticket": null,
+          "requirements": [
+            {
+              "name": "validate-and-load-ecb-history-csv",
+              "text": "2025-02-04,1.0345,160.12,",
+              "stories": [
+                "data_load"
+              ]
+            },
+            {
+              "name": "reject-invalid-rate-data",
+              "text": "2025-02-03,1.0x,159.01,",
+              "stories": [
+                "data_load"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "run.sh": {
+      "state": "current",
+      "versions": [
+        {
+          "commit": "435a905",
+          "date": "2026-10-24",
+          "hash": "f0d6092c076f758abe72e7f0130422f3a1fbdcaa84e33eed747352af311efae7",
+          "release": "",
+          "state": "consumed",
+          "via": "plan",
+          "ticket": null,
+          "requirements": [
+            {
+              "name": "grader-executable-and-cli",
+              "text": "The deliverable is an executable named fxrates at the application root.",
+              "stories": [
+                "cli_interface"
+              ]
+            },
+            {
+              "name": "init-and-load-data",
+              "text": "# \u2500\u2500 A. Command line: initialize and load \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500",
+              "stories": [
+                "data_schema",
+                "data_load"
+              ]
+            },
+            {
+              "name": "cli-usage-errors",
+              "text": "# \u2500\u2500 U. Command-line usage errors \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500",
+              "stories": [
+                "cli_interface"
+              ]
+            },
+            {
+              "name": "serve-http-api",
+              "text": "start_server",
+              "stories": [
+                "api_overview",
+                "api_rates",
+                "api_conversion",
+                "api_history"
+              ]
+            },
+            {
+              "name": "serve-live-load-visibility",
+              "text": "# \u2500\u2500 L. A load while the server runs is visible to the next request \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500",
+              "stories": [
+                "data_load",
+                "api_rates",
+                "api_history"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

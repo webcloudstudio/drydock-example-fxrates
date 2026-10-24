@@ -1,0 +1,19 @@
+<requirement name="grader-executable-and-cli" stories="cli_interface">
+The deliverable is an executable named fxrates at the application root.
+</requirement>
+<requirement name="init-and-load-data" stories="data_schema,data_load">
+# ── A. Command line: initialize and load ───────────────────────────────────────────────
+</requirement>
+<requirement name="cli-usage-errors" stories="cli_interface">
+# ── U. Command-line usage errors ─────────────────────────────────────────────────────────
+</requirement>
+<requirement name="serve-http-api" stories="api_overview,api_rates,api_conversion,api_history">
+start_server
+</requirement>
+<requirement name="serve-live-load-visibility" stories="data_load,api_rates,api_history">
+# ── L. A load while the server runs is visible to the next request ───────────────────────
+</requirement>
+<unattached story="foundation"/>
+<unattached story="data_fetch"/>
+<unattached story="project_tests"/>
+<unattached story="full_verification"/>

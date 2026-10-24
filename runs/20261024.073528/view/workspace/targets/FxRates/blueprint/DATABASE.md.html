@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/DATABASE.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/DATABASE.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/DATABASE.md">Raw file</a></div></header>
+<article class="doc"><h1>DATABASE: FxRates</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Persistence schema and typed repository operations for ECB exchange rates.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md</td></tr><tr><td>Provides</td><td>rates.list, rates.upsert, rates.delete</td></tr><tr><td>Consumes</td><td>persistence.open_database</td></tr></tbody></table></div>
+<h2>Persistence Boundary</h2>
+<div class="scroll"><table><thead><tr><th>Boundary</th><th>Rule</th></tr></thead><tbody><tr><td>Raw storage access</td><td>Only the generated <code>persistence/</code> package reaches SQLite.</td></tr><tr><td>Caller dependency</td><td>Features call declared repository operations and use their DTOs; they do not depend on the schema.</td></tr><tr><td>Implementation</td><td>Generated from this file at the DATABASE build step and never written by hand.</td></tr></tbody></table></div>
+<h2>Access Patterns</h2>
+<h3>FEATURE-RATE-001 — List rates</h3>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Owner</td><td>FEATURE-Rate-Loading.md</td></tr><tr><td>Access</td><td>read</td></tr><tr><td>Repository operation</td><td><code>rates.list</code></td></tr><tr><td>Compatibility</td><td>unchanged</td></tr></tbody></table></div>
+<p>Input: <code>RatesListInput</code></p>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Type</th><th>Required</th></tr></thead><tbody><tr><td>date</td><td>str</td><td>no</td></tr><tr><td>currency</td><td>str</td><td>no</td></tr></tbody></table></div>
+<p>Output: <code>RateRow</code></p>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Type</th></tr></thead><tbody><tr><td>id</td><td>int</td></tr><tr><td>date</td><td>str</td></tr><tr><td>currency</td><td>str</td></tr><tr><td>rate</td><td>str</td></tr></tbody></table></div>
+<h3>FEATURE-RATE-002 — Replace a rate</h3>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Owner</td><td>FEATURE-Rate-Loading.md</td></tr><tr><td>Access</td><td>write</td></tr><tr><td>Repository operation</td><td><code>rates.upsert</code></td></tr><tr><td>Match</td><td><code>date</code>, <code>currency</code></td></tr><tr><td>Compatibility</td><td>unchanged</td></tr></tbody></table></div>
+<p>Input: <code>RateUpsertInput</code></p>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Type</th><th>Required</th></tr></thead><tbody><tr><td>date</td><td>str</td><td>yes</td></tr><tr><td>currency</td><td>str</td><td>yes</td></tr><tr><td>rate</td><td>str</td><td>yes</td></tr></tbody></table></div>
+<p>Output: <code>RateRow</code></p>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Type</th></tr></thead><tbody><tr><td>id</td><td>int</td></tr><tr><td>date</td><td>str</td></tr><tr><td>currency</td><td>str</td></tr><tr><td>rate</td><td>str</td></tr></tbody></table></div>
+<h3>FEATURE-RATE-003 — Delete a rate</h3>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Owner</td><td>FEATURE-CLI.md</td></tr><tr><td>Access</td><td>write</td></tr><tr><td>Repository operation</td><td><code>rates.delete</code></td></tr><tr><td>Match</td><td><code>date</code>, <code>currency</code></td></tr><tr><td>Compatibility</td><td>unchanged</td></tr></tbody></table></div>
+<p>Input: <code>RateDeleteInput</code></p>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Type</th><th>Required</th></tr></thead><tbody><tr><td>date</td><td>str</td><td>yes</td></tr><tr><td>currency</td><td>str</td><td>yes</td></tr></tbody></table></div>
+<p>Output: <code>RateDeleteResult</code></p>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Type</th></tr></thead><tbody><tr><td>date</td><td>str</td></tr><tr><td>currency</td><td>str</td></tr></tbody></table></div>
+<h2>Schemas</h2>
+<h2><code>rates</code></h2>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td>id</td><td>INTEGER PK</td><td>Generated row identifier.</td></tr><tr><td>date</td><td>TEXT NOT NULL</td><td>ECB publication date in <code>YYYY-MM-DD</code> form.</td></tr><tr><td>currency</td><td>TEXT NOT NULL</td><td>Three-letter uppercase currency code.</td></tr><tr><td>rate</td><td>TEXT NOT NULL</td><td>ECB-published rate text, preserved exactly.</td></tr></tbody></table></div>
+<ul><li>UNIQUE (date, currency)</li></ul>
+<h2>Migrations</h2>
+<div class="scroll"><table><thead><tr><th>Access Pattern</th><th>Revision</th><th>State</th></tr></thead><tbody><tr><td>FEATURE-RATE-001</td><td>—</td><td>planned</td></tr><tr><td>FEATURE-RATE-002</td><td>—</td><td>planned</td></tr><tr><td>FEATURE-RATE-003</td><td>—</td><td>planned</td></tr></tbody></table></div>
+<h2>Config (.env)</h2>
+<div class="scroll"><table><thead><tr><th>Key</th><th>Type</th><th>Required</th><th>Notes</th></tr></thead><tbody><tr><td>DATABASE_URL</td><td>str</td><td>no</td><td>SQLite file path or <code>sqlite://</code> DSN; takes precedence.</td></tr><tr><td>DATABASE_PATH</td><td>str</td><td>no</td><td>SQLite file path used when <code>DATABASE_URL</code> is unset.</td></tr></tbody></table></div>
+<p>When both keys are unset, the application uses <code>data/app.db</code>.</p>
+<h2>File Stores</h2>
+<div class="scroll"><table><thead><tr><th>Store</th><th>Root dir</th><th>Notes</th></tr></thead><tbody><tr><td>—</td><td>—</td><td>No file store is used for persistent application state.</td></tr></tbody></table></div>
+<h2>External Services</h2>
+<div class="scroll"><table><thead><tr><th>Service</th><th>Wrapper</th><th>Notes</th></tr></thead><tbody><tr><td>—</td><td>—</td><td>No external service is accessed by the persistence layer.</td></tr></tbody></table></div>
+<h2>External Libraries</h2>
+<div class="scroll"><table><thead><tr><th>Library</th><th>Ownership</th><th>Distribution</th><th>Consumer Contract</th></tr></thead><tbody><tr><td>Shipped persistence package</td><td>Generated persistence boundary</td><td>Supplied by Drydock</td><td>Application code calls <code>open_database</code> and declared <code>db.rates</code> operations; it does not open a database driver.</td></tr></tbody></table></div>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC rates-list ===<br>Intent: Listing returns the rows created through the declared repository interface.</p>
+<p>from persistence.testing import db_session</p>
+<p>with db_session() as db: date = &quot;2099-01-02&quot; currency = &quot;QAZ&quot; rate = &quot;1.234&quot; db.rates.upsert(date=date, currency=currency, rate=rate) rows = db.rates.list(date=date, currency=currency) assert len(rows) == 1 assert rows[0].date == date assert rows[0].currency == currency assert rows[0].rate == rate === END AC rates-list ===</p>
+<p>=== AC rates-upsert ===<br>Intent: Upserting the same date and currency replaces the stored rate.</p>
+<p>from persistence.testing import db_session</p>
+<p>with db_session() as db: date = &quot;2099-01-03&quot; currency = &quot;QAZ&quot; first_rate = &quot;1.234&quot; replacement_rate = &quot;1.235&quot; db.rates.upsert(date=date, currency=currency, rate=first_rate) db.rates.upsert(date=date, currency=currency, rate=replacement_rate) rows = db.rates.list(date=date, currency=currency) assert len(rows) == 1 assert rows[0].date == date assert rows[0].currency == currency assert rows[0].rate == replacement_rate === END AC rates-upsert ===</p>
+<p>=== AC rates-delete ===<br>Intent: Deleting a matching date and currency removes that rate.</p>
+<p>from persistence.testing import db_session</p>
+<p>with db_session() as db: date = &quot;2099-01-04&quot; currency = &quot;QAZ&quot; rate = &quot;1.234&quot; db.rates.upsert(date=date, currency=currency, rate=rate) removed = db.rates.delete(date=date, currency=currency) assert removed.date == date assert removed.currency == currency assert db.rates.list(date=date, currency=currency) == [] === END AC rates-delete ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Preserve published rates as text; do not convert them to floating point during storage.</li><li>Keep the <code>(date, currency)</code> natural key unique so replacement is atomic and unambiguous.</li><li>All runtime database access goes through the generated persistence package.</li></ul></article>
+</main>
+</body>
+</html>

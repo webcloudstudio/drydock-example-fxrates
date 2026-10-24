@@ -1,0 +1,18 @@
+{
+  "criteria": {
+    "app-factory": {
+      "status": "VALID",
+      "error_code": "product-missing",
+      "code_sha256": "cea36785a42d5a94cc023ed4fd3e0207298b00ab5bb135dd158bc1916713d4c3",
+      "updated_at": "2026-10-24T07:41:06+00:00",
+      "detail": ""
+    },
+    "architecture-boundary": {
+      "status": "VALID",
+      "error_code": "product-missing",
+      "code_sha256": "d82677f815ef401e50aa65cf0769783c5872b30af3416724b6dfdc54c55a95bf",
+      "updated_at": "2026-10-24T07:41:06+00:00",
+      "detail": ""
+    }
+  }
+}

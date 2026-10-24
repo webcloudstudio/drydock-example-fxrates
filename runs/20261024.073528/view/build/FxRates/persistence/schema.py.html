@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>build/FxRates/persistence/schema.py</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>build/FxRates/persistence/schema.py</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../build/FxRates/persistence/schema.py">Raw file</a></div></header>
+<article class="doc"><pre>from dataclasses import dataclass
+from .db import Database, Operation, Schema, Table
+
+
+@dataclass(frozen=True)
+class Rate:
+    date: str
+    currency: str
+    rate: str
+
+
+SCHEMA = Schema(
+    tables=(Table(&quot;rates&quot;, (&quot;date&quot;, &quot;currency&quot;, &quot;rate&quot;)),),
+    operations=(
+        Operation(&quot;rates.list&quot;, &quot;rates&quot;, &quot;list&quot;, (&quot;date&quot;, &quot;currency&quot;), Rate, (&quot;date&quot;, &quot;currency&quot;, &quot;rate&quot;), name=&quot;list&quot;),
+        Operation(&quot;rates.upsert&quot;, &quot;rates&quot;, &quot;upsert&quot;, (&quot;date&quot;, &quot;currency&quot;, &quot;rate&quot;), Rate, (&quot;date&quot;, &quot;currency&quot;, &quot;rate&quot;), (&quot;date&quot;, &quot;currency&quot;), name=&quot;upsert&quot;),
+        Operation(&quot;rates.delete&quot;, &quot;rates&quot;, &quot;delete&quot;, (&quot;date&quot;, &quot;currency&quot;), None, match=(&quot;date&quot;, &quot;currency&quot;), name=&quot;delete&quot;),
+    ),
+)
+
+
+def open_database(dsn: str) -&gt; Database:
+    return Database(dsn, SCHEMA)
+</pre></article>
+</main>
+</body>
+</html>

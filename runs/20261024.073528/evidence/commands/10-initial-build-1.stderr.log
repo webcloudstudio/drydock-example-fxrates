@@ -1,0 +1,10 @@
+========================================================================
+A MAJOR ERROR HAS OCCURRED — drydock build FxRates --override --repair-attempts 6 has stopped.
+codex/gpt-6-luna is diagnosing. Standing off; this takes up to a minute.
+========================================================================
+CAUSE: `DATABASE` produced no persistence artifacts, so block-1 acceptance could not verify the app or database interface.
+DO: Inspect `persistence/` and rebuild the `DATABASE` step to generate its artifacts.
+DO: Run `drydock build FxRates --step block-1`.
+========================================================================
+error: build failed for FxRates: 1 step(s)
+  foundation — closed/failed: persistence verification failed

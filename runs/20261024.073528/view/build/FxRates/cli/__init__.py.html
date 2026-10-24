@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>build/FxRates/cli/__init__.py</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>build/FxRates/cli/__init__.py</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../build/FxRates/cli/__init__.py">Raw file</a></div></header>
+<article class="doc"><pre>&quot;&quot;&quot;Command line entry point.&quot;&quot;&quot;
+import argparse
+
+
+def main(argv: list[str] | None = None) -&gt; int:
+    parser = argparse.ArgumentParser(prog=&quot;fxrates&quot;)
+    sub = parser.add_subparsers(dest=&quot;command&quot;, required=True)
+    sub.add_parser(&quot;init&quot;)
+    load = sub.add_parser(&quot;load&quot;)
+    load.add_argument(&quot;csv&quot;)
+    fetch = sub.add_parser(&quot;fetch&quot;)
+    serve = sub.add_parser(&quot;serve&quot;)
+    serve.add_argument(&quot;--port&quot;, type=int, default=8000)
+    args = parser.parse_args(argv)
+    if args.command == &quot;serve&quot;:
+        import uvicorn
+        uvicorn.run(&quot;app_server.main:app&quot;, host=&quot;127.0.0.1&quot;, port=args.port)
+        return 0
+    return 0
+</pre></article>
+</main>
+</body>
+</html>

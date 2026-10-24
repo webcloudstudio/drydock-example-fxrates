@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>build/FxRates/tests/test_foundation.py</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>build/FxRates/tests/test_foundation.py</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../build/FxRates/tests/test_foundation.py">Raw file</a></div></header>
+<article class="doc"><pre>from persistence import open_database
+from app_server.main import create_app
+from fastapi.testclient import TestClient
+
+
+def test_app_factory_health():
+    response = TestClient(create_app()).get(&#x27;/health&#x27;)
+    assert response.status_code == 200
+
+
+def test_declared_rates_operations_exist():
+    db = open_database(&#x27;&#x27;)
+    assert hasattr(db, &#x27;rates&#x27;)
+    assert callable(db.rates.list)
+    assert callable(db.rates.upsert)
+    assert callable(db.rates.delete)
+</pre></article>
+</main>
+</body>
+</html>

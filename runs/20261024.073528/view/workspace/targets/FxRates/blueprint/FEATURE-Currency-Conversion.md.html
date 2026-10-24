@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-Currency-Conversion.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-Currency-Conversion.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-Currency-Conversion.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Currency Conversion</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Converts currency amounts using exact decimal arithmetic and half-even rounding.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md, DATABASE.md</td></tr><tr><td>Provides</td><td>GET /convert</td></tr><tr><td>Consumes</td><td>rates.list</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Convert between EUR and currencies with stored rates using the requested publication date, or the latest publication when no date is supplied. EUR has an implicit rate of one. The returned rate is <code>rate(to) / rate(from)</code> and the result is calculated directly from the unrounded stored rates.</p>
+<h2>Route</h2>
+<p><code>GET /convert?from=&lt;code&gt;&amp;to=&lt;code&gt;&amp;amount=&lt;amount&gt;[&amp;date=&lt;date&gt;]</code></p>
+<p>A successful response contains <code>date</code>, <code>from</code>, <code>to</code>, <code>amount</code>, <code>rate</code>, and <code>result</code>. Echo <code>amount</code> as the supplied string. Render <code>rate</code> as a string with exactly six decimal places, rounded half-even; render <code>result</code> as a string with exactly two decimal places, also rounded half-even. Validate <code>amount</code> against <code>[0-9]+(\.[0-9]+)?</code>. Missing required query parameters, malformed amounts, and malformed or impossible dates return 422. A missing effective publication or unavailable non-EUR currency returns 404.</p>
+<h2>Database Interface</h2>
+<ul><li>None — persistence is owned by FEATURE-CLI.md, FEATURE-Rate-Loading.md.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC conversion ===<br>Intent: Conversion echoes the input amount and returns the calculated rate and result for stored rates.</p>
+<p>from app_server.testing import web_client from persistence.testing import db_session</p>
+<p>with db_session() as db: date = &quot;2099-01-02&quot; from_currency = &quot;QAZ&quot; to_currency = &quot;WXY&quot; from_rate = &quot;2&quot; to_rate = &quot;3&quot; amount = &quot;10&quot; db.rates.upsert(date=date, currency=from_currency, rate=from_rate) db.rates.upsert(date=date, currency=to_currency, rate=to_rate)</p>
+<p>client = web_client() response = client.get( &quot;/convert&quot;, params={&quot;from&quot;: from_currency, &quot;to&quot;: to_currency, &quot;amount&quot;: amount, &quot;date&quot;: date}, ) assert response.status_code == 200 body = response.json() assert body[&quot;date&quot;] == date assert body[&quot;from&quot;] == from_currency assert body[&quot;to&quot;] == to_currency assert body[&quot;amount&quot;] == amount assert body[&quot;rate&quot;] == &quot;1.500000&quot; assert body[&quot;result&quot;] == &quot;15.00&quot; === END AC conversion ===</p>
+<p>=== AC missing-amount ===<br>Intent: A conversion missing its required amount is rejected with the validation status.</p>
+<p>from app_server.testing import web_client</p>
+<p>client = web_client() response = client.get(&quot;/convert&quot;, params={&quot;from&quot;: &quot;EUR&quot;, &quot;to&quot;: &quot;USD&quot;}) assert response.status_code == 422 === END AC missing-amount ===</p>
+<p>=== AC malformed-amount ===<br>Intent: A malformed conversion amount is rejected with the validation status.</p>
+<p>from app_server.testing import web_client</p>
+<p>client = web_client() response = client.get( &quot;/convert&quot;, params={&quot;from&quot;: &quot;EUR&quot;, &quot;to&quot;: &quot;USD&quot;, &quot;amount&quot;: &quot;abc&quot;}, ) assert response.status_code == 422 === END AC malformed-amount ===</p>
+<p>=== AC unavailable-currency ===<br>Intent: A conversion using a currency without an effective rate returns not found.</p>
+<p>from app_server.testing import web_client</p>
+<p>client = web_client() response = client.get( &quot;/convert&quot;, params={&quot;from&quot;: &quot;EUR&quot;, &quot;to&quot;: &quot;XXX&quot;, &quot;amount&quot;: &quot;1&quot;}, ) assert response.status_code == 404 === END AC unavailable-currency ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Use <code>decimal.Decimal</code> for all rate and amount arithmetic; never use binary floating point.</li><li>Compute the result from unrounded source rates, not from the displayed rounded conversion rate.</li><li>Apply half-even rounding at the specified precision.</li></ul></article>
+</main>
+</body>
+</html>

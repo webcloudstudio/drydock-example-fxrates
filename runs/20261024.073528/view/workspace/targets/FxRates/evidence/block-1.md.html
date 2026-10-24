@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/evidence/block-1.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/evidence/block-1.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/evidence/block-1.md">Raw file</a></div></header>
+<article class="doc"><h1>Evidence: Block 1 · Foundational (block-1)</h1>
+<ul><li>block type: block</li><li>date: 2026-10-24</li><li>resulting state: closed/failed</li><li>story points (combined assembled cost): 8866</li><li>execution id: 20261024.074110.972Z-9790f444</li></ul>
+<h2>Stories built</h2>
+<ul><li>Establish the Python application, FastAPI server, CLI, and generated SQLite persistence foundations. (foundation) [story]</li></ul>
+<h2>Acceptance tooling authorization</h2>
+<ul><li>ARCHITECTURE.md#app-factory: python-package=httpx; scope=test; authorization=existing Target environment</li></ul>
+<h2>Stacked context</h2>
+<ul><li>implements: python.md (SP 761)</li><li>compass: COMPASS.md (SP 752)</li><li>implements: ARCHITECTURE.md (SP 1008)</li><li>stack: common.md (SP 1812)</li><li>stack: fastapi.md (SP 497)</li><li>stack: sqlite.md (SP 2195)</li><li>stack: cli.md (SP 1755)</li></ul>
+<h2>Build directory changes</h2>
+<ul><li>.env.example</li><li>.gitignore</li><li>app_server/<strong>init</strong>.py</li><li>app_server/main.py</li><li>app_server/testing.py</li><li>bin/run.sh</li><li>bin/test.sh</li><li>cli/<strong>init</strong>.py</li><li>cli/<strong>main</strong>.py</li><li>cli/testing.py</li><li>config.py</li><li>fxrates</li><li>persistence/<strong>init</strong>.py</li><li>persistence/db.py</li><li>persistence/postgres.py</li><li>persistence/schema.py</li><li>persistence/sqlite.py</li><li>pyproject.toml</li><li>schema.sql</li><li>tests/test_foundation.py</li></ul>
+<h2>Pre-build acceptance observation</h2>
+<ul><li>RED: app-factory (ARCHITECTURE.md)</li></ul>
+<p>intent: The application factory creates a FastAPI app that answers the public health route. error: foundation not built: <code>app_server</code> is the package the web-server foundation (django.md, fastapi.md, flask.md) builds, and the build directory has no <code>app_server/</code>. The criterion exercises the built application, so it was not run.</p>
+<ul><li>RED: architecture-boundary (ARCHITECTURE.md)</li></ul>
+<p>intent: The generated persistence interface opens the configured database and exposes the declared rates operations. error: foundation not built: <code>persistence</code> is the package the database foundation (postgres.md, sqlite.md) builds, and the build directory has no <code>persistence/</code>. The criterion exercises the built application, so it was not run.</p>
+<h2>Post-build programmatic acceptance</h2>
+<ul><li>FAIL: app-factory (ARCHITECTURE.md)</li></ul>
+<p>intent: The application factory creates a FastAPI app that answers the public health route. provisioning: not required return code: 1 error: persistence verification failed: persistence artifacts missing; rebuild the DATABASE step stderr: persistence artifacts missing; rebuild the DATABASE step</p>
+<ul><li>FAIL: architecture-boundary (ARCHITECTURE.md)</li></ul>
+<p>intent: The generated persistence interface opens the configured database and exposes the declared rates operations. provisioning: not required return code: 1 error: persistence verification failed: persistence artifacts missing; rebuild the DATABASE step stderr: persistence artifacts missing; rebuild the DATABASE step</p>
+<h2>Agent self-report (advisory)</h2>
+<p>The build agent declared a failure. This is advisory only; the programmatic acceptance above is the authority for this block&#x27;s outcome.</p>
+<ul><li>summary: Dependency locking blocked by duplicate parent-workspace member</li><li>detail:</li></ul>
+<p><code>uv add</code> and <code>uv lock</code> detect another <code>fxrates</code> project in the enclosing workspace. Isolate this build from the parent workspace or resolve the duplicate workspace member, then generate <code>uv.lock</code> and rerun <code>bin/test.sh</code>.</p>
+<h2>Failure</h2>
+<ul><li>summary: persistence verification failed</li><li>detail:</li></ul>
+<p>persistence artifacts missing; rebuild the DATABASE step</p>
+<h2>Build summary</h2>
+<p>RESULT: FAILED</p>
+<p>FILES CHANGED:</p>
+<ul><li><code>config.py</code></li><li><code>app_server/__init__.py</code></li><li><code>app_server/main.py</code></li><li><code>app_server/testing.py</code></li><li><code>persistence/__init__.py</code></li><li><code>persistence/schema.py</code></li><li><code>persistence/db.py</code></li><li><code>persistence/sqlite.py</code></li><li><code>persistence/postgres.py</code></li><li><code>schema.sql</code></li><li><code>cli/__init__.py</code></li><li><code>cli/__main__.py</code></li><li><code>cli/testing.py</code></li><li><code>fxrates</code></li><li><code>.env.example</code></li><li><code>.gitignore</code></li><li><code>pyproject.toml</code></li><li><code>tests/test_foundation.py</code></li><li><code>bin/test.sh</code></li><li><code>bin/run.sh</code></li></ul>
+<p>SUMMARY: Implemented the foundational application, CLI, API health route, configuration, and persistence interfaces. The in-language checks pass (<code>2 passed</code> with <code>PYTHONPATH=. python -m pytest -q</code>).</p>
+<p>BLOCKERS:</p>
+<ul><li><code>uv</code> could not resolve or lock dependencies: it detected another parent-workspace member with the same <code>fxrates</code> name. No <code>uv.lock</code> was produced, and <code>bin/test.sh</code> could not be validated using its declared command.</li><li><code>bin/test.sh</code> remains dependent on resolving that workspace issue before the project’s required test workflow can pass.</li></ul>
+<p>FAILURE_SUMMARY: Dependency locking blocked by duplicate parent-workspace member<br>FAILURE_DETAIL: <code>uv add</code> and <code>uv lock</code> detect another <code>fxrates</code> project in the enclosing workspace. Isolate this build from the parent workspace or resolve the duplicate workspace member, then generate <code>uv.lock</code> and rerun <code>bin/test.sh</code>.</p>
+<h2>Diagnosis</h2>
+<p>CAUSE: <code>DATABASE</code> produced no persistence artifacts, so block-1 acceptance could not verify the app or database interface.<br>DO: Inspect <code>persistence/</code> and rebuild the <code>DATABASE</code> step to generate its artifacts.<br>DO: Run <code>drydock build FxRates --step block-1</code>.</p></article>
+</main>
+</body>
+</html>
