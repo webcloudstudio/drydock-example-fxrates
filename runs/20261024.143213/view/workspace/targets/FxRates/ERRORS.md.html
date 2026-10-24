@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/ERRORS.md</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/ERRORS.md</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../workspace/targets/FxRates/ERRORS.md">Raw file</a></div></header>
+<article class="doc"><h1>BIG ERRORS — action required</h1>
+<ul><li>Command: <code>plan</code></li><li>Phase: post-output validation</li><li>State: Error</li><li>Timestamp: 2026-10-24T14:35:05+00:00</li><li>Execution ID: 20261024.143259.945Z-ba876a21</li><li>Challenge Execution ID: -</li><li>Classification: plan generation stalled</li><li>Evidence / logs: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261024.143213/workspace/logs</li></ul>
+<h2>Diagnostic</h2>
+<p>Blueprint generation stalled after TOPOLOGY.md was accepted and frozen, after 3 Stage 2 pass(es). last rejection: DATABASE.md does not parse: DATABASE.md: FEATURE-RATE-004 <code>rates.latest</code> runs exactly what FEATURE-RATE-003 runs: the same Kind, Match, Sets, and Output. One operation serves every caller; cite FEATURE-RATE-003 instead. topology:  1  (17 stories declared) specs:     0 / 17  accepted manifest:  0  (not serialized) missing:   architecture -&gt; ARCHITECTURE.md rates_database -&gt; DATABASE.md database_init -&gt; FEATURE-Database-Init.md ecb_load -&gt; FEATURE-ECB-Load.md ecb_fetch -&gt; FEATURE-ECB-Fetch.md api_service -&gt; FEATURE-API-Service.md api_health -&gt; FEATURE-API-Health.md api_stats -&gt; FEATURE-API-Stats.md … (11 more lines truncated)</p>
+<h2>Recovery</h2>
+<p>Inspect the failed Stage 2 batch, then run: drydock plan FxRates</p></article>
+</main>
+</body>
+</html>

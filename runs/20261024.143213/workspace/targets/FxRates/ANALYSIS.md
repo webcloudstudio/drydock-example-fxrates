@@ -1,0 +1,153 @@
+# Blueprint Analysis: FxRates
+
+## Commander Expectations
+
+- assert the product loads ECB euro reference rates and serves date-based rates, conversions, and currency history through a JSON API.
+
+## Crew
+
+| Crew | Charge |
+|---|---|
+| Commander | Defines intent and decides what done means. |
+| Team Lead | Confirms epic completeness and stakeholder expectations. |
+| Planning Crew | Authors atomic specifications and the ordered Manifest. |
+| Shipyard Crew | Builds the tickets without synchronous Commander access. |
+
+## Story List
+
+### Feature: Database and ECB Import
+
+| ID | Story | High-level AC |
+|---|---|---|
+| DATA-001 | Initialize the rates database | `fxrates init` creates an empty rates store and produces no standard output. |
+| DATA-002 | Validate and load ECB history files | Valid files store every non-N/A published rate as text, replace matching date/currency rates, and report stored date and rate counts. Invalid files store nothing and return the specified exit code. |
+| DATA-003 | Fetch and load ECB history | `fxrates fetch` downloads the ECB history archive, extracts the history CSV, and loads it using the same rules as `load`. |
+
+### Feature: Command Line and Service Lifecycle
+
+| ID | Story | High-level AC |
+|---|---|---|
+| CLI-001 | Handle command usage and failures | Unknown commands, invalid argument counts, invalid ports, unreadable files, and rejected files return their specified exit codes; failures write no standard output and one diagnostic line to standard error. |
+| CLI-002 | Serve the API on the requested local port | `fxrates serve` runs uvicorn bound to `127.0.0.1` on the requested port or default port. |
+| API-001 | Report service health | `GET /health` returns status 200 and `{"status":"ok"}`. |
+
+### Feature: Rates and Currency Discovery
+
+| ID | Story | High-level AC |
+|---|---|---|
+| API-002 | Report database statistics | `GET /stats` returns publication-date and rate counts, first and last dates, or null dates for an empty store. |
+| API-003 | List available currencies | `GET /currencies` returns EUR as base and stored currencies in ascending order. |
+| API-004 | Resolve rates by requested date | `GET /rates/{date}` returns all rates for the latest publication on or before the requested date, or 404 when none exists. |
+| API-005 | Resolve the latest rates | `GET /rates/latest` returns all rates for the latest publication and identifies the request as `latest`. |
+
+### Feature: Conversion and Currency History
+
+| ID | Story | High-level AC |
+|---|---|---|
+| API-006 | Convert an amount between currencies | `GET /convert` uses the latest publication by default or resolves the supplied date; returns the effective date, exact six-decimal half-even rate, and exact two-decimal half-even result. |
+| API-007 | Return currency history and statistics | `GET /history/{code}` returns ascending points within optional inclusive bounds, stored-text extrema, and a six-decimal half-even mean; an empty range returns zero count, null statistics, and no points. |
+
+### Feature: Request Validation
+
+| ID | Story | High-level AC |
+|---|---|---|
+| API-008 | Reject malformed or unavailable requests | Malformed dates or amounts and missing required parameters return 422; unknown or unavailable currencies and dates without an effective publication return 404. |
+
+### Feature: Automated Verification
+
+| ID | Story | High-level AC |
+|---|---|---|
+| TEST-001 | Verify the complete supplied grader | The supplied grader completes successfully with every supplied check passing. |
+
+## Story Guidance
+
+Named stories planning must produce. Authoritative record: `STORY_GUIDANCE.json`.
+
+None.
+
+## Surfaced Acceptance Criteria
+
+None.
+
+## Source Inventory
+
+| Path | Content kind | Disposition | Reason |
+|---|---|---|---|
+| `sources/INSTRUCTIONS.md` | markdown | analyzed | readable UTF-8 |
+| `sources/eurofxref-hist_2025-01.csv` | text | analyzed | readable UTF-8 |
+| `sources/eurofxref-hist_2025-02-03_04.csv` | text | analyzed | readable UTF-8 |
+| `sources/eurofxref-hist_bad.csv` | text | analyzed | readable UTF-8 |
+| `sources/run.sh` | code | analyzed | readable UTF-8 |
+
+## Relationship Model
+
+| Source or group | Relationship type | Related source or group | Evidence | Delivery implication |
+|---|---|---|---|---|
+| `sources/INSTRUCTIONS.md` | instruction-to-test | `sources/run.sh` | The brief defines CLI and HTTP behavior; the harness executes commands and compares HTTP responses against known answers. | Build each capability to the brief, then gate complete conformance on the terminal verification story. |
+| `sources/run.sh` | test-kit-to-implementation | `fxrates` CLI and API | The harness invokes `./fxrates`, loads the staged CSVs, and calls localhost endpoints. | Stage the harness and every CSV it reads; implement the executable and service before terminal verification. |
+| `sources/eurofxref-hist_2025-01.csv` | parser-to-normalizer | `DATA-002` and rate store | The file has 22 dates, eight populated currencies, and an all-`N/A` HRK column. | Preserve published rate text and omit `N/A` values. |
+| `sources/eurofxref-hist_2025-02-03_04.csv` | parser-to-normalizer | `DATA-002` and API stories | The file adds two dates and is loaded while the server is running. | Support live visibility of completed loads and effective-date resolution across files. |
+| `sources/eurofxref-hist_bad.csv` | test-kit-to-implementation | `DATA-002` | Its second row has an invalid rate after a valid first row. | Validate the complete file before writing any row. |
+| Shipped persistence library and generated relational layer | dependency | `DATA-001`, `DATA-002`, `API-002`–`API-007` | The brief requires all database access through the supplied persistence boundary and `DATABASE_URL`. | Establish repository-call contracts for CLI and API persistence consumers; route and service specs use those contracts. |
+
+## Source Roles
+
+| Path | Role | Plan disposition | Build disposition |
+|---|---|---|---|
+| `sources/INSTRUCTIONS.md` | normative specification and conformance test suite | prompt-only | none |
+| `sources/eurofxref-hist_2025-01.csv` | asset | context | stage |
+| `sources/eurofxref-hist_2025-02-03_04.csv` | asset | context | stage |
+| `sources/eurofxref-hist_bad.csv` | asset | context | stage |
+| `sources/run.sh` | conformance harness | context | stage |
+
+## Planning Instructions
+
+### Delivery Shape
+
+A local command-line application initializes and populates a SQLite rates store from ECB history data, then runs a FastAPI JSON service. The service reads the store to report health, statistics, currencies, effective-date rates, conversions, and history. The required flow is initialize, load supplied history, serve on localhost, and verify command and HTTP behavior. Fetch is a separate optional import path and must share the load validation and persistence behavior.
+
+### Story Realization Map
+
+| Story ID | Durable Blueprint scope and evidence | Related files | Delivery need |
+|---|---|---|---|
+| DATA-001 | Initialize store; `sources/INSTRUCTIONS.md` Database and Command line sections | `fxrates`, persistence package | Capability |
+| DATA-002 | Atomic ECB CSV validation, storage, and count reporting; brief ECB history file rules | `fxrates`, staged CSV fixtures, persistence package | Capability and integration |
+| DATA-003 | Download archive, extract history CSV, reuse load; brief Command line section | `fxrates`, fetch stub in authored tests | Capability and integration |
+| CLI-001 | Usage, operational, and rejected-file exit behavior; brief Command line section | `fxrates` | Capability |
+| CLI-002 | Local uvicorn service lifecycle; brief Run Harness and Command line sections | `fxrates`, API application | Capability and integration |
+| API-001 | Health response; brief HTTP API | API router | Capability |
+| API-002 | Store statistics; brief HTTP API | API router, repository contract | Capability |
+| API-003 | Available currency list; brief HTTP API | API router, repository contract | Capability |
+| API-004 | Effective-date rates and no-prior-publication response; brief HTTP API | API router, repository contract | Capability |
+| API-005 | Latest publication rates; brief HTTP API | API router, repository contract | Capability |
+| API-006 | Exact currency conversion and rounding; brief HTTP API Values | API router, repository contract | Capability |
+| API-007 | Bounded history and statistics; brief HTTP API | API router, repository contract | Capability |
+| API-008 | Request validation and not-found behavior; brief HTTP API Errors | API routes, authored API tests | Capability |
+| TEST-001 | Full supplied grader verification; `sources/run.sh` | staged harness and CSV fixtures | Acceptance contract |
+
+### Test and Acceptance Strategy
+
+Use focused pytest tests for each command, CSV validation and atomicity, route behavior, effective dates, decimal rounding, and error statuses. Stub fetch downloads so automated tests make no network connection. The terminal `TEST-001` story runs `sh sources/run.sh` unfiltered and declares `Suite: full`; it depends on all implementation stories. The complete grader is a proof gate, not a numeric release threshold.
+
+### Sequencing and Dependencies
+
+Create the persistence boundary and schema before database-backed CLI and API work. Implement CSV validation before storage writes; implement shared effective-date and currency lookup behavior before rates and conversions. The API service and executable must exist before the staged grader can run. Stage all CSV fixtures and the harness before final verification. Fetch depends on the same validated load path and a stubbed download in tests.
+
+### Source Conflicts and Gaps
+
+The brief defines both CLI and programmatic HTTP routes, so project type signals are mixed. The harness and fixtures are supplied, but no project-owned pytest suite is supplied; author the suite and `bin/test.sh` from the brief. No auth, deployment target, or human-facing web screens are specified.
+
+## Analysis Notes
+generated: 2026-10-24
+blueprint: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261024.143213/workspace/targets/FxRates/blueprint
+
+Quality: Ready
+  blockers: 0
+  questions: 0
+  features: 6
+  stories: 15
+  stack: Python 3.11+, FastAPI, uvicorn, SQLite, pytest
+  display_name: not proposed
+  short_description: not proposed
+
+Project type: ambiguous (CLI commands and programmatic HTTP routes).

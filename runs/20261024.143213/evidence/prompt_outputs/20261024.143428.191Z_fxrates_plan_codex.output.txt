@@ -1,0 +1,383 @@
+=== BEGIN ARTIFACT DATABASE.md ===
+# DATABASE: FxRates
+
+| Field | Value |
+|-------|-------|
+| Version | 20261024 V2 |
+| Description | Persistence stores and typed interfaces for ECB reference rates. |
+| Depends On | ARCHITECTURE.md |
+| Provides | rates repository operations |
+
+## Questions
+
+- None.
+
+## Persistence Boundary
+
+| Boundary | Rule |
+|----------|------|
+| Raw storage access | Only the generated `persistence/` package reaches the store. |
+| Caller dependency | Features depend on declared access patterns and their DTOs, not on schemas. |
+| Implementation | Generated from this file at the DATABASE build step; never written by hand. |
+
+## Access Patterns
+
+### FEATURE-RATE-001 — Replace a rate
+
+| Field | Value |
+|-------|-------|
+| Owner | DATABASE.md |
+| Access | write |
+| Repository operation | `rates.upsert` |
+| Match | date, currency |
+| Compatibility | unchanged |
+
+Input: Rate
+
+| Field | Type |
+|------|------|
+| date | str |
+| currency | str |
+| rate | str |
+
+Output: Rate
+
+| Field | Type |
+|------|------|
+| date | str |
+| currency | str |
+| rate | str |
+
+### FEATURE-RATE-002 — List rates for a publication date
+
+| Field | Value |
+|-------|-------|
+| Owner | DATABASE.md |
+| Access | read |
+| Repository operation | `rates.list` |
+| Compatibility | unchanged |
+
+Input: RatesByDate
+
+| Field | Type |
+|------|------|
+| date | str |
+
+Output: Rate
+
+| Field | Type |
+|------|------|
+| date | str |
+| currency | str |
+| rate | str |
+
+### FEATURE-RATE-003 — Find the latest publication on or before a date
+
+| Field | Value |
+|-------|-------|
+| Owner | DATABASE.md |
+| Access | read |
+| Repository operation | `rates.latest_on_or_before` |
+| Kind | list |
+| Compatibility | unchanged |
+
+Input: DateBound
+
+| Field | Type |
+|------|------|
+| date | str |
+
+Output: Publication
+
+| Field | Type |
+|------|------|
+| date | str |
+
+### FEATURE-RATE-004 — Find the latest publication date
+
+| Field | Value |
+|-------|-------|
+| Owner | DATABASE.md |
+| Access | read |
+| Repository operation | `rates.latest` |
+| Kind | list |
+| Compatibility | unchanged |
+
+Input: LatestPublication
+
+| Field | Type |
+|------|------|
+| date | str |
+
+Output: Publication
+
+| Field | Type |
+|------|------|
+| date | str |
+
+### FEATURE-RATE-005 — List distinct publication dates
+
+| Field | Value |
+|-------|------|
+| Owner | DATABASE.md |
+| Access | read |
+| Repository operation | `rates.publication_dates` |
+| Kind | list |
+| Compatibility | unchanged |
+
+Input: PublicationFilters
+
+| Field | Type |
+|------|------|
+| date | str |
+
+Output: Publication
+
+| Field | Type |
+|------|------|
+| date | str |
+
+### FEATURE-RATE-006 — List stored currency codes
+
+| Field | Value |
+|-------|------|
+| Owner | DATABASE.md |
+| Access | read |
+| Repository operation | `rates.currencies` |
+| Kind | list |
+| Compatibility | unchanged |
+
+Input: CurrencyFilters
+
+| Field | Type |
+|------|------|
+| currency | str |
+
+Output: Currency
+
+| Field | Type |
+|------|------|
+| currency | str |
+
+### FEATURE-RATE-007 — List a currency's rates within optional date bounds
+
+| Field | Value |
+|-------|------|
+| Owner | DATABASE.md |
+| Access | read |
+| Repository operation | `rates.history` |
+| Kind | list |
+| Compatibility | unchanged |
+
+Input: HistoryFilters
+
+| Field | Type |
+|------|------|
+| currency | str |
+| start | str |
+| end | str |
+
+Output: Rate
+
+| Field | Type |
+|------|------|
+| date | str |
+| currency | str |
+| rate | str |
+
+### FEATURE-RATE-008 — Count publications and rates and find date bounds
+
+| Field | Value |
+|-------|------|
+| Owner | DATABASE.md |
+| Access | read |
+| Repository operation | `rates.statistics` |
+| Kind | list |
+| Compatibility | unchanged |
+
+Input: StatisticsFilters
+
+| Field | Type |
+|------|------|
+
+Output: Statistics
+
+| Field | Type |
+|------|------|
+| dates | int |
+| rates | int |
+| first | str |
+| last | str |
+
+## Schema
+
+## `rates`
+
+| Field | Type | Notes |
+|-------|------|------|
+| id | INTEGER PK | Surrogate row identifier. |
+| date | TEXT NOT NULL | ECB publication date in YYYY-MM-DD form. |
+| currency | TEXT NOT NULL | Three-letter uppercase currency code. |
+| rate | TEXT NOT NULL | ECB-published rate text, preserved exactly. |
+
+- UNIQUE (date, currency)
+
+## Migrations
+
+| Access Pattern | Revision | State |
+|----------------|----------|-------|
+
+## Config (.env)
+
+| Key | Type | Required | Notes |
+|-----|------|----------|-------|
+
+## File Stores
+
+| Store | Root dir | Notes |
+|-------|----------|-------|
+
+## External Services
+
+| Service | Wrapper | Notes |
+|---------|---------|-------|
+
+## External Libraries
+
+| Library | Ownership | Distribution | Consumer Contract |
+|---------|-----------|--------------|-------------------|
+
+## Programmatic Acceptance
+
+=== AC rates-upsert ===
+Intent: A rate upsert can be read back with the exact values supplied by the criterion.
+
+from persistence.testing import db_session
+
+date_value = "2099-01-02"
+currency_value = "ZZZ"
+rate_value = "9.8765"
+
+with db_session() as db:
+    db.rates.upsert(date=date_value, currency=currency_value, rate=rate_value)
+    rows = db.rates.list(date=date_value)
+    assert any(row.date == date_value and row.currency == currency_value and row.rate == rate_value for row in rows)
+=== END AC rates-upsert ===
+
+=== AC rates-list ===
+Intent: A date-filtered rate list returns the rate created by the criterion.
+
+from persistence.testing import db_session
+
+date_value = "2099-01-03"
+currency_value = "ZZZ"
+rate_value = "8.7654"
+
+with db_session() as db:
+    db.rates.upsert(date=date_value, currency=currency_value, rate=rate_value)
+    rows = db.rates.list(date=date_value)
+    assert any(row.date == date_value and row.currency == currency_value and row.rate == rate_value for row in rows)
+=== END AC rates-list ===
+
+=== AC rates-latest-on-or-before ===
+Intent: The latest publication lookup returns the created publication date.
+
+from persistence.testing import db_session
+
+date_value = "2099-01-04"
+currency_value = "ZZZ"
+rate_value = "7.6543"
+
+with db_session() as db:
+    db.rates.upsert(date=date_value, currency=currency_value, rate=rate_value)
+    publication = db.rates.latest_on_or_before(date=date_value)
+    assert publication.date == date_value
+=== END AC rates-latest-on-or-before ===
+
+=== AC rates-latest ===
+Intent: The latest publication lookup returns a stored publication date.
+
+from persistence.testing import db_session
+
+date_value = "2099-01-05"
+currency_value = "ZZZ"
+rate_value = "6.5432"
+
+with db_session() as db:
+    db.rates.upsert(date=date_value, currency=currency_value, rate=rate_value)
+    publication = db.rates.latest(date=date_value)
+    assert publication.date == date_value
+=== END AC rates-latest ===
+
+=== AC rates-publication-dates ===
+Intent: The publication date listing includes the date created by the criterion.
+
+from persistence.testing import db_session
+
+date_value = "2099-01-06"
+currency_value = "ZZZ"
+rate_value = "5.4321"
+
+with db_session() as db:
+    db.rates.upsert(date=date_value, currency=currency_value, rate=rate_value)
+    publications = db.rates.publication_dates()
+    assert any(row.date == date_value for row in publications)
+=== END AC rates-publication-dates ===
+
+=== AC rates-currencies ===
+Intent: The currency listing includes the currency created by the criterion.
+
+from persistence.testing import db_session
+
+date_value = "2099-01-07"
+currency_value = "ZZZ"
+rate_value = "4.321"
+expected_currency = currency_value
+
+with db_session() as db:
+    db.rates.upsert(date=date_value, currency=currency_value, rate=rate_value)
+    currencies = db.rates.currencies()
+    assert any(row.currency == expected_currency for row in currencies)
+=== END AC rates-currencies ===
+
+=== AC rates-history ===
+Intent: The history listing returns the stored point for the currency.
+
+from persistence.testing import db_session
+
+date_value = "2099-01-08"
+currency_value = "ZZZ"
+rate_value = "3.2109"
+
+with db_session() as db:
+    db.rates.upsert(date=date_value, currency=currency_value, rate=rate_value)
+    points = db.rates.history(currency=currency_value)
+    assert any(row.date == date_value and row.currency == currency_value and row.rate == rate_value for row in points)
+=== END AC rates-history ===
+
+=== AC rates-statistics ===
+Intent: The statistics query reports at least the publication and rate inserted by the criterion.
+
+from persistence.testing import db_session
+
+date_value = "2099-01-09"
+currency_value = "ZZZ"
+rate_value = "2.1098"
+
+with db_session() as db:
+    db.rates.upsert(date=date_value, currency=currency_value, rate=rate_value)
+    statistics = db.rates.statistics()
+    assert statistics.rates >= 1
+    assert statistics.dates >= 1
+=== END AC rates-statistics ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Persist every rate as the exact ECB-published text.
+- Replace a rate identified by its publication date and currency.
+- Do not access the database driver outside the generated persistence library.
+=== END ARTIFACT ===
