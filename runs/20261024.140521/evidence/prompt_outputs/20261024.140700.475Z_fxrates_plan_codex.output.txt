@@ -1,0 +1,291 @@
+=== BEGIN ARTIFACT TOPOLOGY.md ===
+## Declarations
+
+## story architecture
+summary:      Define application boundaries and the shared service scaffold.
+type:         foundational
+kind:         capability
+phase:        1
+implements:   ARCHITECTURE.md
+stack:        common.md, python.md
+provides:     application modules
+consumes:
+acceptance:   yes
+instructions: |
+  Establish the Python application structure and boundaries for configuration, persistence,
+  CLI, and HTTP service modules. Keep database access behind the shipped persistence library.
+
+## story database
+summary:      Declare the rates store and its repository operations.
+type:         foundational
+kind:         migration
+phase:        1
+implements:   DATABASE.md
+context:      sources/INSTRUCTIONS.md
+stack:        common.md, python.md, persistence.md, sqlite.md
+provides:     rates repository
+consumes:
+acceptance:   yes
+instructions: |
+  Declare the rates schema and repository operations required by initialization, loading, and
+  API reads. Store published rates as text and support replacement by date and currency.
+
+## story cli-entry
+summary:      Establish the fxrates command entry point.
+type:         foundational
+kind:         integration
+phase:        1
+implements:   FEATURE-CLI-Entry.md
+stack:        common.md, python.md, cli.md
+provides:     ./fxrates command dispatch
+consumes:     application modules
+acceptance:   yes
+instructions: |
+  Create the root executable and command dispatch structure for init, load, fetch, and serve.
+  Preserve the specified command arguments and exit-code contract.
+
+## story ecb-001
+summary:      Initialize the rates store.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-Initialize.md
+covers:       ECB-001
+context:      DATABASE.md
+stack:        common.md, python.md, cli.md, sqlite.md
+provides:     fxrates init
+consumes:     rates repository
+depends:      architecture, database, cli-entry
+acceptance:   yes
+instructions: |
+  Implement initialization through the declared persistence boundary. Match the source behavior
+  of creating an empty rates table and printing nothing.
+
+## story ecb-002
+summary:      Validate and atomically load ECB history CSV files.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-Load.md
+covers:       ECB-002
+accepts:      st-003, st-008
+context:      DATABASE.md, sources/eurofxref-hist_2025-01.csv, sources/eurofxref-hist_bad.csv
+context_roles: |
+  sources/eurofxref-hist_2025-01.csv: asset
+  sources/eurofxref-hist_bad.csv: asset
+stack:        common.md, python.md, cli.md, sqlite.md
+provides:     fxrates load
+consumes:     rates repository
+depends:      architecture, database, cli-entry
+acceptance:   yes
+instructions: |
+  Validate each input file completely before writing. Skip N/A values, preserve published rate
+  text, replace matching date/currency records, and report counts from the loaded file.
+  A rejected file must leave stored data unchanged.
+
+## story ecb-003
+summary:      Fetch and load ECB history archives.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-Fetch.md
+covers:       ECB-003
+accepts:      st-009
+context:      DATABASE.md
+stack:        common.md, python.md, cli.md, sqlite.md
+provides:     fxrates fetch
+consumes:     fxrates load
+depends:      architecture, database, cli-entry, ecb-002
+acceptance:   yes
+instructions: |
+  Download the ECB history archive, extract eurofxref-hist.csv, and pass it through the CSV
+  loader behavior. Tests must stub the download and use no network.
+
+## story api-001
+summary:      Serve health and dataset statistics.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-Service-Status.md
+covers:       API-001
+accepts:      st-004
+context:      DATABASE.md
+stack:        common.md, python.md, fastapi.md, sqlite.md
+provides:     GET /health, GET /stats
+consumes:     rates repository
+depends:      architecture, database
+acceptance:   yes
+instructions: |
+  Implement health and database-derived publication statistics endpoints.
+
+## story api-002
+summary:      List currencies that have stored rates.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-Currencies.md
+covers:       API-002
+context:      DATABASE.md
+stack:        common.md, python.md, fastapi.md, sqlite.md
+provides:     GET /currencies
+consumes:     rates repository
+depends:      architecture, database
+acceptance:   yes
+instructions: |
+  Return the ascending list of currencies with stored rates and EUR as the base.
+
+## story api-003
+summary:      Retrieve rates for an effective publication date.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-Rates.md
+covers:       API-003
+accepts:      st-005
+context:      DATABASE.md
+stack:        common.md, python.md, fastapi.md, sqlite.md
+provides:     GET /rates/{date}, GET /rates/latest
+consumes:     rates repository
+depends:      architecture, database
+acceptance:   yes
+instructions: |
+  Resolve requested dates to the latest publication on or before the date. Return 404 when no
+  prior publication exists and include the requested date and stored rate text in successful
+  responses.
+
+## story conv-001
+summary:      Convert an amount between currencies.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-Conversion.md
+covers:       CONV-001
+accepts:      st-005, st-006
+context:      DATABASE.md
+stack:        common.md, python.md, fastapi.md, sqlite.md
+provides:     GET /convert
+consumes:     rates repository
+depends:      architecture, database
+acceptance:   yes
+instructions: |
+  Resolve the effective publication date and calculate cross-rates and results with Decimal
+  arithmetic and half-even rounding at the specified precisions.
+
+## story hist-001
+summary:      Retrieve bounded currency history and statistics.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-History.md
+covers:       HIST-001
+accepts:      st-006
+context:      DATABASE.md
+stack:        common.md, python.md, fastapi.md, sqlite.md
+provides:     GET /history/{code}
+consumes:     rates repository
+depends:      architecture, database
+acceptance:   yes
+instructions: |
+  Return ascending publication points within optional inclusive bounds and compute exact
+  minimum, maximum, and half-even six-decimal mean. Return empty statistics when no points exist
+  and 404 for a currency with no stored rates.
+
+## story ops-001
+summary:      Run the HTTP service on loopback.
+type:         service
+kind:         integration
+phase:        1
+implements:   FEATURE-Serve.md
+covers:       OPS-001
+context:      DATABASE.md
+stack:        common.md, python.md, fastapi.md, cli.md
+provides:     fxrates serve
+consumes:     HTTP API
+depends:      architecture, cli-entry, api-001, api-002, api-003, conv-001, hist-001
+acceptance:   yes
+instructions: |
+  Start the API with uvicorn on 127.0.0.1 using the requested port or default port 8000.
+  Keep the server in the foreground and support clean SIGTERM shutdown.
+
+## story ops-002
+summary:      Report CLI usage and operational errors.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-CLI-Errors.md
+covers:       OPS-002
+context:      DATABASE.md
+stack:        common.md, python.md, cli.md
+provides:     CLI error handling
+consumes:     ./fxrates command dispatch
+depends:      architecture, cli-entry, ecb-001, ecb-002, ecb-003, ops-001
+acceptance:   yes
+instructions: |
+  Apply the specified usage, operational, and rejected-file exit codes. Keep command failures'
+  standard output empty and write one diagnostic line to standard error.
+
+## story ops-003
+summary:      Validate API request inputs and currency errors.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-API-Errors.md
+covers:       OPS-003
+accepts:      st-007
+context:      DATABASE.md
+stack:        common.md, python.md, fastapi.md, sqlite.md
+provides:     API request validation
+consumes:     HTTP API
+depends:      architecture, database, api-003, conv-001, hist-001
+acceptance:   yes
+instructions: |
+  Return 422 for malformed dates, malformed amounts, and missing required query parameters.
+  Return 404 for unknown currencies under the specified endpoint conditions.
+
+## story ops-004
+summary:      Verify the complete application test suite.
+type:         service
+kind:         test harness
+phase:        1
+implements:   FEATURE-Verification.md
+covers:       OPS-004
+accepts:      st-001, st-002
+context:      sources/run.sh, sources/eurofxref-hist_2025-01.csv, sources/eurofxref-hist_2025-02-03_04.csv, sources/eurofxref-hist_bad.csv
+context_roles: |
+  sources/run.sh: context
+  sources/eurofxref-hist_2025-01.csv: asset
+  sources/eurofxref-hist_2025-02-03_04.csv: asset
+  sources/eurofxref-hist_bad.csv: asset
+stack:        common.md, python.md, fastapi.md, cli.md, sqlite.md
+provides:     complete project verification
+consumes:     ./fxrates, HTTP API, bin/test.sh
+depends:      architecture, database, cli-entry, ecb-001, ecb-002, ecb-003, api-001, api-002, api-003, conv-001, hist-001, ops-001, ops-002, ops-003
+acceptance:   yes
+instructions: |
+  Run the supplied grader and the project's complete automated suite as the terminal verification
+  story. The supplied grader's exit status is the conformance verdict.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT DECISIONS.json ===
+[
+  {
+    "id": "Q-001",
+    "type": "choice",
+    "severity": "material",
+    "blueprint": "FEATURE-Fetch.md",
+    "story": "ecb-003",
+    "title": "Bound ECB archive download time",
+    "description": "The source requires fetch failures to use the operational failure code but does not specify a download timeout. Use a finite timeout so a stalled ECB request reaches that failure path.",
+    "options": [
+      {
+        "value": "10 seconds",
+        "label": "Use a 10-second download timeout"
+      },
+      {
+        "value": "unbounded",
+        "label": "Wait without a timeout"
+      }
+    ],
+    "system_choice": "10 seconds"
+  }
+]
+=== END ARTIFACT

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/prompt_outputs/20261024.140758.332Z_fxrates_plan_codex.output.txt</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/prompt_outputs/20261024.140758.332Z_fxrates_plan_codex.output.txt</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/prompt_outputs/20261024.140758.332Z_fxrates_plan_codex.output.txt">Raw file</a></div></header>
+<article class="doc"><pre>=== BEGIN ARTIFACT DATABASE.md ===
+# DATABASE: FxRates
+
+| Field | Value |
+|-------|-------|
+| Version | 20261024 V1 |
+| Description | Persistence stores and typed repository interfaces for FxRates. |
+| Depends On | ARCHITECTURE.md |
+| Provides | rates repository |
+| Build Order | |
+
+## Questions
+
+- None.
+
+## Persistence Boundary
+
+| Boundary | Rule |
+|----------|------|
+| Raw storage access | Only the generated `persistence/` package reaches the store. |
+| Caller dependency | Features depend on declared access patterns and their DTOs, not on schemas. |
+| Implementation | Generated from this file at the DATABASE build step; never written by hand. |
+
+## Access Patterns
+
+### FEATURE-RATE-001 — Read rates for dataset statistics
+
+| Field | Value |
+|-------|-------|
+| Owner | DATABASE.md |
+| Access | read |
+| Repository operation | `rates.list` |
+| Compatibility | unchanged |
+
+Input: `currency` (optional).
+
+| Output field | Type |
+|--------------|------|
+| date | str |
+| currency | str |
+| rate | str |
+
+### FEATURE-RATE-002 — Read currencies with stored rates
+
+| Field | Value |
+|-------|-------|
+| Owner | DATABASE.md |
+| Access | read |
+| Repository operation | `rates.get` |
+| Match | `date`, `currency` |
+| Compatibility | unchanged |
+
+Input: `date` (str), `currency` (str).
+
+| Output field | Type |
+|--------------|------|
+| date | str |
+| currency | str |
+| rate | str |
+
+### FEATURE-RATE-003 — Read rates for a publication date
+
+| Field | Value |
+|-------|-------|
+| Owner | DATABASE.md |
+| Access | read |
+| Repository operation | `rates.find_by_date` |
+| Kind | list |
+| Compatibility | unchanged |
+
+Input: `date` (str).
+
+| Output field | Type |
+|--------------|------|
+| date | str |
+| currency | str |
+| rate | str |
+
+### FEATURE-RATE-004 — Store or replace a rate
+
+| Field | Value |
+|-------|-------|
+| Owner | DATABASE.md |
+| Access | write |
+| Repository operation | `rates.replace_rate` |
+| Kind | upsert |
+| Match | `date`, `currency` |
+| Compatibility | unchanged |
+
+Input: `date` (str), `currency` (str), `rate` (str).
+
+| Output field | Type |
+|--------------|------|
+| date | str |
+| currency | str |
+| rate | str |
+
+### FEATURE-RATE-005 — Read bounded currency history
+
+| Field | Value |
+|-------|-------|
+| Owner | DATABASE.md |
+| Access | read |
+| Repository operation | `rates.history` |
+| Kind | list |
+| Compatibility | unchanged |
+
+Input: `currency` (str), `start_date` (optional str), `end_date` (optional str).
+
+| Output field | Type |
+|--------------|------|
+| date | str |
+| currency | str |
+| rate | str |
+
+## Schemas
+
+## `rates`
+
+| Field | Type | Notes |
+|-------|------|-------|
+| id | INTEGER PK | |
+| date | TEXT NOT NULL | ECB publication date in `YYYY-MM-DD` form. |
+| currency | TEXT NOT NULL | Three-letter uppercase currency code. |
+| rate | TEXT NOT NULL | ECB-published rate text. |
+- UNIQUE (date, currency)
+- INDEX (currency, date)
+
+## Migrations
+
+Each relational change has one staged record in `migrations/MIGRATION-&lt;AccessPatternId&gt;.md`. The record carries `upgrade`/`downgrade` snippets and progresses from `planned` to `built` only when its DATABASE build story completes.
+
+| Access Pattern | Revision | State |
+|----------------|----------|-------|
+| FEATURE-RATE-001 | 1 | planned |
+| FEATURE-RATE-002 | 1 | planned |
+| FEATURE-RATE-003 | 1 | planned |
+| FEATURE-RATE-004 | 1 | planned |
+| FEATURE-RATE-005 | 1 | planned |
+
+## Config (.env)
+
+| Key | Type | Required | Notes |
+|-----|------|----------|-------|
+| DATABASE_URL | str | No | Database DSN; takes precedence over DATABASE_PATH. |
+| DATABASE_PATH | str | No | SQLite path when DATABASE_URL is unset; defaults to `data/app.db`. |
+
+## File Stores
+
+| Store | Root dir | Notes |
+|-------|----------|-------|
+| — | — | No file store is used. |
+
+## External Services
+
+| Service | Wrapper | Notes |
+|---------|---------|-------|
+| ECB archive | Fetch service | Downloaded by the fetch capability; tests stub the download and do not use a network connection. |
+
+## External Libraries
+
+| Library | Ownership | Distribution | Consumer Contract |
+|---------|-----------|--------------|-------------------|
+| Shipped persistence library | Generated `persistence/` package | Supplied by Drydock | Application modules use `open_database(dsn)` and declared `db.rates` operations; application code does not access a database driver directly. |
+
+## Programmatic Acceptance
+
+=== AC rates-list-readback ===
+Intent: Read stored rate rows through the declared list operation.
+
+from persistence.testing import db_session
+
+with db_session() as db:
+    rows_before = db.rates.list()
+    marker_date = &quot;2099-01-01&quot;
+    marker_currency = &quot;ZZZ&quot;
+    marker_rate = &quot;9.876&quot;
+    created = db.rates.replace_rate(
+        date=marker_date, currency=marker_currency, rate=marker_rate
+    )
+    rows_after = db.rates.list()
+    assert len(rows_after) == len(rows_before) + 1
+    assert any(
+        row.date == marker_date
+        and row.currency == marker_currency
+        and row.rate == marker_rate
+        for row in rows_after
+    )
+
+=== END AC rates-list-readback ===
+
+=== AC rates-get-readback ===
+Intent: Retrieve a rate by its date and currency natural key.
+
+from persistence.testing import db_session
+
+with db_session() as db:
+    marker_date = &quot;2099-01-02&quot;
+    marker_currency = &quot;ZZY&quot;
+    marker_rate = &quot;8.765&quot;
+    db.rates.replace_rate(date=marker_date, currency=marker_currency, rate=marker_rate)
+    row = db.rates.get(date=marker_date, currency=marker_currency)
+    assert row is not None
+    assert row.date == marker_date
+    assert row.currency == marker_currency
+    assert row.rate == marker_rate
+
+=== END AC rates-get-readback ===
+
+=== AC rates-find-by-date ===
+Intent: List every stored currency rate for a publication date.
+
+from persistence.testing import db_session
+
+with db_session() as db:
+    marker_date = &quot;2099-01-03&quot;
+    first_currency = &quot;ZZX&quot;
+    first_rate = &quot;7.654&quot;
+    second_currency = &quot;ZZW&quot;
+    second_rate = &quot;6.543&quot;
+    db.rates.replace_rate(date=marker_date, currency=first_currency, rate=first_rate)
+    db.rates.replace_rate(date=marker_date, currency=second_currency, rate=second_rate)
+    rows = db.rates.find_by_date(date=marker_date)
+    observed = {(row.currency, row.rate) for row in rows}
+    assert observed == {(first_currency, first_rate), (second_currency, second_rate)}
+
+=== END AC rates-find-by-date ===
+
+=== AC rates-upsert-replaces ===
+Intent: Replace a stored rate for the same date and currency.
+
+from persistence.testing import db_session
+
+with db_session() as db:
+    marker_date = &quot;2099-01-04&quot;
+    marker_currency = &quot;ZZV&quot;
+    first_rate = &quot;5.432&quot;
+    replacement_rate = &quot;4.321&quot;
+    db.rates.replace_rate(date=marker_date, currency=marker_currency, rate=first_rate)
+    db.rates.replace_rate(date=marker_date, currency=marker_currency, rate=replacement_rate)
+    row = db.rates.get(date=marker_date, currency=marker_currency)
+    assert row is not None
+    assert row.rate == replacement_rate
+
+=== END AC rates-upsert-replaces ===
+
+=== AC rates-history-bounds ===
+Intent: List a currency&#x27;s rates within inclusive date bounds in ascending order.
+
+from persistence.testing import db_session
+
+with db_session() as db:
+    currency = &quot;ZZU&quot;
+    before_date = &quot;2099-01-04&quot;
+    start_date = &quot;2099-01-05&quot;
+    end_date = &quot;2099-01-06&quot;
+    after_date = &quot;2099-01-07&quot;
+    before_rate = &quot;2.100&quot;
+    first_rate = &quot;2.200&quot;
+    second_rate = &quot;2.300&quot;
+    after_rate = &quot;2.400&quot;
+    for date, rate in (
+        (before_date, before_rate),
+        (start_date, first_rate),
+        (end_date, second_rate),
+        (after_date, after_rate),
+    ):
+        db.rates.replace_rate(date=date, currency=currency, rate=rate)
+    rows = db.rates.history(currency=currency, start_date=start_date, end_date=end_date)
+    observed = [(row.date, row.rate) for row in rows]
+    assert observed == [(start_date, first_rate), (end_date, second_rate)]
+
+=== END AC rates-history-bounds ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Rates are stored as published text; do not convert stored values to floating point.
+- Natural uniqueness is `(date, currency)`; retain a separate single-column primary key.
+- Application code accesses storage only through the generated persistence library.
+- Do not assume an empty store in acceptance checks.
+=== END ARTIFACT</pre></article>
+</main>
+</body>
+</html>

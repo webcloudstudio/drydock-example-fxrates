@@ -1,0 +1,292 @@
+=== BEGIN ARTIFACT DATABASE.md ===
+# DATABASE: FxRates
+
+| Field | Value |
+|-------|-------|
+| Version | 20261024 V1 |
+| Description | Persistence stores and typed interfaces for FxRates. |
+| Depends On | ARCHITECTURE.md |
+| Provides | rates repository |
+| Build Order | |
+
+## Questions
+
+- None.
+
+## Persistence Boundary
+
+| Boundary | Rule |
+|----------|------|
+| Raw storage access | Only the generated `persistence/` package reaches the store. |
+| Caller dependency | Features depend on declared access patterns and their DTOs, not on schemas. |
+| Implementation | Generated from this file at the DATABASE build step; never written by hand. |
+
+## Access Patterns
+
+### FEATURE-RATE-001 — List rates for date resolution and API reads
+
+| Field | Value |
+|-------|-------|
+| Owner | FEATURE-Load.md |
+| Access | read |
+| Repository operation | `rates.list` |
+| Compatibility | unchanged |
+
+Input: RateFilters
+
+| Field | Type | Required |
+|-------|------|----------|
+| date | str | no |
+| currency | str | no |
+
+Output: RateRow
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+| rate | str |
+
+### FEATURE-RATE-002 — Replace a rate by date and currency
+
+| Field | Value |
+|-------|-------|
+| Owner | FEATURE-Load.md |
+| Access | write |
+| Repository operation | `rates.replace_rate` |
+| Kind | upsert |
+| Match | `date`, `currency` |
+| Compatibility | unchanged |
+
+Input: RateWrite
+
+| Field | Type | Required |
+|-------|------|----------|
+| date | str | yes |
+| currency | str | yes |
+| rate | str | yes |
+
+Output: RateRow
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+| rate | str |
+
+### FEATURE-RATE-003 — Count rates in the store
+
+| Field | Value |
+|-------|-------|
+| Owner | FEATURE-Initialize.md |
+| Access | read |
+| Repository operation | `rates.count_rates` |
+| Kind | list |
+| Compatibility | unchanged |
+
+Input: RateCountFilters
+
+| Field | Type | Required |
+|-------|------|----------|
+| date | str | no |
+| currency | str | no |
+
+Output: RateCountRow
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+| rate | str |
+
+### FEATURE-RATE-004 — Delete all rates during initialization
+
+| Field | Value |
+|-------|-------|
+| Owner | FEATURE-Initialize.md |
+| Access | write |
+| Repository operation | `rates.clear` |
+| Kind | delete |
+| Compatibility | unchanged |
+
+Input: ClearRates
+
+| Field | Type | Required |
+|-------|------|----------|
+
+Output: RateKey
+
+| Field | Type |
+|-------|------|
+
+### FEATURE-RATE-005 — List rates for currency history
+
+| Field | Value |
+|-------|-------|
+| Owner | FEATURE-History.md |
+| Access | read |
+| Repository operation | `rates.list_history` |
+| Kind | list |
+| Compatibility | unchanged |
+
+Input: HistoryFilters
+
+| Field | Type | Required |
+|-------|------|----------|
+| currency | str | yes |
+| start | str | no |
+| end | str | no |
+
+Output: HistoryRateRow
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+| rate | str |
+
+## Schemas
+
+## `rates`
+
+| Field | Type | Notes |
+|-------|------|-------|
+| date | TEXT PK NOT NULL | ECB publication date in `YYYY-MM-DD` format. |
+| currency | TEXT PK NOT NULL | Three-letter uppercase currency code. |
+| rate | TEXT NOT NULL | ECB-published rate text, never a floating-point value. |
+
+## Migrations
+
+| Access Pattern | Revision | State |
+|----------------|----------|-------|
+| FEATURE-RATE-001 | 20261024-001 | planned |
+| FEATURE-RATE-002 | 20261024-002 | planned |
+| FEATURE-RATE-003 | 20261024-003 | planned |
+| FEATURE-RATE-004 | 20261024-004 | planned |
+| FEATURE-RATE-005 | 20261024-005 | planned |
+
+## Config (.env)
+
+| Key | Type | Required | Notes |
+|-----|------|----------|-------|
+| DATABASE_URL | str | no | Selected first; names the SQLite file, optionally prefixed with `sqlite://`. |
+| DATABASE_PATH | str | no | Used when `DATABASE_URL` is unset. |
+| — | — | no | Default location is `data/app.db`. |
+
+## File Stores
+
+| Store | Root dir | Notes |
+|-------|----------|-------|
+| — | — | None. |
+
+## External Services
+
+| Service | Wrapper | Notes |
+|---------|---------|-------|
+| — | — | None. |
+
+## External Libraries
+
+| Library | Ownership | Distribution | Consumer Contract |
+|---------|-----------|--------------|-------------------|
+| Shipped persistence library | Generated `persistence/` package | Shipped with the application | Call only generated `db.rates` operations; application code does not open a database driver. |
+
+## Programmatic Acceptance
+
+=== AC rates-list-roundtrip ===
+Intent: The declared rates.list operation returns rows created through the repository.
+from persistence.testing import db_session
+
+with db_session() as db:
+    marker_date = "2098-11-17"
+    marker_currency = "XQZ"
+    marker_rate = "3.1400"
+    created = db.rates.replace_rate(
+        date=marker_date, currency=marker_currency, rate=marker_rate
+    )
+    assert created.date == marker_date
+    rows = db.rates.list(date=marker_date, currency=marker_currency)
+    assert any(
+        row.date == marker_date
+        and row.currency == marker_currency
+        and row.rate == marker_rate
+        for row in rows
+    )
+=== END AC rates-list-roundtrip ===
+
+=== AC rates-replace-roundtrip ===
+Intent: Replacing a date and currency returns the newly stored text.
+from persistence.testing import db_session
+
+with db_session() as db:
+    marker_date = "2098-11-18"
+    marker_currency = "XQZ"
+    first_rate = "2.500"
+    replacement_rate = "2.7500"
+    db.rates.replace_rate(date=marker_date, currency=marker_currency, rate=first_rate)
+    replaced = db.rates.replace_rate(
+        date=marker_date, currency=marker_currency, rate=replacement_rate
+    )
+    assert replaced.rate == replacement_rate
+    stored = db.rates.list(date=marker_date, currency=marker_currency)
+    assert len(stored) == 1
+    assert stored[0].rate == replacement_rate
+=== END AC rates-replace-roundtrip ===
+
+=== AC rates-count-operation ===
+Intent: The count operation exposes the rows it counts for caller-side count derivation.
+from persistence.testing import db_session
+
+with db_session() as db:
+    marker_date = "2098-11-19"
+    marker_currency = "XQZ"
+    marker_rate = "1.25"
+    db.rates.replace_rate(date=marker_date, currency=marker_currency, rate=marker_rate)
+    rows = db.rates.count_rates(date=marker_date, currency=marker_currency)
+    assert len(rows) == 1
+    assert rows[0].rate == marker_rate
+=== END AC rates-count-operation ===
+
+=== AC rates-clear-operation ===
+Intent: The clear operation deletes matching rates.
+from persistence.testing import db_session
+
+with db_session() as db:
+    marker_date = "2098-11-20"
+    marker_currency = "XQZ"
+    marker_rate = "4.1"
+    db.rates.replace_rate(date=marker_date, currency=marker_currency, rate=marker_rate)
+    cleared = db.rates.clear(date=marker_date, currency=marker_currency)
+    assert cleared is not None
+    assert db.rates.list(date=marker_date, currency=marker_currency) == []
+=== END AC rates-clear-operation ===
+
+=== AC rates-history-operation ===
+Intent: The history operation returns stored rates for a currency.
+from persistence.testing import db_session
+
+with db_session() as db:
+    marker_date = "2098-11-21"
+    marker_currency = "XQZ"
+    marker_rate = "0.8750"
+    db.rates.replace_rate(date=marker_date, currency=marker_currency, rate=marker_rate)
+    rows = db.rates.list_history(currency=marker_currency)
+    assert any(
+        row.date == marker_date
+        and row.currency == marker_currency
+        and row.rate == marker_rate
+        for row in rows
+    )
+=== END AC rates-history-operation ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Keep all rate values as published text.
+- Application code reaches SQLite only through the generated persistence package.
+- Initialization removes rates and leaves the table available for subsequent loads.
+
+=== END ARTIFACT ===
