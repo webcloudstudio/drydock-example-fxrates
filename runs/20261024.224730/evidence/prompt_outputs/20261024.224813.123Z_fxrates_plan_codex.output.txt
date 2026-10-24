@@ -1,0 +1,281 @@
+=== BEGIN ARTIFACT TOPOLOGY.md ===
+## Declarations
+
+## story architecture-foundation
+summary:      Establish the Python application, API, and CLI entry points.
+type:         foundational
+kind:         capability
+phase:        1
+implements:   ARCHITECTURE.md
+stack:        common.md, python.md, fastapi.md, cli.md
+provides:     app_server.main:create_app, cli.main, ./fxrates
+acceptance:   yes
+instructions: |
+  Establish the application structure and the published FastAPI and CLI entry points. Keep
+  database access behind the generated persistence library.
+
+## story database
+summary:      Declare the rates store and its repository operations.
+type:         foundational
+kind:         capability
+phase:        1
+implements:   DATABASE.md
+stack:        python.md, persistence.md, sqlite.md
+provides:     rates.get, rates.list, rates.upsert, rates.delete
+acceptance:   yes
+instructions: |
+  Declare the rates table and every repository operation required by the CLI and API stories.
+  Store rates as text, uniquely keyed by date and currency. Follow the generated persistence
+  contract; application code must not access a database driver directly.
+
+## story cli-init
+summary:      Initialize an empty rates table.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-CLI-Init.md
+covers:       CLI-001
+context:      DATABASE.md
+stack:        python.md, cli.md, sqlite.md
+consumes:     rates.delete
+depends:      architecture-foundation, database
+acceptance:   yes
+instructions: |
+  Implement `fxrates init` to drop and recreate the rates table, leaving it empty and printing
+  nothing.
+
+## story cli-load
+summary:      Validate and load ECB history CSV files atomically.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-CLI-Load.md
+covers:       CLI-002
+accepts:      st-003, st-008
+context:      DATABASE.md
+stack:        python.md, cli.md, sqlite.md
+provides:     fxrates load
+consumes:     rates.upsert, rates.list
+depends:      architecture-foundation, database
+acceptance:   yes
+instructions: |
+  Implement `fxrates load <csv>` using the ECB file rules. Validate the complete file before
+  writing. Skip N/A values, retain published rate text, replace matching date and currency rows,
+  and report counts for dates with at least one stored rate and rates stored. Return exit code 3
+  for rejected files and leave stored data unchanged; use the specified operational and usage
+  exit codes for other failures.
+
+## story cli-fetch
+summary:      Fetch, extract, and load ECB history.
+type:         service
+kind:         integration
+phase:        1
+implements:   FEATURE-CLI-Fetch.md
+covers:       CLI-003
+accepts:      st-003, st-008
+context:      DATABASE.md
+stack:        python.md, cli.md, sqlite.md
+provides:     fxrates fetch
+consumes:     fxrates load
+depends:      architecture-foundation, database, cli-load
+acceptance:   yes
+instructions: |
+  Download the specified ECB ZIP archive, extract `eurofxref-hist.csv`, and load it using the
+  CSV validation and output behavior of `fxrates load`. Tests must replace the download with a
+  stub and must not open a network connection.
+
+## story cli-serve
+summary:      Run the HTTP service on the requested local port.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-CLI-Serve.md
+covers:       CLI-004
+accepts:      st-004
+stack:        python.md, cli.md, fastapi.md
+provides:     fxrates serve
+consumes:     app_server.main:create_app
+depends:      architecture-foundation
+acceptance:   yes
+instructions: |
+  Implement `fxrates serve [--port <n>]` to run uvicorn on 127.0.0.1 at the requested port,
+  defaulting to 8000. Run in the foreground and stop cleanly on SIGTERM.
+
+## story cli-errors
+summary:      Report CLI usage and operational failures through exit codes.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-CLI-Errors.md
+covers:       CLI-005
+stack:        python.md, cli.md
+provides:     fxrates CLI error handling
+consumes:     cli.main
+depends:      architecture-foundation
+acceptance:   yes
+instructions: |
+  Implement the specified usage and operational error behavior for the CLI. Unknown commands,
+  wrong argument counts, and a non-integer port return 2. Unreadable files and failed downloads
+  return 1. Failures print no standard output and one diagnostic line to standard error.
+
+## story api-health-stats
+summary:      Report service health and stored-data statistics.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-API-Health-Stats.md
+covers:       API-001
+accepts:      st-008
+context:      DATABASE.md
+stack:        python.md, fastapi.md, sqlite.md
+provides:     GET /health, GET /stats
+consumes:     app_server.main:create_app, rates.list
+depends:      architecture-foundation, database
+acceptance:   yes
+instructions: |
+  Implement `/health` and `/stats`. Derive date and rate totals and the first and last stored
+  dates from database queries; return null dates when the store has no rates.
+
+## story api-currencies
+summary:      List currencies with stored rates.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-API-Currencies.md
+covers:       API-002
+accepts:      st-008
+context:      DATABASE.md
+stack:        python.md, fastapi.md, sqlite.md
+provides:     GET /currencies
+consumes:     app_server.main:create_app, rates.list
+depends:      architecture-foundation, database
+acceptance:   yes
+instructions: |
+  Implement `/currencies` with EUR as the base and currencies that have at least one stored
+  rate, in ascending order.
+
+## story api-rates
+summary:      Resolve rates for a requested or latest publication date.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-API-Rates.md
+covers:       API-003
+accepts:      st-005, st-008
+context:      DATABASE.md
+stack:        python.md, fastapi.md, sqlite.md
+provides:     GET /rates/{date}, GET /rates/latest
+consumes:     app_server.main:create_app, rates.list
+depends:      architecture-foundation, database
+acceptance:   yes
+instructions: |
+  Implement the date and latest rates endpoints. Resolve a requested date to the latest
+  publication on or before it, return all rates for that effective date as stored text, and
+  return 404 when no publication is available.
+
+## story api-convert
+summary:      Convert amounts between currencies using exact decimal arithmetic.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-API-Convert.md
+covers:       API-004
+accepts:      st-005, st-006, st-008
+context:      DATABASE.md
+stack:        python.md, fastapi.md, sqlite.md
+provides:     GET /convert
+consumes:     app_server.main:create_app, rates.list
+depends:      architecture-foundation, database
+acceptance:   yes
+instructions: |
+  Implement `/convert` with EUR's implicit rate of one. Compute from the exact stored rates
+  using Decimal, round the ratio to six places and the result to two places using half-to-even,
+  and format both with fixed decimal places. Resolve optional dates by effective publication
+  date and use the latest publication when date is omitted.
+
+## story api-history
+summary:      Return currency history and summary statistics.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-API-History.md
+covers:       API-005
+accepts:      st-006, st-008
+context:      DATABASE.md
+stack:        python.md, fastapi.md, sqlite.md
+provides:     GET /history/{code}
+consumes:     app_server.main:create_app, rates.list
+depends:      architecture-foundation, database
+acceptance:   yes
+instructions: |
+  Implement `/history/{code}` with optional inclusive date bounds and ascending points. Return
+  stored rate text for points, minimum, and maximum, and compute the mean with exact Decimal
+  arithmetic rounded half-to-even to six places. Return an empty result with null statistics
+  when the currency has no points in the requested range; return 404 when it has no stored rate
+  at all.
+
+## story api-validation
+summary:      Validate API requests and report missing data.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-API-Validation.md
+covers:       API-006
+accepts:      st-007
+context:      DATABASE.md
+stack:        python.md, fastapi.md, sqlite.md
+provides:     API request validation and missing-data responses
+consumes:     GET /rates/{date}, GET /convert, GET /history/{code}
+depends:      api-rates, api-convert, api-history
+acceptance:   yes
+instructions: |
+  Ensure malformed dates and amounts and missing required query parameters return 422.
+  Unknown currencies and unavailable effective dates return 404. Preserve the specified
+  behavior of the endpoints this story validates.
+
+## story test-suite
+summary:      Provide the network-free pytest suite and POSIX test runner.
+type:         service
+kind:         test harness
+phase:        1
+implements:   FEATURE-Test-Suite.md
+covers:       TEST-001
+accepts:      st-002, st-009
+context:      DATABASE.md
+stack:        common.md, python.md
+depends:      architecture-foundation, database, cli-init, cli-load, cli-fetch, cli-serve, cli-errors, api-health-stats, api-currencies, api-rates, api-convert, api-history, api-validation
+acceptance:   yes
+instructions: |
+  Provide `bin/test.sh` to run the project pytest suite from the application root, returning
+  success only when every test passes. Cover the CLI, CSV rules, API endpoints, effective dates,
+  rounding, and error statuses using a real temporary database. Stub fetch so tests use no
+  network.
+
+## story verification
+summary:      Run the complete supplied grader.
+type:         service
+kind:         test harness
+phase:        1
+implements:   FEATURE-Verification.md
+covers:       TEST-002
+accepts:      st-001
+context:      sources/run.sh, sources/eurofxref-hist_2025-01.csv, sources/eurofxref-hist_2025-02-03_04.csv, sources/eurofxref-hist_bad.csv
+context_roles: |
+  sources/run.sh: harness
+  sources/eurofxref-hist_2025-01.csv: asset
+  sources/eurofxref-hist_2025-02-03_04.csv: asset
+  sources/eurofxref-hist_bad.csv: asset
+copy:         blueprint/sources/run.sh -> sources/run.sh
+copy:         blueprint/sources/eurofxref-hist_2025-01.csv -> sources/eurofxref-hist_2025-01.csv
+copy:         blueprint/sources/eurofxref-hist_2025-02-03_04.csv -> sources/eurofxref-hist_2025-02-03_04.csv
+copy:         blueprint/sources/eurofxref-hist_bad.csv -> sources/eurofxref-hist_bad.csv
+stack:        common.md, python.md
+depends:      test-suite
+acceptance:   yes
+instructions: |
+  Run the supplied grader unfiltered from the completed application root. Its exit status is the
+  release verdict; this story is the sole owner of the full supplied-grader run.
+
+=== BEGIN ARTIFACT DECISIONS.json ===
+[]
+=== END ARTIFACT ===
