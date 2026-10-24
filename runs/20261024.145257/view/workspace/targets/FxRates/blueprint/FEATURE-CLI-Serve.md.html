@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-CLI-Serve.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-CLI-Serve.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-CLI-Serve.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: CLI Serve</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Starts the JSON API server on localhost.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md, FEATURE-API-Overview.md, FEATURE-API-Rates.md, FEATURE-API-Convert.md, FEATURE-API-History.md</td></tr><tr><td>Provides</td><td>fxrates serve</td></tr><tr><td>Consumes</td><td>app_server.main:app</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p><code>fxrates serve [--port &lt;n&gt;]</code> runs uvicorn in the foreground on <code>127.0.0.1</code>, using port 8000 by default, until stopped.</p>
+<h2>Workflow</h2>
+<p>The command accepts an optional integer port. An invalid port argument is a usage error. The server binds only to <code>127.0.0.1</code>, serves the API application, and terminates cleanly on SIGTERM.</p>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC serve-invalid-port ===<br>Intent: A non-integer port is rejected as a usage error.</p>
+<p>from cli.testing import cli_runner</p>
+<p>code, out, _ = cli_runner(&quot;serve&quot;, &quot;--port&quot;, &quot;notaport&quot;) assert code == 2 assert out == &quot;&quot; === END AC serve-invalid-port ===</p>
+<p>=== AC serve-default-config ===<br>Intent: The serve command exposes its foreground server configuration for the default port and localhost binding.</p>
+<p>from cli import server config = server.serve_config([]) assert config.host == &quot;127.0.0.1&quot; assert config.port == 8000 === END AC serve-default-config ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Bind the server to 127.0.0.1 only.</li><li>Keep serving in the foreground and stop cleanly on SIGTERM.</li></ul></article>
+</main>
+</body>
+</html>

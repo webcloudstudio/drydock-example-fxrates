@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/evidence/block-2.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/evidence/block-2.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/evidence/block-2.md">Raw file</a></div></header>
+<article class="doc"><h1>Evidence: Block 2 · Foundational (block-2)</h1>
+<ul><li>block type: block</li><li>date: 2026-10-24</li><li>resulting state: closed/failed</li><li>story points (combined assembled cost): 9509</li><li>execution id: -</li></ul>
+<h2>Stories built</h2>
+<ul><li>Declare the rates schema and persistence operations. (database-contract) [story]</li></ul>
+<h2>Stacked context</h2>
+<ul><li>stack: python_compact.md (SP 601)</li><li>compass: COMPASS.md (SP 752)</li><li>implements: DATABASE.md (SP 1472)</li><li>context: ARCHITECTURE.md (SP 601)</li><li>stack: persistence.md (SP 3845)</li><li>stack: sqlite.md (SP 2195)</li></ul>
+<h2>Pre-build acceptance observation</h2>
+<ul><li>RED: rates-upsert (DATABASE.md)</li></ul>
+<p>intent: Upserting a rate stores its published text and replaces the matching date and currency row. error: foundation not built: <code>persistence</code> is the package the database foundation (postgres.md, sqlite.md) builds, and the build directory has no <code>persistence/</code>. The criterion exercises the built application, so it was not run.</p>
+<ul><li>RED: rates-list-date (DATABASE.md)</li></ul>
+<p>intent: Listing rates by date returns the rate rows stored for that date. error: foundation not built: <code>persistence</code> is the package the database foundation (postgres.md, sqlite.md) builds, and the build directory has no <code>persistence/</code>. The criterion exercises the built application, so it was not run.</p>
+<ul><li>RED: rates-list-currency (DATABASE.md)</li></ul>
+<p>intent: Listing rates by currency returns its stored publication rows. error: foundation not built: <code>persistence</code> is the package the database foundation (postgres.md, sqlite.md) builds, and the build directory has no <code>persistence/</code>. The criterion exercises the built application, so it was not run.</p>
+<ul><li>RED: rates-list-all (DATABASE.md)</li></ul>
+<p>intent: Listing all rates includes a rate inserted by this check. error: foundation not built: <code>persistence</code> is the package the database foundation (postgres.md, sqlite.md) builds, and the build directory has no <code>persistence/</code>. The criterion exercises the built application, so it was not run.</p>
+<h2>Post-build programmatic acceptance</h2>
+<ul><li>FAIL: rates-upsert (DATABASE.md)</li></ul>
+<p>intent: Upserting a rate stores its published text and replaces the matching date and currency row. target interpreter: /mnt/c/Users/barlo/projects/drydock/.venv/bin/python provisioning: not requested return code: 1 stderr: --- drydock: values at failure --- name = &#x27;get&#x27; granted = &#x27;list_all, list_currency, list_date, upsert&#x27; self = &lt;TableAccess rates: list_all, list_currency, list_date, upsert&gt; --- drydock: end values --- Traceback (most recent call last): File &quot;rates-upsert.py&quot;, line 9, in &lt;module&gt; first = db.rates.get(date=date, currency=currency) ^^^^^^^^^^^^ File &quot;/mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261024.145257/build/FxRates/persistence/db.py&quot;, line 214, in <strong>getattr</strong> raise UnknownOperation( persistence.db.UnknownOperation: rates declares no &#x27;get&#x27; operation. Declared: list_all, list_currency, list_date, upsert. Add an access pattern to DATABASE.md rather than reaching around this class.</p>
+<ul><li>PASS: rates-list-date (DATABASE.md)</li></ul>
+<p>intent: Listing rates by date returns the rate rows stored for that date. target interpreter: /mnt/c/Users/barlo/projects/drydock/.venv/bin/python provisioning: not requested return code: 0</p>
+<ul><li>PASS: rates-list-currency (DATABASE.md)</li></ul>
+<p>intent: Listing rates by currency returns its stored publication rows. target interpreter: /mnt/c/Users/barlo/projects/drydock/.venv/bin/python provisioning: not requested return code: 0</p>
+<ul><li>PASS: rates-list-all (DATABASE.md)</li></ul>
+<p>intent: Listing all rates includes a rate inserted by this check. target interpreter: /mnt/c/Users/barlo/projects/drydock/.venv/bin/python provisioning: not requested return code: 0</p>
+<h2>Failure</h2>
+<ul><li>summary: programmatic acceptance failed: rates-upsert</li><li>detail:</li></ul>
+<p>Block &quot;Block 2 · Foundational&quot; [block-2] failed its acceptance criteria. Story &quot;Declare the rates schema and persistence operations.&quot; [database-contract] does not meet its own acceptance criteria:</p>
+<ul><li>AC rates-upsert — Upserting a rate stores its published text and replaces the matching date and currency row.</li></ul>
+<p>assertion: failed with no diagnostic output raised at: db.py:214 process exit code: 1 values at failure: name = &#x27;get&#x27; granted = &#x27;list_all, list_currency, list_date, upsert&#x27; self = &lt;TableAccess rates: list_all, list_currency, list_date, upsert&gt; check stderr: Traceback (most recent call last): File &quot;rates-upsert.py&quot;, line 9, in &lt;module&gt; first = db.rates.get(date=date, currency=currency) ^^^^^^^^^^^^ File &quot;/mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261024.145257/build/FxRates/persistence/db.py&quot;, line 214, in <strong>getattr</strong> raise UnknownOperation( persistence.db.UnknownOperation: rates declares no &#x27;get&#x27; operation. Declared: list_all, list_currency, list_date, upsert. Add an access pattern to DATABASE.md rather than reaching around this class.</p>
+<h2>Build summary</h2>
+<p>(no summary returned)</p></article>
+</main>
+</body>
+</html>

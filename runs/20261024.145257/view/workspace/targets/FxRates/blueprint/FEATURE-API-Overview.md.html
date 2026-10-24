@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-API-Overview.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-API-Overview.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-API-Overview.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: API Overview</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Provides health, rate coverage, and available-currency endpoints.</td></tr><tr><td>Depends On</td><td>DATABASE.md, ARCHITECTURE.md</td></tr><tr><td>Provides</td><td>GET /health, GET /stats, GET /currencies</td></tr><tr><td>Consumes</td><td><code>FEATURE-RATE-005</code> rates.list_all</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Expose service health and a database-backed summary of stored rate coverage and currencies.</p>
+<h2>Workflow</h2>
+<ul><li><code>GET /health</code> returns a JSON object with <code>status</code> set to <code>ok</code>.</li><li><code>GET /stats</code> returns distinct publication-date count, stored-rate count, earliest date, and latest date. Empty stores return zero counts and <code>null</code> dates.</li><li><code>GET /currencies</code> returns EUR as the base and the distinct currencies with at least one stored rate, sorted ascending. EUR is implicit and is not included unless it has stored rates.</li></ul>
+<h2>Database Interface</h2>
+<ul><li><code>FEATURE-RATE-005</code> — read: list all rates - supplies: — - returns: <code>date</code>, <code>currency</code>, <code>rate</code></li></ul>
+<h2>Guardrails</h2>
+<ul><li>Derive counts, dates, and currencies from persisted rates on each request.</li><li>Route access to persistence through the generated library.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC health-endpoint ===<br>Intent: The health route returns a successful response with its declared status field.</p>
+<p>from app_server.testing import web_client</p>
+<p>client = web_client() response = client.get(&quot;/health&quot;) assert response.status_code == 200 body = response.json() assert body[&quot;status&quot;] == &quot;ok&quot; === END AC health-endpoint ===</p>
+<p>=== AC stats-endpoint ===<br>Intent: The stats route responds and reports counts and date bounds derived from the rows arranged by this check.</p>
+<p>from persistence.testing import db_session from app_server.testing import web_client</p>
+<p>with db_session() as db: before = db.rates.list_all() date = &quot;2098-01-02&quot; currency = &quot;ZZZ&quot; rate = &quot;1.234&quot; db.rates.upsert(date=date, currency=currency, rate=rate) response = web_client().get(&quot;/stats&quot;) assert response.status_code == 200 body = response.json() assert body[&quot;rates&quot;] == len(before) + 1 assert body[&quot;dates&quot;] == len({row.date for row in before} | {date}) assert body[&quot;first&quot;] == min([row.date for row in before] + [date]) assert body[&quot;last&quot;] == max([row.date for row in before] + [date]) === END AC stats-endpoint ===</p>
+<p>=== AC currencies-endpoint ===<br>Intent: The currencies route responds and includes the currency inserted by this check.</p>
+<p>from persistence.testing import db_session from app_server.testing import web_client</p>
+<p>with db_session() as db: date = &quot;2098-01-03&quot; currency = &quot;ZZZ&quot; db.rates.upsert(date=date, currency=currency, rate=&quot;1.25&quot;) response = web_client().get(&quot;/currencies&quot;) assert response.status_code == 200 body = response.json() assert body[&quot;base&quot;] == &quot;EUR&quot; assert currency in body[&quot;currencies&quot;] assert body[&quot;currencies&quot;] == sorted(set(body[&quot;currencies&quot;])) === END AC currencies-endpoint ===</p></article>
+</main>
+</body>
+</html>

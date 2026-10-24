@@ -1,0 +1,286 @@
+{
+  "acceptance_status": "NOT_RUN",
+  "assertions": {
+    "failed": 1,
+    "harness_defects": 0,
+    "passed": 4,
+    "product_defects": 1,
+    "unverified": 0
+  },
+  "attestations": [],
+  "build_passes": 1,
+  "commands": [
+    {
+      "argv": [
+        "/mnt/c/Users/barlo/projects/drydock/.venv/bin/python",
+        "-m",
+        "drydock",
+        "init",
+        "FxRates"
+      ],
+      "cwd": "workspace",
+      "elapsed_ms": 3053,
+      "label": "01-init",
+      "llm_executions": [],
+      "returncode": 0,
+      "stderr_path": "evidence/commands/01-init.stderr.log",
+      "stdout_path": "evidence/commands/01-init.stdout.log"
+    },
+    {
+      "argv": [
+        "/mnt/c/Users/barlo/projects/drydock/.venv/bin/python",
+        "-m",
+        "drydock",
+        "import",
+        "FxRates",
+        "sources",
+        "--format",
+        "markdown"
+      ],
+      "cwd": "workspace",
+      "elapsed_ms": 7060,
+      "label": "02-import-sources",
+      "llm_executions": [],
+      "returncode": 0,
+      "stderr_path": "evidence/commands/02-import-sources.stderr.log",
+      "stdout_path": "evidence/commands/02-import-sources.stdout.log"
+    },
+    {
+      "argv": [
+        "/mnt/c/Users/barlo/projects/drydock/.venv/bin/python",
+        "-m",
+        "drydock",
+        "analyze",
+        "FxRates"
+      ],
+      "cwd": "workspace",
+      "elapsed_ms": 33841,
+      "label": "03-analyze",
+      "llm_executions": [
+        "20261024.145311.388Z-49ff0cd6"
+      ],
+      "returncode": 0,
+      "stderr_path": "evidence/commands/03-analyze.stderr.log",
+      "stdout_path": "evidence/commands/03-analyze.stdout.log"
+    },
+    {
+      "argv": [
+        "/mnt/c/Users/barlo/projects/drydock/.venv/bin/python",
+        "-m",
+        "drydock",
+        "plan",
+        "FxRates",
+        "--override"
+      ],
+      "cwd": "workspace",
+      "elapsed_ms": 228218,
+      "label": "04-plan",
+      "llm_executions": [
+        "20261024.145348.385Z-089e0539",
+        "20261024.145419.748Z-32c49028",
+        "20261024.145440.872Z-df702547",
+        "20261024.145457.498Z-c6cd90be",
+        "20261024.145521.855Z-76e35bdf",
+        "20261024.145554.604Z-c8551b69",
+        "20261024.145619.235Z-df494263",
+        "20261024.145637.826Z-b419a009",
+        "20261024.145641.678Z-2e0de64f",
+        "20261024.145645.979Z-903a2e46",
+        "20261024.145650.633Z-165f07a8"
+      ],
+      "returncode": 0,
+      "stderr_path": "evidence/commands/04-plan.stderr.log",
+      "stdout_path": "evidence/commands/04-plan.stdout.log"
+    },
+    {
+      "argv": [
+        "/mnt/c/Users/barlo/projects/drydock/.venv/bin/python",
+        "-m",
+        "drydock",
+        "plan",
+        "verify",
+        "FxRates"
+      ],
+      "cwd": "workspace",
+      "elapsed_ms": 26742,
+      "label": "05-plan-verify",
+      "llm_executions": [],
+      "returncode": 0,
+      "stderr_path": "evidence/commands/05-plan-verify.stderr.log",
+      "stdout_path": "evidence/commands/05-plan-verify.stdout.log"
+    },
+    {
+      "argv": [
+        "/mnt/c/Users/barlo/projects/drydock/.venv/bin/python",
+        "-m",
+        "drydock",
+        "build",
+        "status",
+        "FxRates"
+      ],
+      "cwd": "workspace",
+      "elapsed_ms": 2427,
+      "label": "06-after-plan-build-status",
+      "llm_executions": [],
+      "returncode": 0,
+      "stderr_path": "evidence/commands/06-after-plan-build-status.stderr.log",
+      "stdout_path": "evidence/commands/06-after-plan-build-status.stdout.log"
+    },
+    {
+      "argv": [
+        "/mnt/c/Users/barlo/projects/drydock/.venv/bin/python",
+        "-m",
+        "drydock",
+        "status",
+        "FxRates"
+      ],
+      "cwd": "workspace",
+      "elapsed_ms": 2332,
+      "label": "07-after-plan-target-status",
+      "llm_executions": [],
+      "returncode": 0,
+      "stderr_path": "evidence/commands/07-after-plan-target-status.stderr.log",
+      "stdout_path": "evidence/commands/07-after-plan-target-status.stdout.log"
+    },
+    {
+      "argv": [
+        "/mnt/c/Users/barlo/projects/drydock/.venv/bin/python",
+        "-m",
+        "drydock",
+        "status"
+      ],
+      "cwd": "workspace",
+      "elapsed_ms": 1463,
+      "label": "08-after-plan-workspace-status",
+      "llm_executions": [],
+      "returncode": 0,
+      "stderr_path": "evidence/commands/08-after-plan-workspace-status.stderr.log",
+      "stdout_path": "evidence/commands/08-after-plan-workspace-status.stdout.log"
+    },
+    {
+      "argv": [
+        "/mnt/c/Users/barlo/projects/drydock/.venv/bin/python",
+        "-m",
+        "drydock",
+        "status",
+        "FxRates",
+        "--ready"
+      ],
+      "cwd": "workspace",
+      "elapsed_ms": 2938,
+      "label": "09-initial-ready",
+      "llm_executions": [],
+      "returncode": 0,
+      "stderr_path": "evidence/commands/09-initial-ready.stderr.log",
+      "stdout_path": "evidence/commands/09-initial-ready.stdout.log"
+    },
+    {
+      "argv": [
+        "/mnt/c/Users/barlo/projects/drydock/.venv/bin/python",
+        "-m",
+        "drydock",
+        "build",
+        "FxRates",
+        "--override",
+        "--repair-attempts",
+        "6"
+      ],
+      "cwd": "workspace",
+      "elapsed_ms": 96177,
+      "label": "10-initial-build-1",
+      "llm_executions": [
+        "20261024.145840.366Z-ba93a8f1"
+      ],
+      "returncode": 1,
+      "stderr_path": "evidence/commands/10-initial-build-1.stderr.log",
+      "stdout_path": "evidence/commands/10-initial-build-1.stdout.log"
+    },
+    {
+      "argv": [
+        "/mnt/c/Users/barlo/projects/drydock/.venv/bin/python",
+        "-m",
+        "drydock",
+        "build",
+        "status",
+        "FxRates"
+      ],
+      "cwd": "workspace",
+      "elapsed_ms": 4104,
+      "label": "11-after-initial-build-build-status",
+      "llm_executions": [],
+      "returncode": 0,
+      "stderr_path": "evidence/commands/11-after-initial-build-build-status.stderr.log",
+      "stdout_path": "evidence/commands/11-after-initial-build-build-status.stdout.log"
+    },
+    {
+      "argv": [
+        "/mnt/c/Users/barlo/projects/drydock/.venv/bin/python",
+        "-m",
+        "drydock",
+        "status",
+        "FxRates"
+      ],
+      "cwd": "workspace",
+      "elapsed_ms": 2990,
+      "label": "12-after-initial-build-target-status",
+      "llm_executions": [],
+      "returncode": 0,
+      "stderr_path": "evidence/commands/12-after-initial-build-target-status.stderr.log",
+      "stdout_path": "evidence/commands/12-after-initial-build-target-status.stdout.log"
+    },
+    {
+      "argv": [
+        "/mnt/c/Users/barlo/projects/drydock/.venv/bin/python",
+        "-m",
+        "drydock",
+        "status"
+      ],
+      "cwd": "workspace",
+      "elapsed_ms": 1547,
+      "label": "13-after-initial-build-workspace-status",
+      "llm_executions": [],
+      "returncode": 0,
+      "stderr_path": "evidence/commands/13-after-initial-build-workspace-status.stderr.log",
+      "stdout_path": "evidence/commands/13-after-initial-build-workspace-status.stdout.log"
+    }
+  ],
+  "degraded": [
+    "initial-build-1 exited 1"
+  ],
+  "elapsed_ms": 417827,
+  "environment": {
+    "drydock_version": "0.8.0",
+    "effort": "",
+    "finished_at": "2026-10-24T14:59:56.260766Z",
+    "git_commit": "7a168ea58aaa62e68e51ca094d05ca8831dbd9a6",
+    "model": "gpt-6-luna",
+    "plan_model": "",
+    "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.35",
+    "provider": "codex",
+    "python_version": "3.12.13",
+    "requested_model": "gpt-6-luna",
+    "started_at": "2026-10-24T14:52:58.272541Z"
+  },
+  "error": "FxRates: stopped at initial-build-1: The build exited 1 with work still on the frontier. Diagnose the failing block from its evidence before rerunning; a score taken over a partial build grades the absence, not the product.",
+  "evidence_dir": "evidence",
+  "execution_status": "ERROR",
+  "expected_verdict": "PASSED",
+  "fixture": "FxRates",
+  "observed_verdict": "ERROR",
+  "output_dir": ".",
+  "release_verdict": "",
+  "resumed_from": "",
+  "run_id": "20261024.145257",
+  "score_exit_codes": {},
+  "status": "failed",
+  "target": "FxRates",
+  "usage": {
+    "cached_input_tokens": 293120,
+    "calls": 13,
+    "fresh_input_tokens": 368619,
+    "input_tokens": 661739,
+    "invalid_records": 0,
+    "llm_elapsed_ms": 241284,
+    "output_tokens": 23086
+  }
+}

@@ -1,0 +1,2 @@
+error: build failed for FxRates: 1 step(s)
+  database-contract — closed/failed: programmatic acceptance failed: rates-upsert

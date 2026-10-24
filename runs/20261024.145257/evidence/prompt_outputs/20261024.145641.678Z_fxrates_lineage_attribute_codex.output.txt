@@ -1,0 +1,15 @@
+<requirement name="source-file-data" stories="database-contract,cli-load">
+Date,USD,JPY,GBP,CHF,SEK,CAD,AUD,CNY,
+2025-02-04,1.0335,160.52,0.83188,0.9396,11.418,1.4894,1.6629,7.4943,
+2025-02-03,1.0274,158.87,0.83136,0.9393,11.481,1.5051,1.6671,7.45,
+</requirement>
+<unattached story="architecture-foundation"/>
+<unattached story="cli-init"/>
+<unattached story="api-health"/>
+<unattached story="cli-fetch"/>
+<unattached story="api-rates"/>
+<unattached story="api-history"/>
+<unattached story="api-convert"/>
+<unattached story="cli-serve"/>
+<unattached story="qa-tests"/>
+<unattached story="qa-suite"/>

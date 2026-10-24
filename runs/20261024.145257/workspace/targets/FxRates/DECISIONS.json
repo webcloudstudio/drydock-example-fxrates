@@ -1,0 +1,39 @@
+[
+  {
+    "id": "Q-001",
+    "type": "choice",
+    "severity": "material",
+    "origin": "plan",
+    "blueprint": "FEATURE-QA-Suite.md",
+    "story": "qa-suite",
+    "status": "recommended",
+    "archived": false,
+    "title": "Terminal conformance gate",
+    "description": "The supplied grader is the authoritative final project gate and must run after every implementation and project-test story has completed.",
+    "options": [
+      {
+        "value": "supplied-grader",
+        "label": "Run the supplied grader as the terminal gate"
+      },
+      {
+        "value": "project-suite",
+        "label": "Use only the project pytest suite as the terminal gate"
+      }
+    ],
+    "system_choice": "supplied-grader"
+  },
+  {
+    "id": "build-schema-derived-indexes",
+    "type": "text",
+    "severity": "informational",
+    "origin": "build",
+    "blueprint": "DATABASE.md",
+    "story": null,
+    "status": "recommended",
+    "archived": false,
+    "title": "Indexes derived from the persistence declaration",
+    "description": "The rendered schema indexes rates(date); rates(currency). Each is implied by the declaration \u2014 a foreign key is looked up by its child column, and a read pattern's Input fields are the predicate it filters on. Declare an `- INDEX (...)` bullet in DATABASE.md for any index this does not cover.",
+    "options": [],
+    "system_choice": "rates(date); rates(currency)"
+  }
+]

@@ -1,0 +1,39 @@
+{
+  "criteria": {
+    "architecture-imports": {
+      "status": "VALID",
+      "error_code": "product-missing",
+      "code_sha256": "e34b8df8ca9cdb26e6adc9d8d7defba4ca49761cde58dc3e73ea1da6919b927b",
+      "updated_at": "2026-10-24T14:58:36+00:00",
+      "detail": ""
+    },
+    "rates-list-all": {
+      "status": "VALID",
+      "error_code": "product-missing",
+      "code_sha256": "ef74f6c7627da10c80b9d6e6d1e9a09b637c106d218de024131af5604153c15b",
+      "updated_at": "2026-10-24T14:59:28+00:00",
+      "detail": ""
+    },
+    "rates-list-currency": {
+      "status": "VALID",
+      "error_code": "product-missing",
+      "code_sha256": "edc87e3de3e1e6e590848d0701a9e4cc36697e8c017f93c0cdf37e7dbb9ad795",
+      "updated_at": "2026-10-24T14:59:28+00:00",
+      "detail": ""
+    },
+    "rates-list-date": {
+      "status": "VALID",
+      "error_code": "product-missing",
+      "code_sha256": "6d7c27ec90b8a8eb48da2d507c511124d1a5aa7e73a397f177b717d0bd6b9035",
+      "updated_at": "2026-10-24T14:59:28+00:00",
+      "detail": ""
+    },
+    "rates-upsert": {
+      "status": "VALID",
+      "error_code": "product-missing",
+      "code_sha256": "78a59c1a77cd07ad8670d692f48b25141a452af96bd23eef68223863d9eac835",
+      "updated_at": "2026-10-24T14:59:28+00:00",
+      "detail": ""
+    }
+  }
+}

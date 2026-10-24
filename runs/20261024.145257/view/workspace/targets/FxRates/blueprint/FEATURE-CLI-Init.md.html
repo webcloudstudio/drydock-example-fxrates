@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-CLI-Init.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-CLI-Init.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-CLI-Init.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: CLI Init</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Initializes the rates store through the command line.</td></tr><tr><td>Depends On</td><td>DATABASE.md, ARCHITECTURE.md</td></tr><tr><td>Provides</td><td>fxrates init</td></tr><tr><td>Consumes</td><td>rates repository operations</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>The <code>fxrates init</code> command initializes the rates database and leaves it empty. It prints nothing on success.</p>
+<h2>Workflow</h2>
+<ol><li>Invoke <code>./fxrates init</code>.</li><li>Reinitialize the configured store through the persistence boundary.</li><li>Ensure the rates table has no rows after initialization.</li></ol>
+<h2>Database Interface</h2>
+<ul><li>None — persistence is owned by DATABASE.md.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC cli-init-empty ===<br>Intent: Initialization succeeds silently and leaves no rate rows in the configured store.</p>
+<p>from cli.testing import cli_runner from persistence.testing import db_session</p>
+<p>code, out, err = cli_runner(&quot;init&quot;) assert code == 0 assert out == &quot;&quot; with db_session() as db: assert db.rates.list_all() == [] === END AC cli-init-empty ===</p>
+<p>=== AC cli-init-repeat ===<br>Intent: Repeating initialization succeeds and leaves the rates store empty.</p>
+<p>from cli.testing import cli_runner from persistence.testing import db_session</p>
+<p>first_code, _, _ = cli_runner(&quot;init&quot;) second_code, out, _ = cli_runner(&quot;init&quot;) assert first_code == 0 assert second_code == 0 assert out == &quot;&quot; with db_session() as db: assert db.rates.list_all() == [] === END AC cli-init-repeat ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Use the configured database location.</li><li>Do not print success output.</li></ul></article>
+</main>
+</body>
+</html>

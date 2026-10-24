@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-API-Rates.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-API-Rates.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-API-Rates.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Effective-Date Rates</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Retrieves rates for the latest publication date on or before a requested date.</td></tr><tr><td>Depends On</td><td>DATABASE.md, ARCHITECTURE.md</td></tr><tr><td>Provides</td><td>GET /rates/{date}, GET /rates/latest</td></tr><tr><td>Consumes</td><td><code>FEATURE-RATE-002</code> rates.list_date, <code>FEATURE-RATE-005</code> rates.list_all</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Return the ECB rates for the effective publication date. A requested date resolves to the latest stored publication date on or before it.</p>
+<h2>Workflow</h2>
+<ul><li><code>GET /rates/{date}</code> accepts a real calendar date in <code>YYYY-MM-DD</code> form. A malformed date returns 422. If no publication exists on or before it, return 404.</li><li><code>GET /rates/latest</code> resolves the latest stored publication and uses <code>latest</code> as the requested value. Return 404 when there are no rates.</li><li>Successful responses contain the effective date, requested date, EUR base, and every rate stored for that date. Rate values remain published text strings.</li></ul>
+<h2>Database Interface</h2>
+<ul><li><code>FEATURE-RATE-002</code> — read: list rates for a publication date - supplies: <code>date</code> - returns: <code>date</code>, <code>currency</code>, <code>rate</code></li><li><code>FEATURE-RATE-005</code> — read: list all rates - supplies: — - returns: <code>date</code>, <code>currency</code>, <code>rate</code></li></ul>
+<h2>Guardrails</h2>
+<ul><li>Resolve effective dates from stored rows; do not hardcode dates or rates.</li><li>Do not convert rate text to floating point.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC rates-effective-date ===<br>Intent: A request between two arranged publications uses the earlier publication and returns its stored text.</p>
+<p>from persistence.testing import db_session from app_server.testing import web_client</p>
+<p>requested = &quot;2098-03-06&quot; effective = &quot;2098-03-05&quot; currency = &quot;ZZZ&quot; rate = &quot;0.943&quot; with db_session() as db: db.rates.upsert(date=effective, currency=currency, rate=rate) db.rates.upsert(date=&quot;2098-03-07&quot;, currency=currency, rate=&quot;0.944&quot;) response = web_client().get(f&quot;/rates/{requested}&quot;) assert response.status_code == 200 body = response.json() assert body[&quot;date&quot;] == effective assert body[&quot;requested&quot;] == requested assert body[&quot;base&quot;] == &quot;EUR&quot; assert body[&quot;rates&quot;][currency] == rate === END AC rates-effective-date ===</p>
+<p>=== AC rates-errors ===<br>Intent: The rates routes reject malformed dates and dates with no prior publication using their declared statuses.</p>
+<p>from app_server.testing import web_client</p>
+<p>client = web_client() assert client.get(&quot;/rates/2025-13-01&quot;).status_code == 422 assert client.get(&quot;/rates/1900-01-01&quot;).status_code == 404 assert client.get(&quot;/rates/latest&quot;).status_code == 404 === END AC rates-errors ===</p></article>
+</main>
+</body>
+</html>

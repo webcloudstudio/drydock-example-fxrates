@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/ARCHITECTURE.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/ARCHITECTURE.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/ARCHITECTURE.md">Raw file</a></div></header>
+<article class="doc"><h1>ARCHITECTURE: FxRates</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Defines the application modules and their ownership boundaries.</td></tr></tbody></table></div>
+<h2>System Structure</h2>
+<p>The application is a Python 3.11+ command-line program and JSON HTTP API. The root <code>fxrates</code> executable delegates to <code>cli.main</code>. The API is created by <code>app_server.main.create_app()</code> and served by uvicorn. Features call the generated <code>persistence</code> package for all database access.</p>
+<h2>Module Ownership</h2>
+<div class="scroll"><table><thead><tr><th>Boundary</th><th>Owner</th><th>Allowed access</th></tr></thead><tbody><tr><td>Configuration</td><td><code>config</code></td><td>Reads <code>DATABASE_URL</code>, then <code>DATABASE_PATH</code>, then the <code>data/app.db</code> default.</td></tr><tr><td>Persistence</td><td>generated <code>persistence</code> package</td><td>Opens the configured database and performs declared repository operations.</td></tr><tr><td>CLI</td><td><code>cli</code></td><td>Parses commands and arguments, invokes feature services, and writes command output and diagnostics.</td></tr><tr><td>API</td><td><code>app_server</code></td><td>Defines FastAPI routes and delegates data operations to feature services.</td></tr><tr><td>ECB fetch integration</td><td>CLI fetch service</td><td>Downloads and extracts the ECB archive; passes its CSV to the shared loading behavior.</td></tr></tbody></table></div>
+<p>No application module may open a database driver or issue SQL directly. Persisted rates use their published ECB text; arithmetic uses <code>decimal.Decimal</code>.</p>
+<h2>Technology Stack</h2>
+<div class="scroll"><table><thead><tr><th>Technology</th><th>Use</th></tr></thead><tbody><tr><td>Python</td><td>Application language and project test suite.</td></tr><tr><td>FastAPI</td><td>JSON HTTP API.</td></tr><tr><td>SQLite</td><td>Local relational store, accessed only through the generated persistence package.</td></tr><tr><td>CLI</td><td>Root <code>fxrates</code> executable with <code>init</code>, <code>load</code>, <code>fetch</code>, and <code>serve</code> commands.</td></tr><tr><td>ECB reference rates</td><td>ECB history CSV obtained from the published ZIP archive.</td></tr><tr><td>Shell</td><td>POSIX-compatible command and test runners.</td></tr><tr><td>pytest</td><td>Automated project test suite.</td></tr><tr><td>uvicorn</td><td>Runs the FastAPI application on localhost.</td></tr></tbody></table></div>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC architecture-imports ===<br>Intent: The application entry points import successfully.</p>
+<p>import cli import app_server.main</p>
+<p>assert callable(cli.main) assert callable(app_server.main.create_app) === END AC architecture-imports ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Keep database access behind the shipped persistence package.</li><li>Do not read the supplied grader or data files from application code.</li><li>Do not embed exchange rates, dates, counts, or computed answers.</li></ul></article>
+</main>
+</body>
+</html>

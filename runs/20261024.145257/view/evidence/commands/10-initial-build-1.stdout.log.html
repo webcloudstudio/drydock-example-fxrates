@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/commands/10-initial-build-1.stdout.log</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/commands/10-initial-build-1.stdout.log</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/commands/10-initial-build-1.stdout.log">Raw file</a></div></header>
+<article class="doc"><pre>Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
+Build: FxRates
+scope: entire project
+frontier: architecture-foundation
+git: baseline FxRates 46b30ca3adcd
+git: baseline FxRates 3fc190038d3c
+
+BLOCK block-1  name=&quot;Block 1 · Foundational&quot;  calls_max=7
+  story=architecture-foundation  &quot;Establish the Python application structure and module boundaries.&quot;
+
+  [call 1/7]  kind=initial  llm=codex/gpt-6-luna
+    result=ok  rc=0  execution=20261024.145840.366Z-ba93a8f1
+    acceptance=1/1
+git: block-1 | python.md, ARCHITECTURE.md | call=1 | app=1ac98252e17d target=f16bb036ab6f
+
+  DONE  story=architecture-foundation  state=closed/implemented  execution=20261024.145840.366Z-ba93a8f1  elapsed=49.8s
+git: block-1 | python.md, ARCHITECTURE.md | step_completed | app=unchanged target=046fedbed62d
+
+  FAILED  story=database-contract  state=closed/failed  elapsed=6.6s
+git: block-2 | DATABASE.md | step_completed | app=c94f6989844f target=03c7549c2bce
+
+result: 1 built, 1 failed, 0 unchanged
+elapsed: 1 minute 32 seconds
+
+========================================================================
+BUILD FAILED: FxRates  (1 step)
+========================================================================
+
+  Failure
+    Provenance
+      Target: FxRates
+      Block: Block 2 · Foundational [block-2]
+      Story: Declare the rates schema and persistence operations. [database-contract]
+    Cause: programmatic acceptance failed: rates-upsert
+    acceptance: 3/4 passing · baseline 0/4 · improved
+    Assertion
+      Acceptance checks:
+      Acceptance: rates-upsert
+      Intent: Upserting a rate stores its published text and replaces the matching date and currency row.
+      Source: DATABASE.md
+      Code: (assertion not captured)
+    Result
+      Process exit code: 1
+      Error: (exception not captured)
+      Stderr:
+                    ^^^^^^^^^^^^
+          File &quot;/mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261024.145257/build/FxRates/persistence/db.py&quot;, line 214, in __getattr__
+            raise UnknownOperation(
+        persistence.db.UnknownOperation: rates declares no &#x27;get&#x27; operation. Declared: list_all, list_currency, list_date, upsert. Add an access pattern to DATABASE.md rather than reaching around this class.
+    Recovery
+      Run: drydock build FxRates
+        to continue the build. This story resumes where it left off and is
+        retried against the checks it failed.
+    evidence: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261024.145257/workspace/targets/FxRates/evidence/block-2.md
+
+  Next
+    Run: drydock build FxRates
+      to continue the build. This story resumes where it left off and is
+      retried against the checks it failed.
+========================================================================
+
+========================================================================
+POST-LLM FAILURE  ·  build  ·  programmatic acceptance failed: rates-upsert
+========================================================================
+
+  Block &quot;Block 2 · Foundational&quot; [block-2] failed its acceptance
+  criteria.
+    Story &quot;Declare the rates schema and persistence operations.&quot; [database-contract] does not meet its own acceptance criteria:
+      - AC rates-upsert — Upserting a rate stores its published text and replaces the matching date and currency row.
+          assertion: failed with no diagnostic output
+          raised at: db.py:214
+          process exit code: 1
+          values at failure:
+            name = &#x27;get&#x27;
+            granted = &#x27;list_all, list_currency, list_date, upsert&#x27;
+            self = &lt;TableAccess rates: list_all, list_currency, list_date, upsert&gt;
+          check stderr:
+            Traceback (most recent call last):
+              File &quot;rates-upsert.py&quot;, line 9, in &lt;module&gt;
+  … (5 more lines truncated)
+
+  Recovery
+    Run: drydock build FxRates
+      to continue the build. This story resumes where it left off and is retried against the checks it failed.
+
+========================================================================
+Target - committed project workspace git store
+</pre></article>
+</main>
+</body>
+</html>
