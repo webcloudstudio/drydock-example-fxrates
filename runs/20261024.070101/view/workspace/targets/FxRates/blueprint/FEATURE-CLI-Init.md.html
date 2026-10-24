@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-CLI-Init.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-CLI-Init.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-CLI-Init.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: CLI Initialization</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Initializes the rates store with no stored rates.</td></tr><tr><td>Depends On</td><td>DATABASE.md, ARCHITECTURE.md</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p><code>fxrates init</code> initializes the rates store and prints nothing. Per decision Q-001, it drops existing rates and leaves the store empty. Use only the declared persistence operations: list existing rows and delete them by their natural keys.</p>
+<h2>Trigger and Workflow</h2>
+<ol><li>The caller runs <code>./fxrates init</code>.</li><li>The command removes every stored rate through the repository interface.</li><li>The command returns success.</li></ol>
+<h2>Reads and Writes</h2>
+<ul><li>Reads: <code>FEATURE-RATE-002</code> to list rates.</li><li>Writes: <code>FEATURE-RATE-003</code> to delete rates by date and currency.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC cli-init-clears-rates ===<br>Intent: Initialization removes stored rates and the repository readback finds none.</p>
+<p>from cli.testing import cli_runner from persistence.testing import db_session</p>
+<p>with db_session() as db: date = &quot;2099-01-02&quot; currency = &quot;ZZZ&quot; db.rates.upsert(date=date, currency=currency, rate=&quot;1.23&quot;) code, _, _ = cli_runner(&quot;init&quot;) assert code == 0 assert db.rates.list(date=date, currency=currency) == [] === END AC cli-init-clears-rates ===</p>
+<p>=== AC cli-init-empty-store ===<br>Intent: Initialization succeeds when there are no rates to clear.</p>
+<p>from cli.testing import cli_runner from persistence.testing import db_session</p>
+<p>with db_session() as db: code, _, _ = cli_runner(&quot;init&quot;) assert code == 0 assert db.rates.list(date=&quot;2099-01-02&quot;, currency=&quot;ZZZ&quot;) == [] === END AC cli-init-empty-store ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Initialization must use the generated persistence interface; application code does not access the database driver directly.</li><li>After initialization, no rates remain in the configured store.</li></ul>
+<h2>Database Interface</h2>
+<ul><li><code>FEATURE-RATE-003</code> — write: rates.delete - supplies: <code>date</code>, <code>currency</code> - returns: <code>date</code>, <code>currency</code></li></ul></article>
+</main>
+</body>
+</html>

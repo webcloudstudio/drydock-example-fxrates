@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/ERRORS.md</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/ERRORS.md</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../workspace/targets/FxRates/ERRORS.md">Raw file</a></div></header>
+<article class="doc"><h1>BIG ERRORS — action required</h1>
+<ul><li>Command: <code>build</code></li><li>Phase: build step</li><li>State: Failed</li><li>Timestamp: 2026-10-24T07:08:08+00:00</li><li>Execution ID: -</li><li>Challenge Execution ID: -</li><li>Classification: programmatic acceptance failed: rates-delete</li><li>Evidence / logs: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261024.070101/workspace/targets/FxRates/evidence/block-2.md</li></ul>
+<h2>Diagnostic</h2>
+<p>Block &quot;Block 2 · Foundational&quot; [block-2] failed its acceptance criteria. Story &quot;Declare the rates schema and repository contract.&quot; [database] does not meet its own acceptance criteria:</p>
+<ul><li>AC rates-delete — The rates delete operation removes only the row selected by its date and currency key.</li></ul>
+<p>assertion: persistence.db.PersistenceError: FEATURE-RATE-003 failed: FieldType.<strong>init</strong>() missing 2 required positional arguments: &#x27;id&#x27; and &#x27;rate&#x27; raised at: db.py:398 process exit code: 1 error: persistence.db.PersistenceError: FEATURE-RATE-003 failed: FieldType.<strong>init</strong>() missing 2 required positional arguments: &#x27;id&#x27; and &#x27;rate&#x27; values at failure: … (23 more lines truncated)</p>
+<h2>Recovery</h2>
+<p>Run: drydock build FxRates to continue the build. This story resumes where it left off and is retried against the checks it failed.</p></article>
+</main>
+</body>
+</html>

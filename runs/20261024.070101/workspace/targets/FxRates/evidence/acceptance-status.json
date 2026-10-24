@@ -1,0 +1,39 @@
+{
+  "criteria": {
+    "architecture-application-entry": {
+      "status": "VALID",
+      "error_code": "product-missing",
+      "code_sha256": "27a28be18c6a7e84ee5c971ca1470d36070a6a895bc40d67cfa45d414fd89004",
+      "updated_at": "2026-10-24T07:07:13+00:00",
+      "detail": ""
+    },
+    "architecture-imports": {
+      "status": "VALID",
+      "error_code": "product-missing",
+      "code_sha256": "ff81a1c9b12fa313fccdac0ed22c7c253477577af53339d87119eb8153272acb",
+      "updated_at": "2026-10-24T07:07:13+00:00",
+      "detail": ""
+    },
+    "rates-delete": {
+      "status": "VALID",
+      "error_code": "product-missing",
+      "code_sha256": "a458b9caba8fcd9873de1a23ede07c6df0912fb0625ba75b05ddbd1b809f1ebf",
+      "updated_at": "2026-10-24T07:08:04+00:00",
+      "detail": ""
+    },
+    "rates-list": {
+      "status": "VALID",
+      "error_code": "product-missing",
+      "code_sha256": "841467453fc93ae3608a530bf2d49f577e8da3cc783b42159bd0cd163ef6c4f0",
+      "updated_at": "2026-10-24T07:08:04+00:00",
+      "detail": ""
+    },
+    "rates-upsert": {
+      "status": "VALID",
+      "error_code": "product-missing",
+      "code_sha256": "a9c721dbbd41c767ec8e13498dd73a5060766518a772c32bc183dc410b5ee787",
+      "updated_at": "2026-10-24T07:08:04+00:00",
+      "detail": ""
+    }
+  }
+}

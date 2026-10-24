@@ -1,0 +1,388 @@
+=== BEGIN ARTIFACT ARCHITECTURE.md ===
+# ARCHITECTURE: FxRates
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Defines FxRates application modules and ownership boundaries. |
+| Depends On  | — |
+| Provides    | application module boundaries |
+
+## Questions
+
+- None.
+
+## Module Boundaries
+
+| Module | Responsibility | May access |
+|--------|----------------|------------|
+| `cli` | Implements `fxrates` commands and their exit codes. | Application services and configuration. |
+| `app_server` | Creates the FastAPI application and serves JSON routes. | Application services and configuration. |
+| Application services | Parse and validate ECB input, perform rate queries and exact decimal calculations. | `persistence` repository operations. |
+| `persistence` | Owns connections and database operations through the shipped persistence library. | SQLite driver and declared schema. |
+| Configuration | Resolves the database location from `DATABASE_URL`, then `DATABASE_PATH`, then `data/app.db`. | Environment variables. |
+
+The CLI and API may share application services. Neither opens a database driver or issues SQL. All stored rates remain their published text; rate arithmetic uses `decimal`.
+
+## Technology Stack
+
+| Technology | Application |
+|------------|-------------|
+| Python | CLI, services, configuration, and API. |
+| FastAPI | JSON API application. |
+| SQLite | Rates store, accessed through the shipped persistence library. |
+| CLI | Executable named `fxrates` at the application root. |
+
+## Programmatic Acceptance
+
+=== AC architecture-imports ===
+Intent: The application, CLI, and persistence entry points are importable.
+
+import importlib
+
+for module_name in ("app_server.main", "cli", "persistence"):
+    module = importlib.import_module(module_name)
+    assert module is not None
+=== END AC architecture-imports ===
+
+=== AC architecture-application-entry ===
+Intent: The application exposes its factory and the CLI exposes its callable entry point.
+
+from app_server.main import create_app
+from cli import main
+
+assert callable(create_app)
+assert callable(main)
+=== END AC architecture-application-entry ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Only the shipped persistence library accesses the database driver.
+- CLI and API behavior must use the shared application configuration and service boundaries.
+- Rates are stored as text and calculations use `decimal`.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-CLI-Init.md ===
+# FEATURE: CLI Initialization
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Initializes the rates store with no stored rates. |
+| Depends On  | DATABASE.md, ARCHITECTURE.md |
+
+## Questions
+
+- None.
+
+## Purpose
+
+`fxrates init` initializes the rates store and prints nothing. Per decision Q-001, it drops existing rates and leaves the store empty. Use only the declared persistence operations: list existing rows and delete them by their natural keys.
+
+## Trigger and Workflow
+
+1. The caller runs `./fxrates init`.
+2. The command removes every stored rate through the repository interface.
+3. The command returns success.
+
+## Reads and Writes
+
+- Reads: `FEATURE-RATE-002` to list rates.
+- Writes: `FEATURE-RATE-003` to delete rates by date and currency.
+
+## Programmatic Acceptance
+
+=== AC cli-init-clears-rates ===
+Intent: Initialization removes stored rates and the repository readback finds none.
+
+from cli.testing import cli_runner
+from persistence.testing import db_session
+
+with db_session() as db:
+    date = "2099-01-02"
+    currency = "ZZZ"
+    db.rates.upsert(date=date, currency=currency, rate="1.23")
+    code, _, _ = cli_runner("init")
+    assert code == 0
+    assert db.rates.list(date=date, currency=currency) == []
+=== END AC cli-init-clears-rates ===
+
+=== AC cli-init-empty-store ===
+Intent: Initialization succeeds when there are no rates to clear.
+
+from cli.testing import cli_runner
+from persistence.testing import db_session
+
+with db_session() as db:
+    code, _, _ = cli_runner("init")
+    assert code == 0
+    assert db.rates.list(date="2099-01-02", currency="ZZZ") == []
+=== END AC cli-init-empty-store ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Initialization must use the generated persistence interface; application code does not access the database driver directly.
+- After initialization, no rates remain in the configured store.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-CLI-Load.md ===
+# FEATURE: CLI Load
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Validates and loads ECB history CSV files into the rates store. |
+| Depends On  | DATABASE.md, ARCHITECTURE.md |
+
+## Questions
+
+- None.
+
+## Purpose
+
+`fxrates load <csv>` validates the entire file before writing, stores each non-`N/A` rate exactly as published, replaces an existing (`date`, `currency`) rate, and reports the number of dates and rates stored.
+
+## File Rules
+
+- The first header field is `Date`; remaining fields are three-letter uppercase currency codes. Ignore one trailing empty field.
+- Each date is a real `YYYY-MM-DD` calendar date and appears at most once in the file. Each row has the expected number of fields.
+- Each value is `N/A` or a nonzero value matching `[0-9]+(\.[0-9]+)?`.
+- Reject the whole file if any row is invalid. Rejection exits with code `3` and writes no data.
+- A successful load counts dates having at least one stored rate and counts the non-`N/A` rates from the file.
+
+## Workflow
+
+1. Read and validate the complete CSV before the first write.
+2. Upsert each non-`N/A` value through `rates.upsert`.
+3. Return success and the required date and rate counts.
+
+## Reads and Writes
+
+- Writes: `FEATURE-RATE-001` to store or replace each rate.
+- A rejected file performs no repository writes.
+
+## Programmatic Acceptance
+
+=== AC cli-load-preserves-published-text ===
+Intent: Loading the staged January history stores every non-N/A rate with its original text.
+
+import csv
+from cli.testing import cli_runner
+from persistence.testing import db_session
+
+path = "sources/eurofxref-hist_2025-01.csv"
+with open(path, newline="", encoding="utf-8") as source:
+    rows = list(csv.reader(source))
+headers = rows[0]
+if headers[-1] == "":
+    headers = headers[:-1]
+expected = []
+for row in rows[1:]:
+    if row[-1] == "":
+        row = row[:-1]
+    for currency, rate in zip(headers[1:], row[1:]):
+        if rate != "N/A":
+            expected.append((row[0], currency, rate))
+
+code, _, _ = cli_runner("load", path)
+assert code == 0
+with db_session() as db:
+    for date, currency, rate in expected:
+        stored = db.rates.list(date=date, currency=currency)
+        assert len(stored) == 1
+        assert stored[0].rate == rate
+=== END AC cli-load-preserves-published-text ===
+
+=== AC cli-load-replaces-existing-rates ===
+Intent: Loading the same staged file again leaves one matching row per non-N/A rate with unchanged published text.
+
+import csv
+from cli.testing import cli_runner
+from persistence.testing import db_session
+
+path = "sources/eurofxref-hist_2025-01.csv"
+with open(path, newline="", encoding="utf-8") as source:
+    rows = list(csv.reader(source))
+headers = rows[0]
+if headers[-1] == "":
+    headers = headers[:-1]
+expected = []
+for row in rows[1:]:
+    if row[-1] == "":
+        row = row[:-1]
+    for currency, rate in zip(headers[1:], row[1:]):
+        if rate != "N/A":
+            expected.append((row[0], currency, rate))
+
+first_code, _, _ = cli_runner("load", path)
+assert first_code == 0
+second_code, _, _ = cli_runner("load", path)
+assert second_code == 0
+with db_session() as db:
+    for date, currency, rate in expected:
+        stored = db.rates.list(date=date, currency=currency)
+        assert len(stored) == 1
+        assert stored[0].rate == rate
+=== END AC cli-load-replaces-existing-rates ===
+
+=== AC cli-load-rejects-invalid-file-atomically ===
+Intent: A rejected staged file exits with code 3 and leaves the rates count unchanged.
+
+from cli.testing import cli_runner
+from persistence.testing import db_session
+
+good_path = "sources/eurofxref-hist_2025-02-03_04.csv"
+bad_path = "sources/eurofxref-hist_bad.csv"
+setup_code, _, _ = cli_runner("load", good_path)
+assert setup_code == 0
+with db_session() as db:
+    before = len(db.rates.list())
+    code, _, _ = cli_runner("load", bad_path)
+    after = len(db.rates.list())
+    assert code == 3
+    assert after == before
+=== END AC cli-load-rejects-invalid-file-atomically ===
+
+=== AC END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-CLI-Errors.md ===
+# FEATURE: CLI Errors
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Defines exit codes and diagnostic behavior for CLI failures. |
+| Depends On  | FEATURE-CLI-Init.md, FEATURE-CLI-Load.md, FEATURE-CLI-Fetch.md, FEATURE-CLI-Serve.md |
+
+## Questions
+
+- None.
+
+## Purpose
+
+CLI failures use the specified response contract: usage errors exit `2`, operational failures exit `1`, and rejected input files exit `3`. A failing command writes no standard output and one diagnostic line to standard error; diagnostic wording is not part of the contract.
+
+## Failure Classification
+
+| Condition | Exit code |
+|-----------|-----------|
+| Unknown command, wrong argument count, or non-integer `--port` | `2` |
+| Unreadable input file or failed fetch | `1` |
+| Invalid history file | `3` |
+
+## Programmatic Acceptance
+
+=== AC cli-usage-errors ===
+Intent: Unknown commands, missing command arguments, and a malformed server port return the usage exit code.
+
+from cli.testing import cli_runner
+
+for args in (("frobnicate",), ("load",), ("serve", "--port", "notaport")):
+    code, _, _ = cli_runner(*args)
+    assert code == 2
+=== END AC cli-usage-errors ===
+
+=== AC cli-operational-load-error ===
+Intent: A load request for a missing file returns the operational failure exit code.
+
+from cli.testing import cli_runner
+
+code, _, _ = cli_runner("load", "sources/no-such-file.csv")
+assert code == 1
+=== END AC cli-operational-load-error ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- A failing command writes no standard output and one diagnostic line to standard error.
+- Error message wording is not a CLI compatibility contract.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-CLI-Fetch.md ===
+# FEATURE: CLI Fetch
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Downloads and loads the ECB history archive. |
+| Depends On  | FEATURE-CLI-Load.md, ARCHITECTURE.md |
+
+## Questions
+
+- None.
+
+## Purpose
+
+`fxrates fetch` downloads `https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist.zip`, extracts `eurofxref-hist.csv`, and loads it using the same validation, replacement, and reporting behavior as `fxrates load`. Use Python standard-library HTTPS support. Tests stub the download and do not use the network.
+
+## Workflow
+
+1. Request the archive using the standard-library URL transport.
+2. Read `eurofxref-hist.csv` from the ZIP archive.
+3. Validate the complete CSV before writing.
+4. Store valid non-`N/A` rates through the declared repository operation.
+
+## Reads and Writes
+
+- Writes: `FEATURE-RATE-001` to store or replace each rate.
+- Failed downloads return the operational failure exit code and store nothing.
+
+## Programmatic Acceptance
+
+=== AC cli-fetch-loads-stubbed-archive ===
+Intent: Fetch loads the stubbed archive's CSV through the normal repository path without a network request.
+
+import io
+import zipfile
+from unittest.mock import patch
+from cli.testing import cli_runner
+from persistence.testing import db_session
+
+csv_text = "Date,USD,JPY,\n2099-03-01,1.234,160.50,\n"
+archive = io.BytesIO()
+with zipfile.ZipFile(archive, "w") as zipped:
+    zipped.writestr("eurofxref-hist.csv", csv_text)
+archive_bytes = archive.getvalue()
+
+with patch("urllib.request.urlopen", return_value=io.BytesIO(archive_bytes)):
+    code, _, _ = cli_runner("fetch")
+
+assert code == 0
+with db_session() as db:
+    usd = db.rates.list(date="2099-03-01", currency="USD")
+    jpy = db.rates.list(date="2099-03-01", currency="JPY")
+    assert len(usd) == 1
+    assert len(jpy) == 1
+    assert usd[0].rate == "1.234"
+    assert jpy[0].rate == "160.50"
+=== END AC cli-fetch-loads-stubbed-archive ===
+
+=== AC cli-fetch-rejects-invalid-archive ===
+Intent: An invalid CSV in the stubbed archive is rejected without storing its otherwise valid first row.
+
+import io
+import zipfile
+from unittest.mock import patch
+from cli.testing import cli_runner
+from persistence.testing import db_session
+
+csv_text = "Date,USD,\n2099-03-02,1.234,\n2099-03-03,1.0x,\n"
+archive = io.BytesIO()
+with zipfile.ZipFile(archive, "w") as zipped:
+    zipped.writestr("eurofxref-hist.csv", csv_text)
+archive_bytes = archive.getvalue()
+
+with patch("urllib.request.urlopen", return_value=io.BytesIO(archive_bytes)):
+    code, _, _ = cli_runner("fetch")
+
+assert code == 3
+with db_session() as db:
+    assert db.rates.list(date="2099-03-02", currency="USD") == []
+=== END AC ARTIFACT ===

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/prompt_outputs/20261024.070504.348Z_fxrates_lineage_attribute_codex.output.txt</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/prompt_outputs/20261024.070504.348Z_fxrates_lineage_attribute_codex.output.txt</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/prompt_outputs/20261024.070504.348Z_fxrates_lineage_attribute_codex.output.txt">Raw file</a></div></header>
+<article class="doc"><pre>&lt;requirement name=&quot;initialize-rates-store&quot; stories=&quot;cli_init,database&quot;&gt;
+check A1 0 init &lt; /dev/null
+&lt;/requirement&gt;
+&lt;requirement name=&quot;load-ecb-history-files&quot; stories=&quot;cli_load,database&quot;&gt;
+check A2 0 load &quot;$DATA/eurofxref-hist_2025-01.csv&quot; &lt;&lt;&#x27;EOF&#x27;
+dates,rates
+22,176
+EOF
+&lt;/requirement&gt;
+&lt;requirement name=&quot;handle-invalid-load-files&quot; stories=&quot;cli_load,cli_errors&quot;&gt;
+check A4 3 load &quot;$DATA/eurofxref-hist_bad.csv&quot; &lt; /dev/null
+check A5 1 load &quot;$WORK/no-such-file.csv&quot; &lt; /dev/null
+&lt;/requirement&gt;
+&lt;requirement name=&quot;report-cli-usage-errors&quot; stories=&quot;cli_errors&quot;&gt;
+check U1 2 &lt; /dev/null
+check U2 2 frobnicate &lt; /dev/null
+check U3 2 load &lt; /dev/null
+check U4 2 serve --port notaport &lt; /dev/null
+&lt;/requirement&gt;
+&lt;requirement name=&quot;serve-on-requested-port&quot; stories=&quot;cli_serve&quot;&gt;
+start_server() {
+    (cd &quot;$APP&quot; &amp;&amp; exec &quot;$BIN&quot; serve --port &quot;$PORT&quot;) &gt; &quot;$WORK/server.log&quot; 2&gt;&amp;1 &lt; /dev/null &amp;
+&lt;/requirement&gt;
+&lt;requirement name=&quot;serve-health-and-database-stats&quot; stories=&quot;api_health_stats,database&quot;&gt;
+http H1 200 &#x27;/health&#x27; &lt;&lt;&#x27;EOF&#x27;
+{&quot;status&quot;:&quot;ok&quot;}
+EOF
+http H2 200 &#x27;/stats&#x27; &lt;&lt;&#x27;EOF&#x27;
+{&quot;dates&quot;:22,&quot;rates&quot;:176,&quot;first&quot;:&quot;2025-01-02&quot;,&quot;last&quot;:&quot;2025-01-31&quot;}
+EOF
+&lt;/requirement&gt;
+&lt;requirement name=&quot;list-stored-currencies&quot; stories=&quot;api_currencies,database&quot;&gt;
+http H3 200 &#x27;/currencies&#x27; &lt;&lt;&#x27;EOF&#x27;
+{&quot;base&quot;:&quot;EUR&quot;,&quot;currencies&quot;:[&quot;AUD&quot;,&quot;CAD&quot;,&quot;CHF&quot;,&quot;CNY&quot;,&quot;GBP&quot;,&quot;JPY&quot;,&quot;SEK&quot;,&quot;USD&quot;]}
+EOF
+&lt;/requirement&gt;
+&lt;requirement name=&quot;resolve-rates-by-effective-date&quot; stories=&quot;api_rates,database&quot;&gt;
+http H4 200 &#x27;/rates/2025-01-17&#x27; &lt;&lt;&#x27;EOF&#x27;
+{&quot;date&quot;:&quot;2025-01-17&quot;,&quot;requested&quot;:&quot;2025-01-17&quot;,&quot;base&quot;:&quot;EUR&quot;,&quot;rates&quot;:{&quot;AUD&quot;:&quot;1.6646&quot;,&quot;CAD&quot;:&quot;1.4864&quot;,&quot;CHF&quot;:&quot;0.9394&quot;,&quot;CNY&quot;:&quot;7.5474&quot;,&quot;GBP&quot;:&quot;0.84453&quot;,&quot;JPY&quot;:&quot;160.23&quot;,&quot;SEK&quot;:&quot;11.506&quot;,&quot;USD&quot;:&quot;1.0298&quot;}}
+EOF
+http H5 200 &#x27;/rates/2025-01-18&#x27; &lt;&lt;&#x27;EOF&#x27;
+{&quot;date&quot;:&quot;2025-01-17&quot;,&quot;requested&quot;:&quot;2025-01-18&quot;,&quot;base&quot;:&quot;EUR&quot;,&quot;rates&quot;:{&quot;AUD&quot;:&quot;1.6646&quot;,&quot;CAD&quot;:&quot;1.4864&quot;,&quot;CHF&quot;:&quot;0.9394&quot;,&quot;CNY&quot;:&quot;7.5474&quot;,&quot;GBP&quot;:&quot;0.84453&quot;,&quot;JPY&quot;:&quot;160.23&quot;,&quot;SEK&quot;:&quot;11.506&quot;,&quot;USD&quot;:&quot;1.0298&quot;}}
+EOF
+http H8 200 &#x27;/rates/latest&#x27; &lt;&lt;&#x27;EOF&#x27;
+{&quot;date&quot;:&quot;2025-01-31&quot;,&quot;requested&quot;:&quot;latest&quot;,&quot;base&quot;:&quot;EUR&quot;,&quot;rates&quot;:{&quot;AUD&quot;:&quot;1.6702&quot;,&quot;CAD&quot;:&quot;1.5035&quot;,&quot;CHF&quot;:&quot;0.9449&quot;,&quot;CNY&quot;:&quot;7.5363&quot;,&quot;GBP&quot;:&quot;0.83608&quot;,&quot;JPY&quot;:&quot;160.99&quot;,&quot;SEK&quot;:&quot;11.474&quot;,&quot;USD&quot;:&quot;1.0393&quot;}}
+EOF
+http H6 404 &#x27;/rates/2024-12-31&#x27; &lt; /dev/null
+http H7 422 &#x27;/rates/2025-13-01&#x27; &lt; /dev/null
+&lt;/requirement&gt;
+&lt;requirement name=&quot;convert-currency-amounts&quot; stories=&quot;api_convert,database&quot;&gt;
+http H9 200 &#x27;/convert?from=USD&amp;to=GBP&amp;amount=100&amp;date=2025-01-17&#x27; &lt;&lt;&#x27;EOF&#x27;
+{&quot;date&quot;:&quot;2025-01-17&quot;,&quot;from&quot;:&quot;USD&quot;,&quot;to&quot;:&quot;GBP&quot;,&quot;amount&quot;:&quot;100&quot;,&quot;rate&quot;:&quot;0.820091&quot;,&quot;result&quot;:&quot;82.01&quot;}
+EOF
+http H10 200 &#x27;/convert?from=EUR&amp;to=JPY&amp;amount=250.25&amp;date=2025-01-05&#x27; &lt;&lt;&#x27;EOF&#x27;
+{&quot;date&quot;:&quot;2025-01-03&quot;,&quot;from&quot;:&quot;EUR&quot;,&quot;to&quot;:&quot;JPY&quot;,&quot;amount&quot;:&quot;250.25&quot;,&quot;rate&quot;:&quot;161.770000&quot;,&quot;result&quot;:&quot;40482.94&quot;}
+EOF
+http H11 200 &#x27;/convert?from=GBP&amp;to=EUR&amp;amount=1000&#x27; &lt;&lt;&#x27;EOF&#x27;
+{&quot;date&quot;:&quot;2025-01-31&quot;,&quot;from&quot;:&quot;GBP&quot;,&quot;to&quot;:&quot;EUR&quot;,&quot;amount&quot;:&quot;1000&quot;,&quot;rate&quot;:&quot;1.196058&quot;,&quot;result&quot;:&quot;1196.06&quot;}
+EOF
+http H12 200 &#x27;/convert?from=SEK&amp;to=CNY&amp;amount=12345.67&amp;date=2025-01-20&#x27; &lt;&lt;&#x27;EOF&#x27;
+{&quot;date&quot;:&quot;2025-01-20&quot;,&quot;from&quot;:&quot;SEK&quot;,&quot;to&quot;:&quot;CNY&quot;,&quot;amount&quot;:&quot;12345.67&quot;,&quot;rate&quot;:&quot;0.656236&quot;,&quot;result&quot;:&quot;8101.67&quot;}
+EOF
+&lt;/requirement&gt;
+&lt;requirement name=&quot;validate-conversion-requests&quot; stories=&quot;api_validation,api_convert&quot;&gt;
+http H13 404 &#x27;/convert?from=USD&amp;to=XXX&amp;amount=1&#x27; &lt; /dev/null
+http H14 422 &#x27;/convert?from=USD&amp;to=GBP&#x27; &lt; /dev/null
+http H15 422 &#x27;/convert?from=USD&amp;to=GBP&amp;amount=abc&#x27; &lt; /dev/null
+http H16 404 &#x27;/convert?from=USD&amp;to=GBP&amp;amount=10&amp;date=2024-12-01&#x27; &lt; /dev/null
+&lt;/requirement&gt;
+&lt;requirement name=&quot;return-currency-history-and-summary&quot; stories=&quot;api_history,database&quot;&gt;
+http H17 200 &#x27;/history/USD?start=2025-01-20&amp;end=2025-01-24&#x27; &lt;&lt;&#x27;EOF&#x27;
+{&quot;currency&quot;:&quot;USD&quot;,&quot;base&quot;:&quot;EUR&quot;,&quot;count&quot;:5,&quot;min&quot;:&quot;1.0316&quot;,&quot;max&quot;:&quot;1.0472&quot;,&quot;mean&quot;:&quot;1.039840&quot;,&quot;points&quot;:[{&quot;date&quot;:&quot;2025-01-20&quot;,&quot;rate&quot;:&quot;1.0316&quot;},{&quot;date&quot;:&quot;2025-01-21&quot;,&quot;rate&quot;:&quot;1.0357&quot;},{&quot;date&quot;:&quot;2025-01-22&quot;,&quot;rate&quot;:&quot;1.0443&quot;},{&quot;date&quot;:&quot;2025-01-23&quot;,&quot;rate&quot;:&quot;1.0404&quot;},{&quot;date&quot;:&quot;2025-01-24&quot;,&quot;rate&quot;:&quot;1.0472&quot;}]}
+EOF
+http H18 200 &#x27;/history/CHF?start=2025-01-27&#x27; &lt;&lt;&#x27;EOF&#x27;
+{&quot;currency&quot;:&quot;CHF&quot;,&quot;base&quot;:&quot;EUR&quot;,&quot;count&quot;:5,&quot;min&quot;:&quot;0.943&quot;,&quot;max&quot;:&quot;0.9453&quot;,&quot;mean&quot;:&quot;0.944280&quot;,&quot;points&quot;:[{&quot;date&quot;:&quot;2025-01-27&quot;,&quot;rate&quot;:&quot;0.9453&quot;},{&quot;date&quot;:&quot;2025-01-28&quot;,&quot;rate&quot;:&quot;0.9441&quot;},{&quot;date&quot;:&quot;2025-01-29&quot;,&quot;rate&quot;:&quot;0.943&quot;},{&quot;date&quot;:&quot;2025-01-30&quot;,&quot;rate&quot;:&quot;0.9441&quot;},{&quot;date&quot;:&quot;2025-01-31&quot;,&quot;rate&quot;:&quot;0.9449&quot;}]}
+EOF
+http H20 200 &#x27;/history/USD?start=2025-02-01&#x27; &lt;&lt;&#x27;EOF&#x27;
+{&quot;currency&quot;:&quot;USD&quot;,&quot;base&quot;:&quot;EUR&quot;,&quot;count&quot;:0,&quot;min&quot;:null,&quot;max&quot;:null,&quot;mean&quot;:null,&quot;points&quot;:[]}
+EOF
+&lt;/requirement&gt;
+&lt;requirement name=&quot;validate-history-requests&quot; stories=&quot;api_validation,api_history&quot;&gt;
+http H19 404 &#x27;/history/HRK&#x27; &lt; /dev/null
+http H21 422 &#x27;/history/GBP?start=2025-01-31-x&#x27; &lt; /dev/null
+&lt;/requirement&gt;
+&lt;requirement name=&quot;expose-newly-loaded-rates&quot; stories=&quot;cli_load,database,api_health_stats,api_rates,api_history&quot;&gt;
+# ── L. A load while the server runs is visible to the next request ───────────────────────
+check L1 0 load &quot;$DATA/eurofxref-hist_2025-02-03_04.csv&quot; &lt;&lt;&#x27;EOF&#x27;
+dates,rates
+2,16
+EOF
+http L2 200 &#x27;/stats&#x27; &lt;&lt;&#x27;EOF&#x27;
+{&quot;dates&quot;:24,&quot;rates&quot;:192,&quot;first&quot;:&quot;2025-01-02&quot;,&quot;last&quot;:&quot;2025-02-04&quot;}
+EOF
+http L3 200 &#x27;/rates/latest&#x27; &lt;&lt;&#x27;EOF&#x27;
+{&quot;date&quot;:&quot;2025-02-04&quot;,&quot;requested&quot;:&quot;latest&quot;,&quot;base&quot;:&quot;EUR&quot;,&quot;rates&quot;:{&quot;AUD&quot;:&quot;1.6629&quot;,&quot;CAD&quot;:&quot;1.4894&quot;,&quot;CHF&quot;:&quot;0.9396&quot;,&quot;CNY&quot;:&quot;7.4943&quot;,&quot;GBP&quot;:&quot;0.83188&quot;,&quot;JPY&quot;:&quot;160.52&quot;,&quot;SEK&quot;:&quot;11.418&quot;,&quot;USD&quot;:&quot;1.0335&quot;}}
+EOF
+http L4 200 &#x27;/rates/2025-02-01&#x27; &lt;&lt;&#x27;EOF&#x27;
+{&quot;date&quot;:&quot;2025-01-31&quot;,&quot;requested&quot;:&quot;2025-02-01&quot;,&quot;base&quot;:&quot;EUR&quot;,&quot;rates&quot;:{&quot;AUD&quot;:&quot;1.6702&quot;,&quot;CAD&quot;:&quot;1.5035&quot;,&quot;CHF&quot;:&quot;0.9449&quot;,&quot;CNY&quot;:&quot;7.5363&quot;,&quot;GBP&quot;:&quot;0.83608&quot;,&quot;JPY&quot;:&quot;160.99&quot;,&quot;SEK&quot;:&quot;11.474&quot;,&quot;USD&quot;:&quot;1.0393&quot;}}
+EOF
+http L5 200 &#x27;/history/AUD?start=2025-01-30&#x27; &lt;&lt;&#x27;EOF&#x27;
+{&quot;currency&quot;:&quot;AUD&quot;,&quot;base&quot;:&quot;EUR&quot;,&quot;count&quot;:4,&quot;min&quot;:&quot;1.6629&quot;,&quot;max&quot;:&quot;1.6705&quot;,&quot;mean&quot;:&quot;1.667675&quot;,&quot;points&quot;:[{&quot;date&quot;:&quot;2025-01-30&quot;,&quot;rate&quot;:&quot;1.6705&quot;},{&quot;date&quot;:&quot;2025-01-31&quot;,&quot;rate&quot;:&quot;1.6702&quot;},{&quot;date&quot;:&quot;2025-02-03&quot;,&quot;rate&quot;:&quot;1.6671&quot;},{&quot;date&quot;:&quot;2025-02-04&quot;,&quot;rate&quot;:&quot;1.6629&quot;}]}
+EOF
+&lt;/requirement&gt;
+&lt;unattached story=&quot;architecture&quot;/&gt;
+&lt;unattached story=&quot;cli_fetch&quot;/&gt;
+&lt;unattached story=&quot;verification&quot;/&gt;</pre></article>
+</main>
+</body>
+</html>

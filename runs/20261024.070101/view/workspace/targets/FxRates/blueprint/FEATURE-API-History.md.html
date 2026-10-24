@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-API-History.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-API-History.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-API-History.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Currency History</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Returns a currency&#x27;s stored rate history and summary statistics.</td></tr><tr><td>Depends On</td><td>DATABASE.md</td></tr><tr><td>Provides</td><td>GET /history/{code}</td></tr><tr><td>Consumes</td><td>rates repository operations</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Return ascending publication-date points for a currency, optionally bounded by inclusive <code>start</code> and <code>end</code> dates. Rates, minimum, and maximum preserve stored text. Compute the exact mean with decimal arithmetic and half-even rounding to six decimal places. When the selected range has no points, return an empty points list, count zero, and null statistics. Return 404 when the currency has no stored rate at all.</p>
+<h2>Database Interface</h2>
+<ul><li><code>FEATURE-RATE-002</code> — read: list rates with optional date and currency filters - supplies: <code>date</code>, <code>currency</code> - returns: <code>id</code>, <code>date</code>, <code>currency</code>, <code>rate</code></li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>Requires: python-package=httpx; scope=test</p>
+<p>=== AC history-range ===<br>Intent: The history endpoint returns the stored rate as a point for an inclusive single-date range.</p>
+<p>from persistence.testing import db_session from app_server.testing import web_client</p>
+<p>publication = &quot;2099-01-02&quot; currency = &quot;ZZZ&quot; rate = &quot;1.2300&quot; with db_session() as db: db.rates.upsert(date=publication, currency=currency, rate=rate)</p>
+<p>response = web_client().get( f&quot;/history/{currency}&quot;, params={&quot;start&quot;: publication, &quot;end&quot;: publication} ) body = response.json() assert response.status_code == 200 assert body[&quot;currency&quot;] == currency assert body[&quot;count&quot;] == 1 assert body[&quot;points&quot;] == [{&quot;date&quot;: publication, &quot;rate&quot;: rate}] assert body[&quot;min&quot;] == rate assert body[&quot;max&quot;] == rate assert body[&quot;mean&quot;] == &quot;1.230000&quot; === END AC history-range ===</p>
+<p>=== AC history-empty-range ===<br>Intent: A known currency with no points in the selected range returns empty statistics.</p>
+<p>from persistence.testing import db_session from app_server.testing import web_client</p>
+<p>publication = &quot;2099-01-02&quot; currency = &quot;ZZZ&quot; with db_session() as db: db.rates.upsert(date=publication, currency=currency, rate=&quot;1.23&quot;)</p>
+<p>response = web_client().get( f&quot;/history/{currency}&quot;, params={&quot;start&quot;: &quot;1999-01-01&quot;, &quot;end&quot;: &quot;1999-01-02&quot;} ) body = response.json() assert response.status_code == 200 assert body[&quot;count&quot;] == 0 assert body[&quot;min&quot;] is None assert body[&quot;max&quot;] is None assert body[&quot;mean&quot;] is None assert body[&quot;points&quot;] == [] === END AC history-empty-range ===</p>
+<p>=== AC history-malformed-bound ===<br>Intent: A malformed date bound is rejected with the request-validation status.</p>
+<p>from app_server.testing import web_client</p>
+<p>response = web_client().get(&quot;/history/ZZZ&quot;, params={&quot;start&quot;: &quot;2099-13-01&quot;}) assert response.status_code == 422 === END AC history-malformed-bound ===</p>
+<p>=== AC history-unknown-currency ===<br>Intent: A currency with no stored history returns not found.</p>
+<p>from app_server.testing import web_client</p>
+<p>response = web_client().get(&quot;/history/ZZZ&quot;) assert response.status_code == 404 === END AC history-unknown-currency ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Preserve stored rate text in points, minimum, and maximum.</li><li>Calculate the mean with exact decimal arithmetic and half-even rounding.</li></ul></article>
+</main>
+</body>
+</html>

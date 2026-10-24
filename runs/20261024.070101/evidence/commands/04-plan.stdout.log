@@ -1,0 +1,100 @@
+Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
+2026-10-24 03:01:49 EDT  Calling CODEX/gpt-6-luna (plan · topology)...
+  Completed CODEX/gpt-6-luna (plan · topology)  rc=0
+========================================================================
+PLAN PROGRESS  ·  STAGE 1 · TOPOLOGY
+========================================================================
+Topology Created:  True
+Blueprints Created: 0 / 14
+Manifest Created:  False
+Blueprints Remaining: 14
+Batch Result:       Topology accepted
+========================================================================
+2026-10-24 03:02:12 EDT  Calling CODEX/gpt-6-luna (plan · blueprint batch 1)...
+  Completed CODEX/gpt-6-luna (plan · blueprint batch 1)  rc=0
+========================================================================
+PLAN PROGRESS  ·  STAGE 2 · BLUEPRINT BATCH 1
+========================================================================
+Topology Created:  True
+Blueprints Created: 1 / 14
+Manifest Created:  False
+Blueprints Remaining: 13
+Batch Result:       Accepted 1 Blueprint(s)
+========================================================================
+2026-10-24 03:02:33 EDT  Calling CODEX/gpt-6-luna (plan · blueprint batch 2)...
+  Completed CODEX/gpt-6-luna (plan · blueprint batch 2)  rc=0
+[plan] artifact rejected — FEATURE-CLI-Fetch.md: incomplete or nested artifact envelope; emit one complete body ending with `=== END ARTIFACT ===` on its own line
+========================================================================
+PLAN PROGRESS  ·  STAGE 2 · BLUEPRINT BATCH 2
+========================================================================
+Topology Created:  True
+Blueprints Created: 3 / 14
+Manifest Created:  False
+Blueprints Remaining: 11
+Batch Result:       Accepted 2 Blueprint(s)
+========================================================================
+2026-10-24 03:03:17 EDT  Calling CODEX/gpt-6-luna (plan · blueprint batch 3)...
+[output] artifacts repaired: FEATURE-API-Currencies.md: completed final `=== END ARTIFACT` as `=== END ARTIFACT ===`
+  Completed CODEX/gpt-6-luna (plan · blueprint batch 3)  rc=0
+========================================================================
+PLAN PROGRESS  ·  STAGE 2 · BLUEPRINT BATCH 3
+========================================================================
+Topology Created:  True
+Blueprints Created: 8 / 14
+Manifest Created:  False
+Blueprints Remaining: 6
+Batch Result:       Accepted 5 Blueprint(s)
+========================================================================
+2026-10-24 03:03:36 EDT  Calling CODEX/gpt-6-luna (plan · blueprint batch 4)...
+[output] artifacts repaired: FEATURE-CLI-Serve.md: completed final `=== END ARTIFACT` as `=== END ARTIFACT ===`
+  Completed CODEX/gpt-6-luna (plan · blueprint batch 4)  rc=0
+========================================================================
+PLAN PROGRESS  ·  STAGE 2 · BLUEPRINT BATCH 4
+========================================================================
+Topology Created:  True
+Blueprints Created: 13 / 14
+Manifest Created:  False
+Blueprints Remaining: 1
+Batch Result:       Accepted 5 Blueprint(s)
+========================================================================
+2026-10-24 03:04:05 EDT  Calling CODEX/gpt-6-luna (plan · blueprint batch 5)...
+[output] artifacts repaired: VERIFICATION.md: completed final `=== END ARTIFACT` as `=== END ARTIFACT ===`
+  Completed CODEX/gpt-6-luna (plan · blueprint batch 5)  rc=0
+========================================================================
+PLAN PROGRESS  ·  STAGE 2 · BLUEPRINT BATCH 5
+========================================================================
+Topology Created:  True
+Blueprints Created: 14 / 14
+Manifest Created:  False
+Blueprints Remaining: 0
+Batch Result:       Accepted 1 Blueprint(s)
+========================================================================
+========================================================================
+PLAN PROGRESS  ·  STAGE 3 · MANIFEST
+========================================================================
+Topology Created:  True
+Blueprints Created: 14 / 14
+Manifest Created:  True
+Blueprints Remaining: 0
+Batch Result:       Manifest validated and serialized
+========================================================================
+2026-10-24 03:04:30 EDT  Calling CODEX/gpt-6-luna (lineage_attribute)...
+  Completed CODEX/gpt-6-luna (lineage_attribute)  rc=0
+2026-10-24 03:04:47 EDT  Calling CODEX/gpt-6-luna (lineage_attribute)...
+  Completed CODEX/gpt-6-luna (lineage_attribute)  rc=0
+2026-10-24 03:04:50 EDT  Calling CODEX/gpt-6-luna (lineage_attribute)...
+  Completed CODEX/gpt-6-luna (lineage_attribute)  rc=0
+2026-10-24 03:05:00 EDT  Calling CODEX/gpt-6-luna (lineage_attribute)...
+  Completed CODEX/gpt-6-luna (lineage_attribute)  rc=0
+2026-10-24 03:05:04 EDT  Calling CODEX/gpt-6-luna (lineage_attribute)...
+  Completed CODEX/gpt-6-luna (lineage_attribute)  rc=0
+
+Mode: OVERWRITE (Blueprint specs regenerated from analysis)
+Provider: codex / gpt-6-luna
+Graph: 0 features, 14 stories, 0 spikes, 0 acceptance gates
+Warnings: 4
+Outcome: updated
+Execution: 20261024.070149.752Z-9a12d206
+Elapsed: 4 minutes 8 seconds
+Review: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261024.070101/workspace/targets/FxRates/QuarterDeck
+Target - committed project workspace git store

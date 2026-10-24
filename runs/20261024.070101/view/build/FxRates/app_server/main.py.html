@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>build/FxRates/app_server/main.py</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>build/FxRates/app_server/main.py</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../build/FxRates/app_server/main.py">Raw file</a></div></header>
+<article class="doc"><pre>&quot;&quot;&quot;FastAPI application factory for FxRates.&quot;&quot;&quot;
+
+from fastapi import FastAPI
+
+
+def create_app() -&gt; FastAPI:
+    &quot;&quot;&quot;Create the API application; routes are added by their feature blocks.&quot;&quot;&quot;
+    return FastAPI(title=&quot;FxRates&quot;)
+
+
+app = create_app()
+</pre></article>
+</main>
+</body>
+</html>

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-CLI-Errors.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-CLI-Errors.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-CLI-Errors.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: CLI Errors</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Defines exit statuses and diagnostic behavior for command-line usage and operational failures.</td></tr><tr><td>Depends On</td><td>FEATURE-CLI-Init.md, FEATURE-CLI-Load.md, FEATURE-CLI-Fetch.md, FEATURE-CLI-Serve.md</td></tr><tr><td>Provides</td><td>CLI usage and operational error responses</td></tr><tr><td>Consumes</td><td>fxrates init, fxrates load, fxrates fetch, fxrates serve</td></tr></tbody></table></div>
+<h2>Behavior</h2>
+<p>The executable returns exit code 0 on success. Unknown commands, wrong argument counts, and a non-integer <code>--port</code> return exit code 2. Unreadable load files and fetch download failures return exit code 1. A failing command writes no standard output and exactly one diagnostic line to standard error. Diagnostic wording is concise and is not part of the response contract.</p>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC cli-usage-errors ===<br>Intent: Unknown commands, missing load arguments, and a non-integer server port return the usage exit status.</p>
+<p>from cli.testing import cli_runner</p>
+<p>assert cli_runner(&quot;frobnicate&quot;)[0] == 2 assert cli_runner(&quot;load&quot;)[0] == 2 assert cli_runner(&quot;serve&quot;, &quot;--port&quot;, &quot;notaport&quot;)[0] == 2 === END AC cli-usage-errors ===</p>
+<p>=== AC cli-operational-error ===<br>Intent: An unreadable input file returns the operational failure exit status.</p>
+<p>from cli.testing import cli_runner</p>
+<p>assert cli_runner(&quot;load&quot;, &quot;sources/no-such-file.csv&quot;)[0] == 1 === END AC cli-operational-error ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Failures produce no standard output.</li><li>Write one diagnostic line to standard error on failure.</li><li>Do not make diagnostic wording part of the contract.</li></ul></article>
+</main>
+</body>
+</html>

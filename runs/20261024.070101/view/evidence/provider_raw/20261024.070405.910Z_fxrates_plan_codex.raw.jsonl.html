@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/provider_raw/20261024.070405.910Z_fxrates_plan_codex.raw.jsonl</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/provider_raw/20261024.070405.910Z_fxrates_plan_codex.raw.jsonl</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/provider_raw/20261024.070405.910Z_fxrates_plan_codex.raw.jsonl">Raw file</a></div></header>
+<article class="doc"><pre>{&quot;type&quot;:&quot;thread.started&quot;,&quot;thread_id&quot;:&quot;01a16cb9-4f67-74b3-8fe8-ffd9452ff93e&quot;}
+{&quot;type&quot;:&quot;turn.started&quot;}
+{&quot;type&quot;:&quot;item.completed&quot;,&quot;item&quot;:{&quot;id&quot;:&quot;item_0&quot;,&quot;type&quot;:&quot;agent_message&quot;,&quot;text&quot;:&quot;=== BEGIN ARTIFACT VERIFICATION.md ===\n# FEATURE: Release Verification\n\n| Field       | Value |\n|-------------|-------|\n| Version     | 20261024 V1 |\n| Description | Defines the final verification run for the completed FxRates application. |\n| Depends On  | ARCHITECTURE.md, FEATURE-CLI-Init.md, FEATURE-CLI-Load.md, FEATURE-CLI-Errors.md, FEATURE-CLI-Fetch.md, FEATURE-API-Health-Stats.md, FEATURE-API-Currencies.md, FEATURE-API-Rates.md, FEATURE-API-Convert.md, FEATURE-API-History.md, FEATURE-API-Validation.md, FEATURE-CLI-Serve.md |\n| Provides    | Full supplied FxRates conformance verification |\n\n## Questions\n\n- None.\n\n## Purpose\n\nRun the supplied conformance harness as the terminal verification of the completed application. The harness initializes a fresh database, loads the supplied ECB fixtures, starts the service, and checks CLI behavior and HTTP responses. Its exit status is the verdict.\n\n## Verification\n\nThe authoritative suite is staged at `sources/run.sh`. Run it from the application root with `sh sources/run.sh` after all implementation stories have completed. Do not alter the harness or its fixtures.\n\n## Programmatic Acceptance\n\n=== AC full-conformance ===\nIntent: The completed application passes the supplied full FxRates conformance harness.\nSuite: full\n\nimport subprocess\n\nresult = subprocess.run(\n    [\&quot;sh\&quot;, \&quot;sources/run.sh\&quot;],\n    capture_output=True,\n    text=True,\n)\nprint(result.stdout)\nprint(result.stderr)\nassert result.returncode == 0\n=== END AC full-conformance ===\n\n## User Acceptance\n\n- None.\n\n## Guardrails\n\n- Do not modify, rewrite, regenerate, or substitute any file under `sources/`.\n- This verification runs only after every implementation story is complete.\n- The harness exit status is the acceptance signal; captured output is diagnostic only.\n=== END ARTIFACT&quot;}}
+{&quot;type&quot;:&quot;turn.completed&quot;,&quot;usage&quot;:{&quot;input_tokens&quot;:62948,&quot;cached_input_tokens&quot;:11520,&quot;cache_write_input_tokens&quot;:0,&quot;output_tokens&quot;:403,&quot;reasoning_output_tokens&quot;:0}}
+</pre></article>
+</main>
+</body>
+</html>

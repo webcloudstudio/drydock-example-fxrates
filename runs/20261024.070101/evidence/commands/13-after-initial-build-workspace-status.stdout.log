@@ -1,0 +1,16 @@
+Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
+Drydock status — workspace
+
+Target: FxRates
+   Phase:     Implement
+   State:     Failed: programmatic acceptance failed: rates-delete
+   Detail:    5 imported · 14 authored · metadata building
+   Analysis:  Ready · 13 stories · 0 questions · 0 blockers
+   Plan:      12 pending · 1 closed/implemented · 1 closed/failed
+   Next Step: drydock run quarterdeck FxRates
+   10-24:     ✅  drydock build status FxRates
+   10-24:     ❌  drydock build FxRates --override --repair-attempts 6
+   10-24:     ✅  drydock build status FxRates
+   10-24:     ✅  drydock plan verify FxRates
+   10-24:     ✅  drydock plan FxRates --override
+

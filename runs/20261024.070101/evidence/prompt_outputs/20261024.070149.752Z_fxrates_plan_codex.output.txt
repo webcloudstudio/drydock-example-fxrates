@@ -1,0 +1,293 @@
+=== BEGIN ARTIFACT TOPOLOGY.md ===
+## Declarations
+
+## story architecture
+summary:      Define application modules and ownership boundaries.
+type:         foundational
+kind:         capability
+phase:        1
+implements:   ARCHITECTURE.md
+stack:        common.md, python.md, fastapi.md, sqlite.md, cli.md
+provides:     application module boundaries
+acceptance:   yes
+instructions: |
+  Define the module boundaries and ownership rules for the CLI, API, configuration, and persistence library. Keep database-driver access inside the shipped persistence library.
+
+## story database
+summary:      Declare the rates schema and repository contract.
+type:         foundational
+kind:         capability
+phase:        1
+implements:   DATABASE.md
+stack:        common.md, python.md, persistence.md, sqlite.md
+provides:     rates repository operations
+depends:      architecture
+acceptance:   yes
+instructions: |
+  Declare the rates table and the repository operations needed by loading and API stories. Store published rate values as text, keyed by date and currency.
+
+## story cli_init
+summary:      Initialize an empty rates store.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-CLI-Init.md
+covers:       CLI-001
+stack:        common.md, python.md, cli.md, sqlite.md
+provides:     fxrates init
+consumes:     rates repository operations
+depends:      database
+accepts:       st-008
+acceptance:   yes
+instructions: |
+  Implement `fxrates init` to create an empty rates table and print nothing, using the declared persistence interface.
+
+## story cli_load
+summary:      Validate, load, and report ECB history files.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-CLI-Load.md
+covers:       CLI-002, CLI-003
+stack:        common.md, python.md, cli.md, sqlite.md
+provides:     fxrates load
+consumes:     rates repository operations
+depends:      database
+accepts:       st-003, st-008
+context:      sources/eurofxref-hist_2025-01.csv, sources/eurofxref-hist_2025-02-03_04.csv, sources/eurofxref-hist_bad.csv
+context_roles: |
+  eurofxref-hist_2025-01.csv: asset
+  eurofxref-hist_2025-02-03_04.csv: asset
+  eurofxref-hist_bad.csv: asset
+acceptance:   yes
+instructions: |
+  Implement whole-file validation before any write, skip N/A values, replace existing date and currency keys, and report dates and rates stored. A rejected file exits 3 and changes nothing.
+
+## story cli_errors
+summary:      Report CLI usage and operational errors.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-CLI-Errors.md
+covers:       CLI-004
+stack:        common.md, python.md, cli.md
+provides:     CLI usage and operational error responses
+consumes:     fxrates init, fxrates load, fxrates fetch, fxrates serve
+depends:      cli_init, cli_load, cli_fetch, cli_serve
+accepts:       st-007
+acceptance:   yes
+instructions: |
+  Implement conventional CLI usage and operational error handling: usage failures exit 2, unreadable files and fetch failures exit 1, with no stdout and one diagnostic line on stderr.
+
+## story cli_fetch
+summary:      Fetch and load the ECB history archive.
+type:         service
+kind:         integration
+phase:        1
+implements:   FEATURE-CLI-Fetch.md
+covers:       CLI-005
+stack:        common.md, python.md, cli.md
+provides:     fxrates fetch
+consumes:     fxrates load
+depends:      cli_load
+accepts:       st-009
+acceptance:   yes
+instructions: |
+  Download the ECB history ZIP, extract eurofxref-hist.csv, and load it with the same validation and reporting behavior as the load command. Keep tests offline by stubbing the download.
+
+## story api_health_stats
+summary:      Serve health and database statistics.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-API-Health-Stats.md
+covers:       API-001
+stack:        common.md, python.md, fastapi.md, sqlite.md
+provides:     GET /health, GET /stats
+consumes:     rates repository operations
+depends:      database
+accepts:       st-004, st-008
+acceptance:   yes
+instructions: |
+  Implement JSON health and statistics routes, including null first and last dates for an empty store.
+
+## story api_currencies
+summary:      List currencies with stored rates.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-API-Currencies.md
+covers:       API-002
+stack:        common.md, python.md, fastapi.md, sqlite.md
+provides:     GET /currencies
+consumes:     rates repository operations
+depends:      database
+accepts:       st-008
+acceptance:   yes
+instructions: |
+  Implement the currency listing route with EUR as base and stored currencies in ascending order.
+
+## story api_rates
+summary:      Resolve rates by effective publication date.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-API-Rates.md
+covers:       API-003
+stack:        common.md, python.md, fastapi.md, sqlite.md
+provides:     GET /rates/{date}, GET /rates/latest
+consumes:     rates repository operations
+depends:      database
+accepts:       st-005, st-008
+acceptance:   yes
+instructions: |
+  Implement date and latest rate routes. Resolve a requested date to the latest publication on or before it, and return 404 when no publication exists.
+
+## story api_convert
+summary:      Convert amounts between currencies using exact decimals.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-API-Convert.md
+covers:       API-004
+stack:        common.md, python.md, fastapi.md, sqlite.md
+provides:     GET /convert
+consumes:     rates repository operations
+depends:      database
+accepts:       st-005, st-006, st-007, st-008
+acceptance:   yes
+instructions: |
+  Implement conversion with exact Decimal arithmetic, half-even rounding, six decimal places for the rate, and two for the result. Resolve effective dates and return the specified validation and not-found statuses.
+
+## story api_history
+summary:      Return currency history and summary statistics.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-API-History.md
+covers:       API-005
+stack:        common.md, python.md, fastapi.md, sqlite.md
+provides:     GET /history/{code}
+consumes:     rates repository operations
+depends:      database
+accepts:       st-006, st-007, st-008
+acceptance:   yes
+instructions: |
+  Implement ascending currency history with inclusive optional bounds, stored text rates, exact Decimal mean rounded half-even to six places, and null statistics for empty ranges.
+
+## story api_validation
+summary:      Validate API request parameters and currency availability.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-API-Validation.md
+covers:       API-006
+stack:        common.md, python.md, fastapi.md
+provides:     API request validation behavior
+consumes:     GET /rates/{date}, GET /convert, GET /history/{code}
+depends:      api_rates, api_convert, api_history
+accepts:       st-007
+acceptance:   yes
+instructions: |
+  Ensure malformed dates and amounts and missing required query parameters return 422; unknown currencies and unavailable rates return 404.
+
+## story cli_serve
+summary:      Run the API server on the requested local port.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-CLI-Serve.md
+covers:       RUN-001
+stack:        common.md, python.md, cli.md, fastapi.md
+provides:     fxrates serve
+consumes:     FastAPI application
+depends:      api_health_stats
+accepts:       st-004
+acceptance:   yes
+instructions: |
+  Implement foreground serving on 127.0.0.1 at the requested port, defaulting to 8000, and stop cleanly on SIGTERM.
+
+## story verification
+summary:      Run the supplied full conformance harness.
+type:         service
+kind:         test harness
+phase:        1
+implements:   VERIFICATION.md
+covers:       RUN-002
+stack:        common.md, python.md
+depends:      cli_init, cli_load, cli_errors, cli_fetch, api_health_stats, api_currencies, api_rates, api_convert, api_history, api_validation, cli_serve
+acceptance:   yes
+context:      sources/run.sh, sources/eurofxref-hist_2025-01.csv, sources/eurofxref-hist_2025-02-03_04.csv, sources/eurofxref-hist_bad.csv
+context_roles: |
+  run.sh: harness
+  eurofxref-hist_2025-01.csv: asset
+  eurofxref-hist_2025-02-03_04.csv: asset
+  eurofxref-hist_bad.csv: asset
+instructions: |
+  As the terminal story, run the supplied harness in full and require success. This story depends on every implementation story.
+
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT DECISIONS.json ===
+[
+  {
+    "id": "Q-001",
+    "type": "choice",
+    "severity": "material",
+    "blueprint": "FEATURE-CLI-Init.md",
+    "story": "cli_init",
+    "title": "Initialization behavior",
+    "description": "The source requires init to drop and recreate the rates table, while the Compass describes creating an empty rates table. Use the narrower source behavior for this command.",
+    "options": [
+      {
+        "value": "drop_recreate",
+        "label": "Drop and recreate the rates table"
+      },
+      {
+        "value": "create_if_missing",
+        "label": "Create the rates table only when absent"
+      }
+    ],
+    "system_choice": "drop_recreate"
+  },
+  {
+    "id": "Q-002",
+    "type": "choice",
+    "severity": "material",
+    "blueprint": "FEATURE-CLI-Fetch.md",
+    "story": "cli_fetch",
+    "title": "ECB fetch transport",
+    "description": "The archive URL is specified but the transport details are not. Use Python's standard-library HTTPS support and stub the download in tests.",
+    "options": [
+      {
+        "value": "stdlib_https",
+        "label": "Standard-library HTTPS"
+      },
+      {
+        "value": "third_party_client",
+        "label": "Third-party HTTP client"
+      }
+    ],
+    "system_choice": "stdlib_https"
+  },
+  {
+    "id": "Q-003",
+    "type": "choice",
+    "severity": "material",
+    "blueprint": "FEATURE-CLI-Errors.md",
+    "story": "cli_errors",
+    "title": "Failure diagnostics",
+    "description": "The source specifies one diagnostic line on standard error but not its wording. Use concise messages for usage, file, and fetch failures.",
+    "options": [
+      {
+        "value": "concise_diagnostic",
+        "label": "Concise diagnostic"
+      },
+      {
+        "value": "detailed_diagnostic",
+        "label": "Detailed diagnostic"
+      }
+    ],
+    "system_choice": "concise_diagnostic"
+  }
+]
+=== END ARTIFACT ===

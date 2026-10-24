@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/evidence/block-2.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/evidence/block-2.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/evidence/block-2.md">Raw file</a></div></header>
+<article class="doc"><h1>Evidence: Block 2 · Foundational (block-2)</h1>
+<ul><li>block type: block</li><li>date: 2026-10-24</li><li>resulting state: closed/failed</li><li>story points (combined assembled cost): 9596</li><li>execution id: -</li></ul>
+<h2>Stories built</h2>
+<ul><li>Declare the rates schema and repository contract. (database) [story]</li></ul>
+<h2>Stacked context</h2>
+<ul><li>stack: python_compact.md (SP 601)</li><li>compass: COMPASS.md (SP 752)</li><li>implements: DATABASE.md (SP 1337)</li><li>stack: common_compact.md (SP 1079)</li><li>stack: persistence.md (SP 3845)</li><li>stack: sqlite_compact.md (SP 1943)</li></ul>
+<h2>Pre-build acceptance observation</h2>
+<ul><li>RED: rates-upsert (DATABASE.md)</li></ul>
+<p>intent: The rates upsert operation stores the supplied published text and replaces the row for the same date and currency. return code: 1 stderr: Traceback (most recent call last): File &quot;rates-upsert.py&quot;, line 1, in &lt;module&gt; from persistence.testing import db_session<br>ModuleNotFoundError: No module named &#x27;persistence.testing&#x27;</p>
+<ul><li>RED: rates-list (DATABASE.md)</li></ul>
+<p>intent: The rates list operation returns stored rows and applies its declared date and currency equality filters. return code: 1 stderr: Traceback (most recent call last): File &quot;rates-list.py&quot;, line 1, in &lt;module&gt; from persistence.testing import db_session<br>ModuleNotFoundError: No module named &#x27;persistence.testing&#x27;</p>
+<ul><li>RED: rates-delete (DATABASE.md)</li></ul>
+<p>intent: The rates delete operation removes only the row selected by its date and currency key. return code: 1 stderr: Traceback (most recent call last): File &quot;rates-delete.py&quot;, line 1, in &lt;module&gt; from persistence.testing import db_session<br>ModuleNotFoundError: No module named &#x27;persistence.testing&#x27;</p>
+<h2>Post-build programmatic acceptance</h2>
+<ul><li>PASS: rates-upsert (DATABASE.md)</li></ul>
+<p>intent: The rates upsert operation stores the supplied published text and replaces the row for the same date and currency. target interpreter: /mnt/c/Users/barlo/projects/drydock/.venv/bin/python provisioning: not requested return code: 0</p>
+<ul><li>PASS: rates-list (DATABASE.md)</li></ul>
+<p>intent: The rates list operation returns stored rows and applies its declared date and currency equality filters. target interpreter: /mnt/c/Users/barlo/projects/drydock/.venv/bin/python provisioning: not requested return code: 0</p>
+<ul><li>FAIL: rates-delete (DATABASE.md)</li></ul>
+<p>intent: The rates delete operation removes only the row selected by its date and currency key. target interpreter: /mnt/c/Users/barlo/projects/drydock/.venv/bin/python provisioning: not requested return code: 1 stderr: --- drydock: values at failure --- operation = Operation(identifier=&#x27;FEATURE-RATE-003&#x27;, table=&#x27;rates&#x27;, verb=&#x27;delete&#x27;, inputs=(&#x27;date&#x27;, &#x27;currency&#x27;), row=&lt;class &#x27;persistence.schema.FieldType&#x27;&gt;, columns=(&#x27;date&#x27;, &#x27;currency&#x27;), match=(&#x27;date&#x27;, &#x27;currency&#x27;), name=&#x27;delete&#x27;) --- drydock: end values --- Traceback (most recent call last): File &quot;/mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261024.070101/build/FxRates/persistence/db.py&quot;, line 390, in run result = self._dispatch(operation, cursor, names, values) ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ File &quot;/mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261024.070101/build/FxRates/persistence/db.py&quot;, line 474, in _dispatch return self._build(operation, names, values) if cursor.rowcount else None ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ File &quot;/mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261024.070101/build/FxRates/persistence/db.py&quot;, line 503, in _build return operation.row(**{ ^^^^^^^^^^^^^^^^^<br>TypeError: FieldType.<strong>init</strong>() missing 2 required positional arguments: &#x27;id&#x27; and &#x27;rate&#x27;</p>
+<p>The above exception was the direct cause of the following exception:</p>
+<p>Traceback (most recent call last): File &quot;rates-delete.py&quot;, line 8, in &lt;module&gt; deleted = db.rates.delete(date=date, currency=currency) ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ File &quot;/mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261024.070101/build/FxRates/persistence/db.py&quot;, line 218, in &lt;lambda&gt; return lambda **arguments: self._database.run(operation, arguments) ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ File &quot;/mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261024.070101/build/FxRates/persistence/db.py&quot;, line 398, in run raise PersistenceError(f&quot;{operation.identifier} failed: {exc}&quot;) from exc persistence.db.PersistenceError: FEATURE-RATE-003 failed: FieldType.<strong>init</strong>() missing 2 required positional arguments: &#x27;id&#x27; and &#x27;rate&#x27;</p>
+<h2>Failure</h2>
+<ul><li>summary: programmatic acceptance failed: rates-delete</li><li>detail:</li></ul>
+<p>Block &quot;Block 2 · Foundational&quot; [block-2] failed its acceptance criteria. Story &quot;Declare the rates schema and repository contract.&quot; [database] does not meet its own acceptance criteria:</p>
+<ul><li>AC rates-delete — The rates delete operation removes only the row selected by its date and currency key.</li></ul>
+<p>assertion: persistence.db.PersistenceError: FEATURE-RATE-003 failed: FieldType.<strong>init</strong>() missing 2 required positional arguments: &#x27;id&#x27; and &#x27;rate&#x27; raised at: db.py:398 process exit code: 1 error: persistence.db.PersistenceError: FEATURE-RATE-003 failed: FieldType.<strong>init</strong>() missing 2 required positional arguments: &#x27;id&#x27; and &#x27;rate&#x27; values at failure: operation = Operation(identifier=&#x27;FEATURE-RATE-003&#x27;, table=&#x27;rates&#x27;, verb=&#x27;delete&#x27;, inputs=(&#x27;date&#x27;, &#x27;currency&#x27;), row=&lt;class &#x27;persistence.schema.FieldType&#x27;&gt;, columns=(&#x27;date&#x27;, &#x27;currency&#x27;), match=(&#x27;date&#x27;, &#x27;currency&#x27;), name=&#x27;delete&#x27;) check stderr: result = self._dispatch(operation, cursor, names, values) ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ File &quot;/mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261024.070101/build/FxRates/persistence/db.py&quot;, line 474, in _dispatch return self._build(operation, names, values) if cursor.rowcount else None ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ File &quot;/mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261024.070101/build/FxRates/persistence/db.py&quot;, line 503, in _build return operation.row(**{ ^^^^^^^^^^^^^^^^^<br>TypeError: FieldType.<strong>init</strong>() missing 2 required positional arguments: &#x27;id&#x27; and &#x27;rate&#x27; The above exception was the direct cause of the following exception: Traceback (most recent call last): File &quot;rates-delete.py&quot;, line 8, in &lt;module&gt; deleted = db.rates.delete(date=date, currency=currency) ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ File &quot;/mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261024.070101/build/FxRates/persistence/db.py&quot;, line 218, in &lt;lambda&gt; return lambda **arguments: self._database.run(operation, arguments) ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ File &quot;/mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261024.070101/build/FxRates/persistence/db.py&quot;, line 398, in run raise PersistenceError(f&quot;{operation.identifier} failed: {exc}&quot;) from exc persistence.db.PersistenceError: FEATURE-RATE-003 failed: FieldType.<strong>init</strong>() missing 2 required positional arguments: &#x27;id&#x27; and &#x27;rate&#x27; … 2 earlier line(s) omitted, --full for all</p>
+<h2>Build summary</h2>
+<p>(no summary returned)</p></article>
+</main>
+</body>
+</html>

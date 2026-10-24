@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/commands/10-initial-build-1.stdout.log</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/commands/10-initial-build-1.stdout.log</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/commands/10-initial-build-1.stdout.log">Raw file</a></div></header>
+<article class="doc"><pre>Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
+Build: FxRates
+scope: entire project
+frontier: architecture
+git: baseline FxRates cc66f0cc02b1
+git: baseline FxRates 9617167dd033
+
+BLOCK block-1  name=&quot;Block 1 · Foundational&quot;  calls_max=7
+  story=architecture  &quot;Define application modules and ownership boundaries.&quot;
+
+  [call 1/7]  kind=initial  llm=codex/gpt-6-luna
+    result=ok  rc=0  execution=20261024.070717.782Z-d3efcda1
+    acceptance=2/2
+git: block-1 | python.md, ARCHITECTURE.md | call=1 | app=4fe7f4f3bded target=b2c2c9190aa3
+
+  DONE  story=architecture  state=closed/implemented  execution=20261024.070717.782Z-d3efcda1  elapsed=48.3s
+git: block-1 | python.md, ARCHITECTURE.md | step_completed | app=unchanged target=92a6b5bebe05
+
+  FAILED  story=database  state=closed/failed  elapsed=6.3s
+git: block-2 | DATABASE.md | step_completed | app=eedd8f1ff930 target=1502a322bda9
+
+result: 1 built, 1 failed, 0 unchanged
+elapsed: 1 minute 34 seconds
+
+========================================================================
+BUILD FAILED: FxRates  (1 step)
+========================================================================
+
+  Failure
+    Provenance
+      Target: FxRates
+      Block: Block 2 · Foundational [block-2]
+      Story: Declare the rates schema and repository contract. [database]
+    Cause: programmatic acceptance failed: rates-delete
+    acceptance: 2/3 passing · baseline 0/3 · improved
+    Assertion
+      Acceptance checks:
+      Acceptance: rates-delete
+      Intent: The rates delete operation removes only the row selected by its date and currency key.
+      Source: DATABASE.md
+      Code: (assertion not captured)
+    Result
+      Process exit code: 1
+      Error: persistence.db.PersistenceError: FEATURE-RATE-003 failed: FieldType.__init__() missing 2 required positional arguments: &#x27;id&#x27; and &#x27;rate&#x27;
+      Stderr:
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+          File &quot;/mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261024.070101/build/FxRates/persistence/db.py&quot;, line 398, in run
+            raise PersistenceError(f&quot;{operation.identifier} failed: {exc}&quot;) from exc
+        persistence.db.PersistenceError: FEATURE-RATE-003 failed: FieldType.__init__() missing 2 required positional arguments: &#x27;id&#x27; and &#x27;rate&#x27;
+    Recovery
+      Run: drydock build FxRates
+        to continue the build. This story resumes where it left off and is
+        retried against the checks it failed.
+    evidence: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261024.070101/workspace/targets/FxRates/evidence/block-2.md
+
+  Next
+    Run: drydock build FxRates
+      to continue the build. This story resumes where it left off and is
+      retried against the checks it failed.
+========================================================================
+
+========================================================================
+POST-LLM FAILURE  ·  build  ·  programmatic acceptance failed: rates-delete
+========================================================================
+
+  Block &quot;Block 2 · Foundational&quot; [block-2] failed its acceptance
+  criteria.
+    Story &quot;Declare the rates schema and repository contract.&quot; [database] does not meet its own acceptance criteria:
+      - AC rates-delete — The rates delete operation removes only the row selected by its date and currency key.
+          assertion: persistence.db.PersistenceError: FEATURE-RATE-003 failed: FieldType.__init__() missing 2 required positional arguments: &#x27;id&#x27; and &#x27;rate&#x27;
+          raised at: db.py:398
+          process exit code: 1
+          error: persistence.db.PersistenceError: FEATURE-RATE-003 failed: FieldType.__init__() missing 2 required positional arguments: &#x27;id&#x27; and &#x27;rate&#x27;
+          values at failure:
+  … (23 more lines truncated)
+
+  Recovery
+    Run: drydock build FxRates
+      to continue the build. This story resumes where it left off and is retried against the checks it failed.
+
+========================================================================
+Target - committed project workspace git store
+</pre></article>
+</main>
+</body>
+</html>
