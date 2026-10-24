@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/evidence/block-2.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/evidence/block-2.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/evidence/block-2.md">Raw file</a></div></header>
+<article class="doc"><h1>Evidence: Block 2 · Foundational (block-2)</h1>
+<ul><li>block type: block</li><li>date: 2026-10-24</li><li>resulting state: closed/verified</li><li>story points (combined assembled cost): 12403</li><li>execution id: 20261024.052707.533Z-f67e7d93</li></ul>
+<h2>Stories built</h2>
+<ul><li>Declare the rates schema and generated persistence operations. (database) [story]</li><li>Establish the FastAPI application and server test client. (app-server-foundation) [story]</li><li>Establish the fxrates command entry point. (cli-foundation) [story]</li></ul>
+<h2>Reusable compacts</h2>
+<ul><li>DATABASE_compact.md</li><li>ARCHITECTURE_compact.md</li></ul>
+<h2>Stacked context</h2>
+<ul><li>stack: python_compact.md (SP 601)</li><li>compass: COMPASS.md (SP 752)</li><li>implements: DATABASE.md (SP 1486)</li><li>stack: persistence.md (SP 3834)</li><li>stack: sqlite.md (SP 2160)</li><li>implements: FEATURE-API-Foundation.md (SP 404)</li><li>context: ARCHITECTURE.md (SP 494)</li><li>context: DATABASE.md (SP 1486)</li><li>stack: fastapi.md (SP 497)</li><li>implements: FEATURE-CLI-Foundation.md (SP 324)</li><li>stack: cli.md (SP 1755)</li></ul>
+<h2>Build directory changes</h2>
+<ul><li>app_server/<strong>init</strong>.py</li><li>app_server/main.py</li><li>app_server/testing.py</li><li>bin/run.ps1</li><li>bin/run.sh</li><li>cli/<strong>init</strong>.py</li><li>cli/<strong>main</strong>.py</li><li>cli/commands.py</li><li>cli/parser.py</li><li>cli/testing.py</li><li>config.py</li><li>fxrates</li><li>pyproject.toml</li><li>tests/test_foundations.py</li><li>app_server.py</li><li>cli.py</li></ul>
+<h2>Pre-build acceptance observation</h2>
+<ul><li>RED: rates-get (DATABASE.md)</li></ul>
+<p>intent: A rate can be retrieved by its unique publication date and currency key. return code: 1 stderr: Traceback (most recent call last): File &quot;rates-get.py&quot;, line 1, in &lt;module&gt; from persistence.testing import db_session<br>ModuleNotFoundError: No module named &#x27;persistence.testing&#x27;</p>
+<ul><li>RED: rates-list (DATABASE.md)</li></ul>
+<p>intent: Rate rows can be listed and filtered by declared equality fields. return code: 1 stderr: Traceback (most recent call last): File &quot;rates-list.py&quot;, line 1, in &lt;module&gt; from persistence.testing import db_session<br>ModuleNotFoundError: No module named &#x27;persistence.testing&#x27;</p>
+<ul><li>RED: rates-upsert (DATABASE.md)</li></ul>
+<p>intent: Storing a rate inserts it and replaces the value for the same date and currency. return code: 1 stderr: Traceback (most recent call last): File &quot;rates-upsert.py&quot;, line 1, in &lt;module&gt; from persistence.testing import db_session<br>ModuleNotFoundError: No module named &#x27;persistence.testing&#x27;</p>
+<ul><li>RED: rates-delete (DATABASE.md)</li></ul>
+<p>intent: A stored rate can be deleted by its unique publication date and currency key. return code: 1 stderr: Traceback (most recent call last): File &quot;rates-delete.py&quot;, line 1, in &lt;module&gt; from persistence.testing import db_session<br>ModuleNotFoundError: No module named &#x27;persistence.testing&#x27;</p>
+<ul><li>RED: app-factory (FEATURE-API-Foundation.md)</li></ul>
+<p>intent: The application factory returns a FastAPI application. return code: 1 stderr: Traceback (most recent call last): File &quot;app-factory.py&quot;, line 2, in &lt;module&gt; from app_server.main import create_app<br>ModuleNotFoundError: No module named &#x27;app_server.main&#x27;; &#x27;app_server&#x27; is not a package</p>
+<ul><li>RED: app-instance (FEATURE-API-Foundation.md)</li></ul>
+<p>intent: The module exports an application instance usable by the server entry point. return code: 1 stderr: Traceback (most recent call last): File &quot;app-instance.py&quot;, line 2, in &lt;module&gt; from app_server.main import app<br>ModuleNotFoundError: No module named &#x27;app_server.main&#x27;; &#x27;app_server&#x27; is not a package</p>
+<ul><li>RED: web-client (FEATURE-API-Foundation.md)</li></ul>
+<p>intent: The published callable returns a client that can issue HTTP requests. return code: 1 stderr: Traceback (most recent call last): File &quot;web-client.py&quot;, line 1, in &lt;module&gt; from fastapi.testclient import TestClient File &quot;/mnt/c/Users/barlo/projects/drydock/.venv/lib/python3.12/site-packages/fastapi/testclient.py&quot;, line 1, in &lt;module&gt; from starlette.testclient import TestClient as TestClient  # noqa ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ File &quot;/mnt/c/Users/barlo/projects/drydock/.venv/lib/python3.12/site-packages/starlette/testclient.py&quot;, line 35, in &lt;module&gt; raise RuntimeError(<br>RuntimeError: The starlette.testclient module requires the httpx2 package to be installed. You can install this with: $ pip install httpx2</p>
+<ul><li>RED: cli-main (FEATURE-CLI-Foundation.md)</li></ul>
+<p>intent: The CLI exposes its documented callable entry point. return code: 1 stderr: Traceback (most recent call last): File &quot;cli-main.py&quot;, line 1, in &lt;module&gt; from cli import main<br>ImportError: cannot import name &#x27;main&#x27; from &#x27;cli&#x27; (/mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261024.051856/build/FxRates/cli.py)</p>
+<ul><li>RED: cli-runner (FEATURE-CLI-Foundation.md)</li></ul>
+<p>intent: The in-process CLI runner returns an exit code and captured output streams. return code: 1 stderr: Traceback (most recent call last): File &quot;cli-runner.py&quot;, line 1, in &lt;module&gt; from cli.testing import cli_runner<br>ModuleNotFoundError: No module named &#x27;cli.testing&#x27;; &#x27;cli&#x27; is not a package</p>
+<h2>Post-build programmatic acceptance</h2>
+<ul><li>PASS: rates-get (DATABASE.md)</li></ul>
+<p>intent: A rate can be retrieved by its unique publication date and currency key. target interpreter: /mnt/c/Users/barlo/projects/drydock/.venv/bin/python provisioning: not required return code: 0</p>
+<ul><li>PASS: rates-list (DATABASE.md)</li></ul>
+<p>intent: Rate rows can be listed and filtered by declared equality fields. target interpreter: /mnt/c/Users/barlo/projects/drydock/.venv/bin/python provisioning: not required return code: 0</p>
+<ul><li>PASS: rates-upsert (DATABASE.md)</li></ul>
+<p>intent: Storing a rate inserts it and replaces the value for the same date and currency. target interpreter: /mnt/c/Users/barlo/projects/drydock/.venv/bin/python provisioning: not required return code: 0</p>
+<ul><li>PASS: rates-delete (DATABASE.md)</li></ul>
+<p>intent: A stored rate can be deleted by its unique publication date and currency key. target interpreter: /mnt/c/Users/barlo/projects/drydock/.venv/bin/python provisioning: not required return code: 0</p>
+<ul><li>PASS: app-factory (FEATURE-API-Foundation.md)</li></ul>
+<p>intent: The application factory returns a FastAPI application. target interpreter: /mnt/c/Users/barlo/projects/drydock/.venv/bin/python provisioning: not required return code: 0</p>
+<ul><li>PASS: app-instance (FEATURE-API-Foundation.md)</li></ul>
+<p>intent: The module exports an application instance usable by the server entry point. target interpreter: /mnt/c/Users/barlo/projects/drydock/.venv/bin/python provisioning: not required return code: 0</p>
+<ul><li>PASS: web-client (FEATURE-API-Foundation.md)</li></ul>
+<p>intent: The published callable returns a client that can issue HTTP requests. target interpreter: /mnt/c/Users/barlo/projects/drydock/.venv/bin/python provisioning: not required return code: 0 stderr: /mnt/c/Users/barlo/projects/drydock/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using <code>httpx</code> with <code>starlette.testclient</code> is deprecated; install <code>httpx2</code> instead. from starlette.testclient import TestClient as TestClient  # noqa</p>
+<ul><li>PASS: cli-main (FEATURE-CLI-Foundation.md)</li></ul>
+<p>intent: The CLI exposes its documented callable entry point. target interpreter: /mnt/c/Users/barlo/projects/drydock/.venv/bin/python provisioning: not required return code: 0 stderr: error: a command is required</p>
+<ul><li>PASS: cli-runner (FEATURE-CLI-Foundation.md)</li></ul>
+<p>intent: The in-process CLI runner returns an exit code and captured output streams. target interpreter: /mnt/c/Users/barlo/projects/drydock/.venv/bin/python provisioning: not required return code: 0</p>
+<h2>Build summary</h2>
+<p>&lt;reusable-compact filename=&quot;DATABASE.md&quot;&gt;</p>
+<h1>FxRates persistence contract</h1>
+<p>The generated <code>persistence</code> package is the only database access boundary. It exposes <code>open_database(dsn)</code>, <code>SCHEMA</code>, and <code>db.rates</code> operations. Rates retain ECB text exactly; arithmetic belongs in application services and uses <code>decimal</code>.</p>
+<p>The <code>rates</code> table has <code>id INTEGER PRIMARY KEY</code>, <code>date TEXT NOT NULL</code>, <code>currency TEXT NOT NULL</code>, and <code>rate TEXT NOT NULL</code>, with a unique <code>(date, currency)</code> key.</p>
+<ul><li><code>rates.get(date: str, currency: str)</code> returns a rate row or <code>None</code>.</li><li><code>rates.list(date?: str, currency?: str)</code> returns rows filtered by supplied equality fields.</li><li><code>rates.upsert(date: str, currency: str, rate: str)</code> inserts or replaces a rate and returns its row.</li><li><code>rates.delete(date: str, currency: str)</code> deletes the matching row and returns its date and currency or <code>None</code>.</li></ul>
+<p>Resolve the database location from <code>DATABASE_URL</code>, then <code>DATABASE_PATH</code>, then <code>data/app.db</code>. <code>fxrates init</code> resets the rates store through the persistence boundary. Do not access the database driver outside <code>persistence/</code> or create schema at application startup.</p>
+<p>Database criteria use <code>persistence.testing.db_session()</code> and its configured, provisioned store. Pass its yielded database through the operation and read back state in the same rollback transaction. Do not replace the configured store or delete unrelated records. &lt;/reusable-compact&gt;</p>
+<p>&lt;reusable-compact filename=&quot;ARCHITECTURE.md&quot;&gt;</p>
+<h1>FxRates module contract</h1>
+<ul><li><code>cli</code> owns command dispatch and the root <code>./fxrates</code> entry point; it depends on application services and configuration.</li><li><code>app_server</code> owns the FastAPI factory, routes, and HTTP test client; it depends on application services.</li><li>Application services own CSV validation, ingestion, rate lookup, conversion, and history calculations; they use only public <code>persistence</code> operations.</li><li><code>persistence</code> owns the database connection, schema, and generated repository operations.</li><li>Configuration owns database location resolution from environment variables.</li></ul>
+<p>Python 3.11+, FastAPI, SQLite through the generated persistence library, pytest, and ECB CSV/ZIP inputs are the specified stack. Preserve published rate text and use <code>decimal</code> for calculations. The public packages <code>cli</code>, <code>app_server</code>, and <code>persistence</code> must be importable. &lt;/reusable-compact&gt;</p>
+<p>RESULT: SUCCESS</p>
+<p>FILES CHANGED:</p>
+<ul><li>app_server.py (removed placeholder)</li><li>app_server/<strong>init</strong>.py</li><li>app_server/main.py</li><li>app_server/testing.py</li><li>bin/run.ps1</li><li>bin/run.sh</li><li>cli.py (removed placeholder)</li><li>cli/<strong>init</strong>.py</li><li>cli/<strong>main</strong>.py</li><li>cli/commands.py</li><li>cli/parser.py</li><li>cli/testing.py</li><li>config.py</li><li>fxrates</li><li>pyproject.toml</li><li>tests/test_foundations.py</li></ul>
+<p>SUMMARY: Implemented the FastAPI factory and test client, the <code>fxrates</code> CLI package and executable launchers, typed database configuration, and foundation tests. Preserved the already-present generated persistence package and schema. All declared foundation acceptance assertions passed; <code>python -m pytest -q</code> passed (13 tests). The executable also returned help when invoked outside the project directory.</p>
+<p>BLOCKERS:</p>
+<ul><li>None</li></ul></article>
+</main>
+</body>
+</html>

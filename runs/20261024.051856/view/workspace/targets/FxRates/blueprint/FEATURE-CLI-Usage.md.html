@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-CLI-Usage.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-CLI-Usage.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-CLI-Usage.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: CLI Usage</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Defines usage errors for unsupported or malformed <code>fxrates</code> invocations.</td></tr><tr><td>Depends On</td><td>FEATURE-CLI-Foundation.md</td></tr><tr><td>Provides</td><td>CLI usage error behavior</td></tr><tr><td>Consumes</td><td>./fxrates entry point</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Return exit code <code>2</code> for unknown commands, incorrect argument counts, and a non-integer port value. These usage failures produce no standard output. Write a single diagnostic line to standard error.</p>
+<h2>Trigger and behavior</h2>
+<p>The root <code>./fxrates</code> executable dispatches commands. It rejects an unrecognized command, a command with the wrong number of arguments, or <code>serve --port</code> followed by a non-integer value with exit code <code>2</code>.</p>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC usage-unknown-command ===<br>Intent: An unknown command returns the usage exit status.</p>
+<p>from cli.testing import cli_runner</p>
+<p>code, stdout, stderr = cli_runner(&quot;frobnicate&quot;) assert code == 2 assert stdout == &quot;&quot; === END AC usage-unknown-command ===</p>
+<p>=== AC usage-wrong-arguments ===<br>Intent: A command missing its required argument returns the usage exit status.</p>
+<p>from cli.testing import cli_runner</p>
+<p>code, stdout, stderr = cli_runner(&quot;load&quot;) assert code == 2 assert stdout == &quot;&quot; === END AC usage-wrong-arguments ===</p>
+<p>=== AC usage-invalid-port ===<br>Intent: A non-integer port returns the usage exit status.</p>
+<p>from cli.testing import cli_runner</p>
+<p>code, stdout, stderr = cli_runner(&quot;serve&quot;, &quot;--port&quot;, &quot;notaport&quot;) assert code == 2 assert stdout == &quot;&quot; === END AC usage-invalid-port ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Usage failures use exit code <code>2</code> and produce no standard output.</li></ul></article>
+</main>
+</body>
+</html>

@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/ERRORS.md</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/ERRORS.md</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../workspace/targets/FxRates/ERRORS.md">Raw file</a></div></header>
+<article class="doc"><h1>BIG ERRORS — action required</h1>
+<ul><li>Command: <code>build</code></li><li>Phase: build step</li><li>State: Failed</li><li>Timestamp: 2026-10-24T05:43:46+00:00</li><li>Execution ID: 20261024.054026.852Z-038863a6</li><li>Challenge Execution ID: -</li><li>Classification: programmatic acceptance failed: history-route-empty-range, date-resolves-to-effective-publication, latest-rates-route-works, euro-conversion-uses-implicit-unit-rate</li><li>Evidence / logs: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261024.051856/workspace/targets/FxRates/evidence/block-3.md</li></ul>
+<h2>Diagnostic</h2>
+<p>Block &quot;Block 3 · Service&quot; [block-3] failed its acceptance criteria. Story &quot;Return bounded currency history and summary statistics.&quot; [api_005] does not meet its own acceptance criteria:</p>
+<ul><li>AC history-route-empty-range — A currency with stored history returns the declared empty summary for a range with no points.</li></ul>
+<p>assertion: assert response.status_code == 200 → AssertionError raised at: history-route-empty-range.py:11 process exit code: 1 values at failure: response = &lt;Response [404 Not Found]&gt; check stderr: /mnt/c/Users/barlo/projects/drydock/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using <code>httpx</code> with <code>starlette.testclient</code> is deprecated; install <code>httpx2</code> instead. … (52 more lines truncated)</p>
+<h2>Recovery</h2>
+<p>Run: drydock build FxRates to continue the build. This story resumes where it left off and is retried against the checks it failed.</p></article>
+</main>
+</body>
+</html>

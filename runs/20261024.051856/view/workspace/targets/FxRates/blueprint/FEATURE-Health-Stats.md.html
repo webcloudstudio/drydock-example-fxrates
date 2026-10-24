@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-Health-Stats.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-Health-Stats.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-Health-Stats.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Health Stats</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Provide service health and live rates-store statistics.</td></tr><tr><td>Depends On</td><td>FEATURE-API-Foundation.md, DATABASE.md</td></tr><tr><td>Provides</td><td>GET /health, GET /stats</td></tr><tr><td>Consumes</td><td>rates repository operations</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Expose a health response and statistics derived from the rates currently stored. Statistics include the number of distinct publication dates with rates, the total number of stored rates, and the first and last publication dates. Empty stores report null date bounds.</p>
+<h2>Routes</h2>
+<ul><li><code>GET /health</code> returns HTTP 200 with a JSON object whose <code>status</code> is <code>&quot;ok&quot;</code>.</li><li><code>GET /stats</code> returns HTTP 200 with <code>dates</code>, <code>rates</code>, <code>first</code>, and <code>last</code>, calculated from current stored rows. A load completed while the service runs is visible on the next request.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC health-route ===<br>Intent: The health route is reachable and returns a successful response.</p>
+<p>from app_server.testing import web_client</p>
+<p>client = web_client() response = client.get(&quot;/health&quot;) assert response.status_code == 200 assert response.json()[&quot;status&quot;] == &quot;ok&quot; === END AC health-route ===</p>
+<p>=== AC stats-route ===<br>Intent: The statistics route is reachable and returns the declared response fields.</p>
+<p>from app_server.testing import web_client</p>
+<p>response = web_client().get(&quot;/stats&quot;) assert response.status_code == 200 body = response.json() assert {&quot;dates&quot;, &quot;rates&quot;, &quot;first&quot;, &quot;last&quot;} &lt;= body.keys() assert isinstance(body[&quot;dates&quot;], int) assert isinstance(body[&quot;rates&quot;], int) === END AC stats-route ===</p>
+<p>=== AC stats-reflects-stored-rates ===<br>Intent: Statistics reflect a rate inserted before the request.</p>
+<p>from app_server.testing import web_client from persistence.testing import committed_session</p>
+<p>date = &quot;2099-01-08&quot; currency = &quot;ZZT&quot; rate = &quot;8.901&quot;</p>
+<p>with committed_session() as db: db.rates.upsert(date=date, currency=currency, rate=rate)</p>
+<p>try: response = web_client().get(&quot;/stats&quot;) assert response.status_code == 200 body = response.json() assert body[&quot;dates&quot;] &gt;= 1 assert body[&quot;rates&quot;] &gt;= 1 assert body[&quot;first&quot;] is not None assert body[&quot;last&quot;] is not None finally: with committed_session() as db: db.rates.delete(date=date, currency=currency) === END AC stats-reflects-stored-rates ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Derive all counts and date bounds from the rates store; do not hardcode them.</li><li>All database access goes through the generated persistence package.</li></ul></article>
+</main>
+</body>
+</html>

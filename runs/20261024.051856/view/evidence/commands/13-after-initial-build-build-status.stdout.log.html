@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/commands/13-after-initial-build-build-status.stdout.log</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/commands/13-after-initial-build-build-status.stdout.log</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/commands/13-after-initial-build-build-status.stdout.log">Raw file</a></div></header>
+<article class="doc"><pre>Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
+Next: drydock build FxRates
+
+Blueprint: FxRates
+Target: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261024.051856/workspace/targets/FxRates
+Rows: &lt;state&gt; &lt;type&gt;  &lt;Name&gt;  [&lt;id&gt;]   — pass [&lt;id&gt;] to --step
+Block: Build Block 1 · Foundational  [block-1]   — [built] story Define application modules and their ownership boundaries.  [architecture] — complete
+
+Block: Build Block 2 · Foundational  [block-2]   — 3/3 stories complete
+  [built]   story  Declare the rates schema and generated persistence operations.  [database]
+  [built]   story  Establish the FastAPI application and server test client.  [app-server-foundation]
+  [built]   story  Establish the fxrates command entry point.  [cli-foundation]
+
+Block: Build Block 3 · Service  [block-3]   — 0/13 stories complete
+  [FAILED]  story  Initialize the rates store from the CLI.  [ingest_001]  &lt;- resume (repairs in place)
+  [FAILED]  story  Validate and load ECB history files.  [ingest_002]  &lt;- resume (repairs in place)
+  [FAILED]  story  Reject invalid ECB history files atomically.  [ingest_003]  &lt;- resume (repairs in place)
+  [FAILED]  story  Fetch and load the ECB history archive.  [ingest_004]  &lt;- resume (repairs in place)
+  [FAILED]  story  List currencies available in stored rates.  [api_002]  &lt;- resume (repairs in place)
+  [FAILED]  story  Serve health and rate-store statistics.  [api_001]  &lt;- resume (repairs in place)
+  [FAILED]  story  Return bounded currency history and summary statistics.  [api_005]  &lt;- resume (repairs in place)
+  [FAILED]  story  Resolve rates for requested and latest dates.  [api_003]  &lt;- resume (repairs in place)
+  [FAILED]  story  Convert amounts between currencies.  [api_004]  &lt;- resume (repairs in place)
+  [FAILED]  story  Run the HTTP service on the requested localhost port.  [cli_002]  &lt;- resume (repairs in place)
+  [FAILED]  story  Return usage errors for invalid CLI invocations.  [cli_001]  &lt;- resume (repairs in place)
+  [FAILED]  story  Validate API dates, amounts, and currencies.  [api_006]  &lt;- resume (repairs in place)
+  [FAILED]  story  Verify the completed application with the supplied grader.  [verify_001]  &lt;- resume (repairs in place)
+
+Steps: 17 total — 0 done, 4 built (await verify), 0 in review, 0 pending, 0 blocked by questions, 13 failed (0% complete)
+Buildable now: block-3
+Failed (resume with drydock build, or --step &lt;id&gt;; --reset discards work instead): ingest_001, ingest_002, ingest_003, ingest_004, api_002, api_001, api_005, api_003, api_004, cli_002, cli_001, api_006, verify_001
+Target - committed project workspace git store
+</pre></article>
+</main>
+</body>
+</html>

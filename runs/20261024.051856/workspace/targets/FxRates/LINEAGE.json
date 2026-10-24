@@ -1,0 +1,475 @@
+{
+  "version": 1,
+  "import": {
+    "root": "/mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261024.051856/sources",
+    "format": "markdown"
+  },
+  "sources": {
+    "INSTRUCTIONS.md": {
+      "state": "current",
+      "versions": [
+        {
+          "commit": "c8b9a4a",
+          "date": "2026-10-24",
+          "hash": "f762e7650270073d828bdee60efe9c2cbaf4479a375598dc2b0ecbec9d762f3b",
+          "release": "",
+          "state": "consumed",
+          "via": "plan",
+          "ticket": null,
+          "requirements": [
+            {
+              "name": "application-stack",
+              "text": "Implement in Python 3.11 or newer with FastAPI, served by uvicorn, over SQLite. Tests run under pytest, using FastAPI's `TestClient` for the API. The product is an executable named `fxrates` at the application root.",
+              "stories": [
+                "architecture",
+                "app-server-foundation",
+                "cli-foundation",
+                "database"
+              ]
+            },
+            {
+              "name": "run-harness",
+              "text": "`sources/run.sh` is the scoring entry point. It is supplied, not authored, and is staged verbatim into the application root with the data files. `drydock uat` runs `sh sources/run.sh` from the completed application root and takes its exit code and output as the score.",
+              "stories": [
+                "verify_001"
+              ]
+            },
+            {
+              "name": "read-only-scoring-assets",
+              "text": "These files are the exam. Do not modify, rewrite, regenerate, or substitute them:",
+              "stories": [
+                "ingest_002",
+                "ingest_003",
+                "ingest_004"
+              ]
+            },
+            {
+              "name": "database-configuration-schema",
+              "text": "`DATABASE_URL` names the SQLite database file, optionally prefixed `sqlite://`. When it is unset, `DATABASE_PATH` is used, then `data/app.db`. All database access goes through the shipped persistence library and the relational layer generated from `DATABASE.md`. Application code never opens a database driver directly.",
+              "stories": [
+                "database"
+              ]
+            },
+            {
+              "name": "rates-storage-format",
+              "text": "A rate is stored exactly as the ECB publishes it, as text. `0.943` stays `0.943`, never `0.9430` and never a float. Arithmetic on rates uses Python's `decimal` module.",
+              "stories": [
+                "database"
+              ]
+            },
+            {
+              "name": "initialize-rates-table",
+              "text": "`fxrates init` | Drops the `rates` table if present and creates it empty. | Nothing.",
+              "stories": [
+                "ingest_001",
+                "database"
+              ]
+            },
+            {
+              "name": "load-ecb-history-file",
+              "text": "`fxrates load <csv>` | Loads an ECB history file (rules below). | `dates,rates`, then the number of dates and of rates stored from the file.",
+              "stories": [
+                "ingest_002"
+              ]
+            },
+            {
+              "name": "fetch-ecb-history",
+              "text": "`fxrates fetch` | Downloads `https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist.zip`, extracts `eurofxref-hist.csv`, and loads it as `load` does. | As `load`.",
+              "stories": [
+                "ingest_004"
+              ]
+            },
+            {
+              "name": "serve-http-api",
+              "text": "`fxrates serve [--port <n>]` | Serves the HTTP API on `127.0.0.1:<n>` with uvicorn until stopped. Default port `8000`. | Nothing required.",
+              "stories": [
+                "cli_002",
+                "app-server-foundation"
+              ]
+            },
+            {
+              "name": "validate-history-csv-format",
+              "text": "1. The file is CSV. The header's first field is `Date`, and every other field is a three-letter uppercase currency code. The ECB writes a trailing comma on every line, and the resulting empty last field is ignored.\n2. Each row is a date (`YYYY-MM-DD`, a real calendar date, not repeated within the file) followed by one value per currency. The value `N/A` means no rate, and nothing is stored for it. Any other value must match `[0-9]+(\\\\.[0-9]+)?` and be nonzero.",
+              "stories": [
+                "ingest_002"
+              ]
+            },
+            {
+              "name": "reject-history-file-atomically",
+              "text": "3. **A rejected file changes nothing.** The whole file is checked before the first write. A row with the wrong field count, an invalid or repeated date, or an invalid value rejects the file.",
+              "stories": [
+                "ingest_002",
+                "ingest_003"
+              ]
+            },
+            {
+              "name": "upsert-rates-and-count-load",
+              "text": "4. A rate for a (`date`, `currency`) that is already stored replaces it, so loading the same file twice leaves the database unchanged.\n5. The reported `dates` counts the dates with at least one stored rate, and `rates` counts the rates stored.",
+              "stories": [
+                "ingest_002"
+              ]
+            },
+            {
+              "name": "command-errors-and-exit-codes",
+              "text": "A failing command writes nothing to standard output and one diagnostic line to standard error.",
+              "stories": [
+                "cli_001",
+                "ingest_002",
+                "ingest_003",
+                "ingest_004"
+              ]
+            },
+            {
+              "name": "cli-exit-codes",
+              "text": "**Exit codes.** `0` success. `1` operational failure: the file cannot be read, or a `fetch` download fails. `2` usage error: unknown command, wrong argument count, `--port` not an integer. `3` rejected file.",
+              "stories": [
+                "cli_001",
+                "ingest_002",
+                "ingest_003",
+                "ingest_004"
+              ]
+            },
+            {
+              "name": "health-and-stats",
+              "text": "`GET /health` | `{\"status\": \"ok\"}`",
+              "stories": [
+                "api_001"
+              ]
+            },
+            {
+              "name": "health-and-stats-summary",
+              "text": "`GET /stats` | `{\"dates\": <n>, \"rates\": <n>, \"first\": <date>, \"last\": <date>}`. `first` and `last` are `null` when the table is empty.",
+              "stories": [
+                "api_001"
+              ]
+            },
+            {
+              "name": "list-stored-currencies",
+              "text": "`GET /currencies` | `{\"base\": \"EUR\", \"currencies\": [<code>, ...]}`: every currency with at least one stored rate, ascending.",
+              "stories": [
+                "api_002"
+              ]
+            },
+            {
+              "name": "resolve-rates-by-date",
+              "text": "`GET /rates/{date}` | `{\"date\": <effective date>, \"requested\": <date>, \"base\": \"EUR\", \"rates\": {<code>: <rate>, ...}}`: every currency with a rate on the effective date.",
+              "stories": [
+                "api_003"
+              ]
+            },
+            {
+              "name": "resolve-latest-rates",
+              "text": "`GET /rates/latest` | As `/rates/{date}` for the latest publication date, with `\"requested\": \"latest\"`.",
+              "stories": [
+                "api_003"
+              ]
+            },
+            {
+              "name": "convert-currency",
+              "text": "`GET /convert?from=<code>&to=<code>&amount=<amount>[&date=<date>]` | `{\"date\": <effective date>, \"from\": <code>, \"to\": <code>, \"amount\": <amount>, \"rate\": <rate>, \"result\": <result>}`. Without `date`, the latest publication date is used.",
+              "stories": [
+                "api_004"
+              ]
+            },
+            {
+              "name": "bounded-currency-history",
+              "text": "`GET /history/{code}[?start=<date>][&end=<date>]` | `{\"currency\": <code>, \"base\": \"EUR\", \"count\": <n>, \"min\": <rate>, \"max\": <rate>, \"mean\": <mean>, \"points\": [{\"date\": <date>, \"rate\": <rate>}, ...]}` for the publication dates from `start` through `end` inclusive, ascending. Both bounds are optional. With no points, `count` is `0`, `min`, `max`, and `mean` are `null`, and `points` is `[]`.",
+              "stories": [
+                "api_005"
+              ]
+            },
+            {
+              "name": "rate-value-format-and-conversion-rounding",
+              "text": "- `<rate>` in `/rates`, `min`, `max`, and `points` is the stored text, as a JSON string.\n- `/convert` `amount` matches `[0-9]+(\\\\.[0-9]+)?` and is echoed as given, as a JSON string.\n- `/convert` `rate` is `rate(to) / rate(from)`, computed exactly and rounded half to even to six decimal places, written with exactly six decimals, as a JSON string: `\"161.770000\"`.\n- `/convert` `result` is `amount \u00d7 rate(to) / rate(from)`, computed exactly from the stored rates (not from the rounded `rate`) and rounded half to even to two decimal places, written with exactly two decimals, as a JSON string: `\"82.01\"`.\n- `/history` `min` and `max` are the stored text of the smallest and largest rate by value.\n- `/history` `mean` is the exact mean rounded half to even to six decimal places, written with exactly six decimals, as a JSON string.",
+              "stories": [
+                "api_003",
+                "api_004"
+              ]
+            },
+            {
+              "name": "error-statuses",
+              "text": "| Status | Condition |\n|---|---|\n| `404` | No publication on or before the requested date; a `/convert` currency other than EUR with no rate on the effective date; a `/history` currency with no stored rate at all (including `EUR`). |\n| `422` | A malformed date in the path or query, a malformed `amount`, or a missing required query parameter. FastAPI's request validation produces this status.",
+              "stories": [
+                "api_003",
+                "api_004",
+                "api_005",
+                "api_006"
+              ]
+            },
+            {
+              "name": "live-loads-visible",
+              "text": "A load that completes while the server is running is visible to the next request.",
+              "stories": [
+                "database",
+                "api_001",
+                "api_002",
+                "api_003",
+                "api_004",
+                "api_005"
+              ]
+            },
+            {
+              "name": "pytest-suite",
+              "text": "The completed application provides a POSIX-compatible `bin/test.sh` that runs its own pytest suite from the application root and exits zero only when every test passes. The suite covers each command, each load rule, each endpoint, the effective-date rule, rounding, and each error status, against a real temporary database, with `fetch` stubbed.",
+              "stories": [
+                "verify_001"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "eurofxref-hist_2025-01.csv": {
+      "state": "current",
+      "versions": [
+        {
+          "commit": "c8b9a4a",
+          "date": "2026-10-24",
+          "hash": "a77de17e0b3c0b73f16805c200496298dae39e44c01bf6726f6c413d1634decf",
+          "release": "",
+          "state": "consumed",
+          "via": "plan",
+          "ticket": null,
+          "requirements": []
+        }
+      ]
+    },
+    "eurofxref-hist_2025-02-03_04.csv": {
+      "state": "current",
+      "versions": [
+        {
+          "commit": "c8b9a4a",
+          "date": "2026-10-24",
+          "hash": "91c942eee600dc1dccaffd15bd2917625813d2050487be5de720ead2fc3e0d05",
+          "release": "",
+          "state": "consumed",
+          "via": "plan",
+          "ticket": null,
+          "requirements": [
+            {
+              "name": "load-ecb-history",
+              "text": "Date,USD,JPY,GBP,CHF,SEK,CAD,AUD,CNY,\n2025-02-04,1.0335,160.52,0.83188,0.9396,11.418,1.4894,1.6629,7.4943,\n2025-02-03,1.0274,158.87,0.83136,0.9393,11.481,1.5051,1.6671,7.45,",
+              "stories": [
+                "ingest_002"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "eurofxref-hist_bad.csv": {
+      "state": "current",
+      "versions": [
+        {
+          "commit": "c8b9a4a",
+          "date": "2026-10-24",
+          "hash": "91c5c0ffeacc455ee6e2e4f6c33996985d91f8a1bb6a1f35897660f3037d7b5e",
+          "release": "",
+          "state": "consumed",
+          "via": "plan",
+          "ticket": null,
+          "requirements": [
+            {
+              "name": "validate-and-load-history",
+              "text": "Date,USD,JPY,\n2025-02-04,1.0345,160.12,\n2025-02-03,1.0x,159.01,",
+              "stories": [
+                "database",
+                "ingest_002",
+                "ingest_003"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "run.sh": {
+      "state": "current",
+      "versions": [
+        {
+          "commit": "c8b9a4a",
+          "date": "2026-10-24",
+          "hash": "f0d6092c076f758abe72e7f0130422f3a1fbdcaa84e33eed747352af311efae7",
+          "release": "",
+          "state": "consumed",
+          "via": "plan",
+          "ticket": null,
+          "requirements": [
+            {
+              "name": "cli-initialize-store",
+              "text": "check A1 0 init < /dev/null",
+              "stories": [
+                "cli-foundation",
+                "ingest_001"
+              ]
+            },
+            {
+              "name": "load-ecb-history",
+              "text": "check A2 0 load \"$DATA/eurofxref-hist_2025-01.csv\" <<'EOF'\ndates,rates\n22,176\nEOF",
+              "stories": [
+                "database",
+                "ingest_002"
+              ]
+            },
+            {
+              "name": "idempotent-history-load",
+              "text": "check A3 0 load \"$DATA/eurofxref-hist_2025-01.csv\" <<'EOF'\ndates,rates\n22,176\nEOF",
+              "stories": [
+                "ingest_002"
+              ]
+            },
+            {
+              "name": "reject-invalid-history",
+              "text": "check A4 3 load \"$DATA/eurofxref-hist_bad.csv\" < /dev/null",
+              "stories": [
+                "ingest_003"
+              ]
+            },
+            {
+              "name": "reject-missing-history-file",
+              "text": "check A5 1 load \"$WORK/no-such-file.csv\" < /dev/null",
+              "stories": [
+                "ingest_002"
+              ]
+            },
+            {
+              "name": "cli-usage-errors",
+              "text": "check U1 2 < /dev/null\ncheck U2 2 frobnicate < /dev/null\ncheck U3 2 load < /dev/null\ncheck U4 2 serve --port notaport < /dev/null",
+              "stories": [
+                "cli-foundation",
+                "cli_001"
+              ]
+            },
+            {
+              "name": "serve-on-localhost-port",
+              "text": "start_server",
+              "stories": [
+                "cli_002"
+              ]
+            },
+            {
+              "name": "health-response",
+              "text": "http H1 200 '/health' <<'EOF'\n{\"status\":\"ok\"}\nEOF",
+              "stories": [
+                "app-server-foundation",
+                "api_001"
+              ]
+            },
+            {
+              "name": "rate-store-statistics",
+              "text": "http H2 200 '/stats' <<'EOF'\n{\"dates\":22,\"rates\":176,\"first\":\"2025-01-02\",\"last\":\"2025-01-31\"}\nEOF",
+              "stories": [
+                "database",
+                "api_001"
+              ]
+            },
+            {
+              "name": "list-available-currencies",
+              "text": "http H3 200 '/currencies' <<'EOF'\n{\"base\":\"EUR\",\"currencies\":[\"AUD\",\"CAD\",\"CHF\",\"CNY\",\"GBP\",\"JPY\",\"SEK\",\"USD\"]}\nEOF",
+              "stories": [
+                "api_002"
+              ]
+            },
+            {
+              "name": "resolve-rates-by-date",
+              "text": "http H4 200 '/rates/2025-01-17' <<'EOF'\n{\"date\":\"2025-01-17\",\"requested\":\"2025-01-17\",\"base\":\"EUR\",\"rates\":{\"AUD\":\"1.6646\",\"CAD\":\"1.4864\",\"CHF\":\"0.9394\",\"CNY\":\"7.5474\",\"GBP\":\"0.84453\",\"JPY\":\"160.23\",\"SEK\":\"11.506\",\"USD\":\"1.0298\"}}\nEOF",
+              "stories": [
+                "api_003"
+              ]
+            },
+            {
+              "name": "resolve-rates-on-non-publication-day",
+              "text": "http H5 200 '/rates/2025-01-18' <<'EOF'\n{\"date\":\"2025-01-17\",\"requested\":\"2025-01-18\",\"base\":\"EUR\",\"rates\":{\"AUD\":\"1.6646\",\"CAD\":\"1.4864\",\"CHF\":\"0.9394\",\"CNY\":\"7.5474\",\"GBP\":\"0.84453\",\"JPY\":\"160.23\",\"SEK\":\"11.506\",\"USD\":\"1.0298\"}}\nEOF",
+              "stories": [
+                "api_003"
+              ]
+            },
+            {
+              "name": "rate-date-error-responses",
+              "text": "http H6 404 '/rates/2024-12-31' < /dev/null\nhttp H7 422 '/rates/2025-13-01' < /dev/null",
+              "stories": [
+                "api_003",
+                "api_006"
+              ]
+            },
+            {
+              "name": "resolve-latest-rates",
+              "text": "http H8 200 '/rates/latest' <<'EOF'\n{\"date\":\"2025-01-31\",\"requested\":\"latest\",\"base\":\"EUR\",\"rates\":{\"AUD\":\"1.6702\",\"CAD\":\"1.5035\",\"CHF\":\"0.9449\",\"CNY\":\"7.5363\",\"GBP\":\"0.83608\",\"JPY\":\"160.99\",\"SEK\":\"11.474\",\"USD\":\"1.0393\"}}\nEOF",
+              "stories": [
+                "api_003"
+              ]
+            },
+            {
+              "name": "convert-between-currencies",
+              "text": "http H9 200 '/convert?from=USD&to=GBP&amount=100&date=2025-01-17' <<'EOF'\n{\"date\":\"2025-01-17\",\"from\":\"USD\",\"to\":\"GBP\",\"amount\":\"100\",\"rate\":\"0.820091\",\"result\":\"82.01\"}\nEOF\nhttp H10 200 '/convert?from=EUR&to=JPY&amount=250.25&date=2025-01-05' <<'EOF'\n{\"date\":\"2025-01-03\",\"from\":\"EUR\",\"to\":\"JPY\",\"amount\":\"250.25\",\"rate\":\"161.770000\",\"result\":\"40482.94\"}\nEOF\nhttp H11 200 '/convert?from=GBP&to=EUR&amount=1000' <<'EOF'\n{\"date\":\"2025-01-31\",\"from\":\"GBP\",\"to\":\"EUR\",\"amount\":\"1000\",\"rate\":\"1.196058\",\"result\":\"1196.06\"}\nEOF\nhttp H12 200 '/convert?from=SEK&to=CNY&amount=12345.67&date=2025-01-20' <<'EOF'\n{\"date\":\"2025-01-20\",\"from\":\"SEK\",\"to\":\"CNY\",\"amount\":\"12345.67\",\"rate\":\"0.656236\",\"result\":\"8101.67\"}\nEOF",
+              "stories": [
+                "api_004"
+              ]
+            },
+            {
+              "name": "convert-validation-errors",
+              "text": "http H13 404 '/convert?from=USD&to=XXX&amount=1' < /dev/null\nhttp H14 422 '/convert?from=USD&to=GBP' < /dev/null\nhttp H15 422 '/convert?from=USD&to=GBP&amount=abc' < /dev/null\nhttp H16 404 '/convert?from=USD&to=GBP&amount=10&date=2024-12-01' < /dev/null",
+              "stories": [
+                "api_004",
+                "api_006"
+              ]
+            },
+            {
+              "name": "currency-history-and-summary",
+              "text": "http H17 200 '/history/USD?start=2025-01-20&end=2025-01-24' <<'EOF'\n{\"currency\":\"USD\",\"base\":\"EUR\",\"count\":5,\"min\":\"1.0316\",\"max\":\"1.0472\",\"mean\":\"1.039840\",\"points\":[{\"date\":\"2025-01-20\",\"rate\":\"1.0316\"},{\"date\":\"2025-01-21\",\"rate\":\"1.0357\"},{\"date\":\"2025-01-22\",\"rate\":\"1.0443\"},{\"date\":\"2025-01-23\",\"rate\":\"1.0404\"},{\"date\":\"2025-01-24\",\"rate\":\"1.0472\"}]}\nEOF\nhttp H18 200 '/history/CHF?start=2025-01-27' <<'EOF'\n{\"currency\":\"CHF\",\"base\":\"EUR\",\"count\":5,\"min\":\"0.943\",\"max\":\"0.9453\",\"mean\":\"0.944280\",\"points\":[{\"date\":\"2025-01-27\",\"rate\":\"0.9453\"},{\"date\":\"2025-01-28\",\"rate\":\"0.9441\"},{\"date\":\"2025-01-29\",\"rate\":\"0.943\"},{\"date\":\"2025-01-30\",\"rate\":\"0.9441\"},{\"date\":\"2025-01-31\",\"rate\":\"0.9449\"}]}\nEOF",
+              "stories": [
+                "api_005"
+              ]
+            },
+            {
+              "name": "history-empty-range-response",
+              "text": "http H20 200 '/history/USD?start=2025-02-01' <<'EOF'\n{\"currency\":\"USD\",\"base\":\"EUR\",\"count\":0,\"min\":null,\"max\":null,\"mean\":null,\"points\":[]}\nEOF",
+              "stories": [
+                "api_005"
+              ]
+            },
+            {
+              "name": "history-validation-errors",
+              "text": "http H19 404 '/history/HRK' < /dev/null\nhttp H21 422 '/history/GBP?start=2025-01-31-x' < /dev/null",
+              "stories": [
+                "api_005",
+                "api_006"
+              ]
+            },
+            {
+              "name": "load-while-server-runs",
+              "text": "check L1 0 load \"$DATA/eurofxref-hist_2025-02-03_04.csv\" <<'EOF'\ndates,rates\n2,16\nEOF\nhttp L2 200 '/stats' <<'EOF'\n{\"dates\":24,\"rates\":192,\"first\":\"2025-01-02\",\"last\":\"2025-02-04\"}\nEOF",
+              "stories": [
+                "ingest_002",
+                "cli_002"
+              ]
+            },
+            {
+              "name": "latest-rates-after-loading",
+              "text": "http L3 200 '/rates/latest' <<'EOF'\n{\"date\":\"2025-02-04\",\"requested\":\"latest\",\"base\":\"EUR\",\"rates\":{\"AUD\":\"1.6629\",\"CAD\":\"1.4894\",\"CHF\":\"0.9396\",\"CNY\":\"7.4943\",\"GBP\":\"0.83188\",\"JPY\":\"160.52\",\"SEK\":\"11.418\",\"USD\":\"1.0335\"}}\nEOF",
+              "stories": [
+                "api_003",
+                "ingest_002"
+              ]
+            },
+            {
+              "name": "rates-fallback-after-loading",
+              "text": "http L4 200 '/rates/2025-02-01' <<'EOF'\n{\"date\":\"2025-01-31\",\"requested\":\"2025-02-01\",\"base\":\"EUR\",\"rates\":{\"AUD\":\"1.6702\",\"CAD\":\"1.5035\",\"CHF\":\"0.9449\",\"CNY\":\"7.5363\",\"GBP\":\"0.83608\",\"JPY\":\"160.99\",\"SEK\":\"11.474\",\"USD\":\"1.0393\"}}\nEOF",
+              "stories": [
+                "api_003",
+                "ingest_002"
+              ]
+            },
+            {
+              "name": "history-after-loading",
+              "text": "http L5 200 '/history/AUD?start=2025-01-30' <<'EOF'\n{\"currency\":\"AUD\",\"base\":\"EUR\",\"count\":4,\"min\":\"1.6629\",\"max\":\"1.6705\",\"mean\":\"1.667675\",\"points\":[{\"date\":\"2025-01-30\",\"rate\":\"1.6705\"},{\"date\":\"2025-01-31\",\"rate\":\"1.6702\"},{\"date\":\"2025-02-03\",\"rate\":\"1.6671\"},{\"date\":\"2025-02-04\",\"rate\":\"1.6629\"}]}\nEOF",
+              "stories": [
+                "api_005",
+                "ingest_002"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

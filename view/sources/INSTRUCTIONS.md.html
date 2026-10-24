@@ -43,7 +43,7 @@
 <ol><li>The reported <code>dates</code> counts the dates with at least one stored rate, and <code>rates</code> counts the</li></ol>
 <p>rates stored.</p>
 <p>A failing command writes nothing to standard output and one diagnostic line to standard error. <code>fetch</code> is never run by the harness. Its tests replace the download with a stub and never use the network.</p>
-<p><strong>Exit codes.</strong> <code>0</code> success. <code>1</code> operational failure: the file cannot be read, the database cannot be reached, or a <code>fetch</code> download fails. <code>2</code> usage error: unknown command, wrong argument count, <code>--port</code> not an integer. <code>3</code> rejected file.</p>
+<p><strong>Exit codes.</strong> <code>0</code> success. <code>1</code> operational failure: the file cannot be read, or a <code>fetch</code> download fails. <code>2</code> usage error: unknown command, wrong argument count, <code>--port</code> not an integer. <code>3</code> rejected file.</p>
 <h2>HTTP API</h2>
 <p>Every response is JSON. EUR is the base. A rate is the number of units of a currency per euro, and EUR itself has the implicit rate <code>1</code>.</p>
 <p><strong>Effective date.</strong> The ECB publishes on working days only. A request for date <code>D</code> uses the latest publication date on or before <code>D</code>. If none exists, the response is <code>404</code>.</p>

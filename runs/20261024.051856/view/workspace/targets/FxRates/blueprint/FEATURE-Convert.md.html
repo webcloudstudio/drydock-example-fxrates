@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-Convert.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-Convert.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-Convert.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Currency Conversion</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Converts an amount between currencies using exact decimal arithmetic.</td></tr><tr><td>Depends On</td><td>FEATURE-API-Foundation.md, DATABASE.md</td></tr><tr><td>Provides</td><td>GET /convert</td></tr><tr><td>Consumes</td><td>rates repository operations</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Convert an amount from one currency to another at the latest effective publication date, or at the latest publication on or before an optional requested date.</p>
+<h2>Route</h2>
+<p><code>GET /convert?from=&lt;code&gt;&amp;to=&lt;code&gt;&amp;amount=&lt;amount&gt;[&amp;date=&lt;date&gt;]</code></p>
+<p>The response contains the effective date, the supplied <code>from</code>, <code>to</code>, and <code>amount</code>, plus <code>rate</code> and <code>result</code>. <code>amount</code> is echoed as a string. The rate is <code>rate(to) / rate(from)</code>, rounded to six decimal places using half-even rounding. The result is calculated directly from the stored rates and amount, not from the rounded rate, then rounded to two decimal places using half-even rounding. Both computed values are strings with fixed decimal places.</p>
+<p>EUR has an implicit rate of one. A non-EUR currency without a rate on the effective date returns 404. Malformed amounts, malformed dates, or missing required query parameters return 422.</p>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC convert-route-returns-computed-values ===<br>Intent: The conversion route returns the echoed inputs and values derived from the supplied rates.</p>
+<p>from decimal import Decimal, ROUND_HALF_EVEN from persistence.testing import db_session from app_server.testing import web_client</p>
+<p>date = &quot;2098-03-04&quot; source_currency = &quot;ZZX&quot; target_currency = &quot;ZZW&quot; source_rate_text = &quot;3.125&quot; target_rate_text = &quot;6.75&quot; amount_text = &quot;10.10&quot; with db_session() as db: db.rates.upsert(date=date, currency=source_currency, rate=source_rate_text) db.rates.upsert(date=date, currency=target_currency, rate=target_rate_text)</p>
+<p>client = web_client() response = client.get( &quot;/convert&quot;, params={&quot;from&quot;: source_currency, &quot;to&quot;: target_currency, &quot;amount&quot;: amount_text, &quot;date&quot;: date}, ) assert response.status_code == 200 body = response.json() expected_rate = (Decimal(target_rate_text) / Decimal(source_rate_text)).quantize( Decimal(&quot;0.000001&quot;), rounding=ROUND_HALF_EVEN ) expected_result = (Decimal(amount_text) * Decimal(target_rate_text) / Decimal(source_rate_text)).quantize( Decimal(&quot;0.01&quot;), rounding=ROUND_HALF_EVEN ) assert body[&quot;date&quot;] == date assert body[&quot;from&quot;] == source_currency assert body[&quot;to&quot;] == target_currency assert body[&quot;amount&quot;] == amount_text assert body[&quot;rate&quot;] == f&quot;{expected_rate:.6f}&quot; assert body[&quot;result&quot;] == f&quot;{expected_result:.2f}&quot; === END AC convert-route-returns-computed-values ===</p>
+<p>=== AC euro-conversion-uses-implicit-unit-rate ===<br>Intent: EUR conversions use the implicit unit rate without requiring an EUR row.</p>
+<p>from persistence.testing import db_session from app_server.testing import web_client</p>
+<p>date = &quot;2098-03-05&quot; currency = &quot;ZZV&quot; rate = &quot;2.5&quot; amount = &quot;4&quot; with db_session() as db: db.rates.upsert(date=date, currency=currency, rate=rate)</p>
+<p>response = web_client().get( &quot;/convert&quot;, params={&quot;from&quot;: &quot;EUR&quot;, &quot;to&quot;: currency, &quot;amount&quot;: amount, &quot;date&quot;: date} ) assert response.status_code == 200 body = response.json() assert body[&quot;amount&quot;] == amount assert body[&quot;rate&quot;] == rate + &quot;0&quot; * (6 - len(rate.rsplit(&quot;.&quot;, 1)[1])) + (&quot;0.000000&quot; if &quot;.&quot; not in rate else &quot;&quot;) === END AC euro-conversion-uses-implicit-unit-rate ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Use <code>decimal.Decimal</code> for rate and amount arithmetic, never binary floating point.</li><li>Compute the result from unrounded source and target rates, independently of the rounded response rate.</li></ul></article>
+</main>
+</body>
+</html>

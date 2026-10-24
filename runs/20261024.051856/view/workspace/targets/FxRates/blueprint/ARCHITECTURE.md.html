@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/ARCHITECTURE.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/ARCHITECTURE.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/ARCHITECTURE.md">Raw file</a></div></header>
+<article class="doc"><h1>ARCHITECTURE: FxRates</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Defines application modules and their ownership boundaries.</td></tr><tr><td>Provides</td><td>application module boundaries</td></tr></tbody></table></div>
+<h2>Module Ownership</h2>
+<div class="scroll"><table><thead><tr><th>Module</th><th>Owns</th><th>Permitted dependencies</th></tr></thead><tbody><tr><td><code>cli</code></td><td><code>fxrates</code> entry point and command dispatch</td><td>Application services, configuration</td></tr><tr><td><code>app_server</code></td><td>FastAPI factory, routes, and HTTP test client</td><td>Application services</td></tr><tr><td>Application services</td><td>CSV validation, ingestion, rate lookup, conversion, and history calculations</td><td><code>persistence</code> public operations</td></tr><tr><td><code>persistence</code></td><td>Database connections, schema, and generated repository operations</td><td>SQLite engine</td></tr><tr><td>Configuration</td><td>Database location resolution</td><td>Environment variables</td></tr></tbody></table></div>
+<p>Application code accesses persistent data only through the generated <code>persistence</code> package. No application module opens a database driver directly.</p>
+<h2>Technology Stack</h2>
+<div class="scroll"><table><thead><tr><th>Technology</th><th>Use</th></tr></thead><tbody><tr><td>Python 3.11+</td><td>Application and test code</td></tr><tr><td>FastAPI</td><td>JSON HTTP API</td></tr><tr><td>SQLite</td><td>Persistent rates store through the generated persistence library</td></tr><tr><td>CLI</td><td>Root <code>fxrates</code> executable</td></tr><tr><td>pytest</td><td>Automated test suite</td></tr><tr><td>ECB reference rates</td><td>CSV history input and ZIP archive for fetch</td></tr><tr><td>POSIX shell</td><td>Test launcher and supplied grader</td></tr></tbody></table></div>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC architecture-boundaries ===<br>Intent: The published application packages can be imported.</p>
+<p>import importlib</p>
+<p>for name in (&quot;cli&quot;, &quot;app_server&quot;, &quot;persistence&quot;): module = importlib.import_module(name) assert module is not None === END AC architecture-boundaries ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Only the generated persistence package may access the database driver.</li><li>Preserve ECB rate text in storage and use <code>decimal</code> for arithmetic.</li><li>Resolve the database location from <code>DATABASE_URL</code>, then <code>DATABASE_PATH</code>, then <code>data/app.db</code>.</li></ul></article>
+</main>
+</body>
+</html>

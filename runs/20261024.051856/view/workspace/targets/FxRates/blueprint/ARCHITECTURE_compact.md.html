@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/ARCHITECTURE_compact.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/ARCHITECTURE_compact.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/ARCHITECTURE_compact.md">Raw file</a></div></header>
+<article class="doc"><p>&lt;!-- Compacted from ARCHITECTURE.md sha256=6f19609e3501b5c81682988bc8e666bd2505beb5942c619bd31e54613eef90f4 on 2026-10-24 by drydock build agent --&gt;</p>
+<h1>FxRates module contract</h1>
+<ul><li><code>cli</code> owns command dispatch and the root <code>./fxrates</code> entry point; it depends on application services and configuration.</li><li><code>app_server</code> owns the FastAPI factory, routes, and HTTP test client; it depends on application services.</li><li>Application services own CSV validation, ingestion, rate lookup, conversion, and history calculations; they use only public <code>persistence</code> operations.</li><li><code>persistence</code> owns the database connection, schema, and generated repository operations.</li><li>Configuration owns database location resolution from environment variables.</li></ul>
+<p>Python 3.11+, FastAPI, SQLite through the generated persistence library, pytest, and ECB CSV/ZIP inputs are the specified stack. Preserve published rate text and use <code>decimal</code> for calculations. The public packages <code>cli</code>, <code>app_server</code>, and <code>persistence</code> must be importable.</p></article>
+</main>
+</body>
+</html>

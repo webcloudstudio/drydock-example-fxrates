@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-API-Validation.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-API-Validation.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-API-Validation.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: API Request Validation</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Applies request validation statuses for malformed API input and unknown currencies.</td></tr><tr><td>Depends On</td><td>FEATURE-Rates.md, FEATURE-Convert.md, FEATURE-History.md</td></tr><tr><td>Provides</td><td>API request validation behavior</td></tr><tr><td>Consumes</td><td>GET /rates/{date}, GET /convert, GET /history/{code}</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Malformed dates in a route or query, malformed conversion amounts, and missing required conversion parameters return 422. Unknown currencies return 404. Error response bodies are not part of this contract.</p>
+<p>Validation applies to <code>/rates/{date}</code>, <code>/convert</code>, and <code>/history/{code}</code> date parameters. Conversion requires <code>from</code>, <code>to</code>, and <code>amount</code>.</p>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC malformed-date-is-unprocessable ===<br>Intent: A malformed requested rate date returns 422.</p>
+<p>from app_server.testing import web_client</p>
+<p>response = web_client().get(&quot;/rates/2098-13-01&quot;) assert response.status_code == 422 === END AC malformed-date-is-unprocessable ===</p>
+<p>=== AC missing-conversion-amount-is-unprocessable ===<br>Intent: A conversion missing its required amount returns 422.</p>
+<p>from app_server.testing import web_client</p>
+<p>response = web_client().get(&quot;/convert&quot;, params={&quot;from&quot;: &quot;USD&quot;, &quot;to&quot;: &quot;GBP&quot;}) assert response.status_code == 422 === END AC missing-conversion-amount-is-unprocessable ===</p>
+<p>=== AC malformed-amount-is-unprocessable ===<br>Intent: A malformed conversion amount returns 422.</p>
+<p>from app_server.testing import web_client</p>
+<p>response = web_client().get( &quot;/convert&quot;, params={&quot;from&quot;: &quot;USD&quot;, &quot;to&quot;: &quot;GBP&quot;, &quot;amount&quot;: &quot;not-a-number&quot;} ) assert response.status_code == 422 === END AC malformed-amount-is-unprocessable ===</p>
+<p>=== AC unknown-currency-is-not-found ===<br>Intent: A conversion naming an unknown currency returns 404.</p>
+<p>from persistence.testing import db_session from app_server.testing import web_client</p>
+<p>date = &quot;2098-05-06&quot; currency = &quot;ZZA&quot; rate = &quot;1.5&quot; with db_session() as db: db.rates.upsert(date=date, currency=currency, rate=rate)</p>
+<p>response = web_client().get( &quot;/convert&quot;, params={&quot;from&quot;: currency, &quot;to&quot;: &quot;ZZB&quot;, &quot;amount&quot;: &quot;1&quot;, &quot;date&quot;: date}, ) assert response.status_code == 404 === END AC unknown-currency-is-not-found ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Error response bodies and diagnostic wording are not contractual.</li><li>Use the declared HTTP status codes for validation and unknown-currency failures.</li></ul></article>
+</main>
+</body>
+</html>

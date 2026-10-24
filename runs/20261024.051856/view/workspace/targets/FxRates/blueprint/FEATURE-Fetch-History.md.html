@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-Fetch-History.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-Fetch-History.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-Fetch-History.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Fetch History</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Fetch the ECB history archive and load its CSV through the shared history loader.</td></tr><tr><td>Depends On</td><td>FEATURE-Load-History.md, DATABASE.md</td></tr><tr><td>Provides</td><td>fxrates fetch</td></tr><tr><td>Consumes</td><td>fxrates load, rates repository operations</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p><code>fxrates fetch</code> retrieves the ECB history ZIP archive, extracts <code>eurofxref-hist.csv</code>, and loads it using the same validation, replacement, storage, and reporting behavior as <code>fxrates load</code>.</p>
+<h2>Workflow</h2>
+<p>The download boundary is a callable <code>download_archive(destination)</code> in <code>cli.fetch</code>. It writes the downloaded archive to the supplied destination. Keep this boundary replaceable so automated tests can provide a local ZIP archive without network access.</p>
+<p>The command extracts the named CSV to a temporary location and passes that file to the shared loader. A download failure returns exit code <code>1</code>; invalid extracted history follows the loader&#x27;s rejection behavior.</p>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC fetch-loads-stubbed-archive ===<br>Intent: Fetch loads an ECB-format CSV from a locally supplied archive without opening a network connection.</p>
+<p>import tempfile import zipfile from unittest.mock import patch</p>
+<p>from cli.testing import cli_runner from persistence.testing import committed_session</p>
+<p>date = &quot;2099-01-07&quot; currency = &quot;ZZU&quot; rate = &quot;7.890&quot;</p>
+<p>with tempfile.TemporaryDirectory() as directory: archive = f&quot;{directory}/history.zip&quot; with zipfile.ZipFile(archive, &quot;w&quot;) as output: output.writestr( &quot;eurofxref-hist.csv&quot;, f&quot;Date,{currency},\n{date},{rate},\n&quot;, )</p>
+<p>def stub_download(destination): with open(archive, &quot;rb&quot;) as source, open(destination, &quot;wb&quot;) as target: target.write(source.read())</p>
+<p>try: with patch(&quot;cli.fetch.download_archive&quot;, side_effect=stub_download): code, stdout, stderr = cli_runner(&quot;fetch&quot;) assert code == 0 with committed_session() as db: row = db.rates.get(date=date, currency=currency) assert row is not None assert row.rate == rate finally: with committed_session() as db: db.rates.delete(date=date, currency=currency) === END AC fetch-loads-stubbed-archive ===</p>
+<p>=== AC fetch-download-failure ===<br>Intent: A failed archive download returns the conventional operational failure exit code.</p>
+<p>from unittest.mock import patch</p>
+<p>from cli.testing import cli_runner</p>
+<p>with patch(&quot;cli.fetch.download_archive&quot;, side_effect=OSError): code, stdout, stderr = cli_runner(&quot;fetch&quot;) assert code == 1 === END AC fetch-download-failure ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Automated tests stub the download and never use the network.</li><li>Extract and load the archive&#x27;s <code>eurofxref-hist.csv</code> through the shared history loader.</li><li>Do not access SQLite outside the generated persistence package.</li></ul></article>
+</main>
+</body>
+</html>

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-CLI-Foundation.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-CLI-Foundation.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-CLI-Foundation.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: CLI Foundation</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Establishes the <code>fxrates</code> command entry point and in-process runner contract.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md</td></tr><tr><td>Provides</td><td><code>./fxrates</code> entry point, <code>cli.main</code>, <code>cli.testing.cli_runner</code></td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>The root executable dispatches commands through <code>cli.main(argv: list[str] | None) -&gt; int</code>. Tests call the same implementation through <code>cli.testing.cli_runner(*args)</code>, which returns <code>(exit_code, stdout, stderr)</code> without spawning a process.</p>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC cli-main ===<br>Intent: The CLI exposes its documented callable entry point.</p>
+<p>from cli import main</p>
+<p>assert callable(main) assert isinstance(main([]), int) === END AC cli-main ===</p>
+<p>=== AC cli-runner ===<br>Intent: The in-process CLI runner returns an exit code and captured output streams.</p>
+<p>from cli.testing import cli_runner</p>
+<p>result = cli_runner() assert isinstance(result, tuple) assert len(result) == 3 assert isinstance(result[0], int) assert isinstance(result[1], str) assert isinstance(result[2], str) === END AC cli-runner ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>The root executable is named <code>fxrates</code> and is invoked as <code>./fxrates &lt;command&gt;</code>.</li><li>CLI diagnostics use standard error.</li></ul></article>
+</main>
+</body>
+</html>

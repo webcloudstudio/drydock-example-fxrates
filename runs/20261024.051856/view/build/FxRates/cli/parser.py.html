@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>build/FxRates/cli/parser.py</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>build/FxRates/cli/parser.py</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../build/FxRates/cli/parser.py">Raw file</a></div></header>
+<article class="doc"><pre>&quot;&quot;&quot;Argument parser construction, without command behavior.&quot;&quot;&quot;
+
+import argparse
+
+
+def build_parser() -&gt; argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(prog=&quot;fxrates&quot;)
+    subcommands = parser.add_subparsers(dest=&quot;command&quot;, required=True)
+    subcommands.add_parser(&quot;init&quot;, help=&quot;Clear the rates store&quot;)
+    load = subcommands.add_parser(&quot;load&quot;, help=&quot;Load an ECB history CSV&quot;)
+    load.add_argument(&quot;csv&quot;)
+    subcommands.add_parser(&quot;fetch&quot;, help=&quot;Fetch and load ECB history&quot;)
+    serve = subcommands.add_parser(&quot;serve&quot;, help=&quot;Run the HTTP API&quot;)
+    serve.add_argument(&quot;--host&quot;, default=&quot;127.0.0.1&quot;)
+    serve.add_argument(&quot;--port&quot;, type=int, default=8000)
+    return parser
+</pre></article>
+</main>
+</body>
+</html>

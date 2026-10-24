@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/prompt_outputs/20261024.052103.344Z_fxrates_plan_codex.output.txt</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/prompt_outputs/20261024.052103.344Z_fxrates_plan_codex.output.txt</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/prompt_outputs/20261024.052103.344Z_fxrates_plan_codex.output.txt">Raw file</a></div></header>
+<article class="doc"><pre>=== BEGIN ARTIFACT ARCHITECTURE.md ===
+# ARCHITECTURE: FxRates
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Defines application modules and their ownership boundaries. |
+| Provides    | application module boundaries |
+
+## Questions
+
+- None.
+
+## Module Ownership
+
+| Module | Owns | Permitted dependencies |
+|--------|------|-----------------------|
+| `cli` | `fxrates` entry point and command dispatch | Application services, configuration |
+| `app_server` | FastAPI factory, routes, and HTTP test client | Application services |
+| Application services | CSV validation, ingestion, rate lookup, conversion, and history calculations | `persistence` public operations |
+| `persistence` | Database connections, schema, and generated repository operations | SQLite engine |
+| Configuration | Database location resolution | Environment variables |
+
+Application code accesses persistent data only through the generated `persistence` package. No application module opens a database driver directly.
+
+## Technology Stack
+
+| Technology | Use |
+|------------|-----|
+| Python 3.11+ | Application and test code |
+| FastAPI | JSON HTTP API |
+| SQLite | Persistent rates store through the generated persistence library |
+| CLI | Root `fxrates` executable |
+| pytest | Automated test suite |
+| ECB reference rates | CSV history input and ZIP archive for fetch |
+| POSIX shell | Test launcher and supplied grader |
+
+## Programmatic Acceptance
+
+=== AC architecture-boundaries ===
+Intent: The published application packages can be imported.
+
+import importlib
+
+for name in (&quot;cli&quot;, &quot;app_server&quot;, &quot;persistence&quot;):
+    module = importlib.import_module(name)
+    assert module is not None
+=== END AC architecture-boundaries ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Only the generated persistence package may access the database driver.
+- Preserve ECB rate text in storage and use `decimal` for arithmetic.
+- Resolve the database location from `DATABASE_URL`, then `DATABASE_PATH`, then `data/app.db`.
+
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-CLI-Foundation.md ===
+# FEATURE: CLI Foundation
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Establishes the `fxrates` command entry point and in-process runner contract. |
+| Depends On  | ARCHITECTURE.md |
+| Provides    | `./fxrates` entry point, `cli.main`, `cli.testing.cli_runner` |
+
+## Questions
+
+- None.
+
+## Purpose
+
+The root executable dispatches commands through `cli.main(argv: list[str] | None) -&gt; int`. Tests call the same implementation through `cli.testing.cli_runner(*args)`, which returns `(exit_code, stdout, stderr)` without spawning a process.
+
+## Programmatic Acceptance
+
+=== AC cli-main ===
+Intent: The CLI exposes its documented callable entry point.
+
+from cli import main
+
+assert callable(main)
+assert isinstance(main([]), int)
+=== END AC cli-main ===
+
+=== AC cli-runner ===
+Intent: The in-process CLI runner returns an exit code and captured output streams.
+
+from cli.testing import cli_runner
+
+result = cli_runner()
+assert isinstance(result, tuple)
+assert len(result) == 3
+assert isinstance(result[0], int)
+assert isinstance(result[1], str)
+assert isinstance(result[2], str)
+=== END AC cli-runner ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- The root executable is named `fxrates` and is invoked as `./fxrates &lt;command&gt;`.
+- CLI diagnostics use standard error.
+
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-API-Foundation.md ===
+# FEATURE: API Foundation
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Establishes the FastAPI application factory and published in-process test client. |
+| Depends On  | ARCHITECTURE.md |
+| Provides    | `app_server.main:create_app`, `app_server.main:app`, `app_server.testing:web_client` |
+
+## Questions
+
+- None.
+
+## Purpose
+
+`app_server.main` exposes `create_app() -&gt; FastAPI` and a module-level `app` suitable for uvicorn. `app_server.testing.web_client()` returns a test client created from the application factory.
+
+## Programmatic Acceptance
+
+Requires: python-package=httpx; scope=test
+
+=== AC app-factory ===
+Intent: The application factory returns a FastAPI application.
+
+from fastapi import FastAPI
+from app_server.main import create_app
+
+assert isinstance(create_app(), FastAPI)
+=== END AC app-factory ===
+
+=== AC app-instance ===
+Intent: The module exports an application instance usable by the server entry point.
+
+from fastapi import FastAPI
+from app_server.main import app
+
+assert isinstance(app, FastAPI)
+=== END AC app-instance ===
+
+=== AC web-client ===
+Intent: The published callable returns a client that can issue HTTP requests.
+
+from fastapi.testclient import TestClient
+from app_server.testing import web_client
+
+client = web_client()
+assert isinstance(client, TestClient)
+response = client.get(&quot;/health&quot;)
+assert response.status_code in (200, 404)
+=== END AC web-client ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- The published test client is created by `app_server.testing.web_client()`.
+- Route behavior is specified by the feature that owns each route.
+
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-Initialize-Store.md ===
+# FEATURE: Initialize Store
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Resets the rates store through the `fxrates init` command. |
+| Depends On  | FEATURE-CLI-Foundation.md, DATABASE.md |
+| Provides    | `fxrates init` |
+| Consumes    | rates repository operations |
+
+## Questions
+
+- None.
+
+## Purpose
+
+`fxrates init` drops the existing `rates` table and creates it empty through the supported persistence boundary. Success returns exit code `0` and produces no standard output.
+
+## Programmatic Acceptance
+
+=== AC init-exit ===
+Intent: Initializing the store succeeds.
+
+from cli.testing import cli_runner
+
+code, stdout, stderr = cli_runner(&quot;init&quot;)
+assert code == 0
+=== END AC init-exit ===
+
+=== AC init-repeat ===
+Intent: Store initialization can be repeated successfully.
+
+from cli.testing import cli_runner
+
+first = cli_runner(&quot;init&quot;)
+second = cli_runner(&quot;init&quot;)
+assert first[0] == 0
+assert second[0] == 0
+=== END AC init-repeat ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Store initialization uses the shipped persistence boundary.
+- Do not print to standard output on successful initialization.
+
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-Load-History.md ===
+# FEATURE: Load History
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Validates and loads ECB history CSV files through the CLI. |
+| Depends On  | FEATURE-Initialize-Store.md, DATABASE.md |
+| Provides    | `fxrates load` |
+| Consumes    | rates repository operations |
+
+## Questions
+
+- None.
+
+## Purpose
+
+`fxrates load &lt;csv&gt;` validates the complete CSV before writing. The header begins with `Date`; currency fields are three-letter uppercase codes, with a trailing empty field ignored. Each date is a unique real calendar date in `YYYY-MM-DD` form. `N/A` values are skipped; other values must match `[0-9]+(\.[0-9]+)?` and be nonzero. Valid rates are stored exactly as published, replacing any stored value for the same date and currency.
+
+On success, standard output is two lines: `dates,rates`, followed by the counts of dates with at least one stored rate and rates stored from the input.
+
+## Programmatic Acceptance
+
+=== AC load-valid-file ===
+Intent: A valid staged history file loads successfully.
+Suite: scoped
+
+from cli.testing import cli_runner
+
+result = cli_runner(&quot;load&quot;, &quot;sources/eurofxref-hist_2025-01.csv&quot;)
+assert result[0] == 0
+=== END AC load-valid-file ===
+
+=== AC load-preserves-rate-text ===
+Intent: Loaded rates are readable through the generated repository with their published text preserved.
+
+from cli.testing import cli_runner
+from persistence.testing import committed_session
+
+result = cli_runner(&quot;load&quot;, &quot;sources/eurofxref-hist_2025-01.csv&quot;)
+assert result[0] == 0
+with committed_session() as db:
+    rows = db.rates.list(date=&quot;2025-01-29&quot;, currency=&quot;CHF&quot;)
+    assert len(rows) == 1
+    assert rows[0].rate == &quot;0.943&quot;
+=== END AC load-preserves-rate-text ===
+
+=== AC load-skips-na ===
+Intent: Currency cells marked N/A do not create stored rate rows.
+
+from cli.testing import cli_runner
+from persistence.testing import committed_session
+
+result = cli_runner(&quot;load&quot;, &quot;sources/eurofxref-hist_2025-01.csv&quot;)
+assert result[0] == 0
+with committed_session() as db:
+    rows = db.rates.list(currency=&quot;HRK&quot;)
+    assert rows == []
+=== END AC load-skips-na ===
+
+=== AC load-replaces-existing ===
+Intent: Loading a publication row stores or replaces its matching rate.
+Suite: scoped
+
+from cli.testing import cli_runner
+from persistence.testing import committed_session
+
+with committed_session() as db:
+    db.rates.upsert(date=&quot;2025-01-29&quot;, currency=&quot;CHF&quot;, rate=&quot;9.876&quot;)
+result = cli_runner(&quot;load&quot;, &quot;sources/eurofxref-hist_2025-01.csv&quot;)
+assert result[0] == 0
+with committed_session() as db:
+    rows = db.rates.list(date=&quot;2025-01-29&quot;, currency=&quot;CHF&quot;)
+    assert len(rows) == 1
+    assert rows[0].rate == &quot;0.943&quot;
+=== END AC load-replaces-existing ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Validate the whole file before its first write.
+- Preserve each ECB rate as published text; do not store rates as floating-point values.
+- Use the generated `persistence` package for all database access.
+
+=== END ARTIFACT ===</pre></article>
+</main>
+</body>
+</html>

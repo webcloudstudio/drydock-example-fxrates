@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/prompt_outputs/20261024.052227.043Z_fxrates_plan_codex.output.txt</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/prompt_outputs/20261024.052227.043Z_fxrates_plan_codex.output.txt</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/prompt_outputs/20261024.052227.043Z_fxrates_plan_codex.output.txt">Raw file</a></div></header>
+<article class="doc"><pre>=== BEGIN ARTIFACT FEATURE-CLI-Usage.md ===
+# FEATURE: CLI Usage
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Defines usage errors for unsupported or malformed `fxrates` invocations. |
+| Depends On  | FEATURE-CLI-Foundation.md |
+| Provides    | CLI usage error behavior |
+| Consumes    | ./fxrates entry point |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Return exit code `2` for unknown commands, incorrect argument counts, and a non-integer port value. These usage failures produce no standard output. Write a single diagnostic line to standard error.
+
+## Trigger and behavior
+
+The root `./fxrates` executable dispatches commands. It rejects an unrecognized command, a command with the wrong number of arguments, or `serve --port` followed by a non-integer value with exit code `2`.
+
+## Programmatic Acceptance
+
+=== AC usage-unknown-command ===
+Intent: An unknown command returns the usage exit status.
+
+from cli.testing import cli_runner
+
+code, stdout, stderr = cli_runner(&quot;frobnicate&quot;)
+assert code == 2
+assert stdout == &quot;&quot;
+=== END AC usage-unknown-command ===
+
+=== AC usage-wrong-arguments ===
+Intent: A command missing its required argument returns the usage exit status.
+
+from cli.testing import cli_runner
+
+code, stdout, stderr = cli_runner(&quot;load&quot;)
+assert code == 2
+assert stdout == &quot;&quot;
+=== END AC usage-wrong-arguments ===
+
+=== AC usage-invalid-port ===
+Intent: A non-integer port returns the usage exit status.
+
+from cli.testing import cli_runner
+
+code, stdout, stderr = cli_runner(&quot;serve&quot;, &quot;--port&quot;, &quot;notaport&quot;)
+assert code == 2
+assert stdout == &quot;&quot;
+=== END AC usage-invalid-port ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Usage failures use exit code `2` and produce no standard output.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-Serve.md ===
+# FEATURE: Serve HTTP API
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Runs the FastAPI service on localhost until it is stopped. |
+| Depends On  | FEATURE-CLI-Foundation.md, FEATURE-API-Foundation.md |
+| Provides    | fxrates serve |
+| Consumes    | app_server.main:create_app |
+
+## Questions
+
+- None.
+
+## Purpose
+
+The `fxrates serve` command starts uvicorn in the foreground, bound only to `127.0.0.1`. It accepts an optional integer port and defaults to port `8000`. The process stops cleanly on SIGTERM.
+
+## Trigger and behavior
+
+Running `./fxrates serve` starts the service on `127.0.0.1:8000`. Running `./fxrates serve --port &lt;n&gt;` starts it on `127.0.0.1:&lt;n&gt;`. The API application is supplied by `app_server.main:create_app`.
+
+## Programmatic Acceptance
+
+=== AC serve-command-entry ===
+Intent: The CLI exposes the serve command.
+
+from cli import main
+
+assert callable(main)
+=== END AC serve-command-entry ===
+
+=== AC serve-app-factory ===
+Intent: The server command&#x27;s application factory is available.
+
+from app_server.main import create_app
+
+assert callable(create_app)
+=== END AC serve-app-factory ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Bind to `127.0.0.1`; use port `8000` when none is supplied.
+- Run in the foreground and stop cleanly on SIGTERM.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT VERIFICATION.md ===
+# FEATURE: Verification
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Defines the final verification commands for the completed FxRates application. |
+| Depends On  | FEATURE-CLI-Usage.md, FEATURE-Serve.md |
+| Provides    | bin/test.sh, supplied FxRates grader |
+| Consumes    | pytest suite, sources/run.sh |
+
+## Questions
+
+- None.
+
+## Purpose
+
+The completed application provides `bin/test.sh`, a POSIX-compatible launcher that runs the project&#x27;s pytest suite from the application root and succeeds only when every test passes. The supplied `sources/run.sh` is an authoritative full-project grader. This story is the terminal full-suite gate, after all implementation stories are complete.
+
+The grader sets `DATABASE_URL` to a fresh temporary SQLite file, exercises CLI commands, starts the local server, and checks its HTTP responses. It does not exercise `fetch` and makes no network requests beyond localhost.
+
+## Verification behavior
+
+Keep the supplied grader and its CSV fixtures unchanged. The full grader is run only by this terminal story. The project&#x27;s test suite covers each command, each CSV load rule, each endpoint, effective-date selection, rounding, and error statuses; tests of `fetch` stub the download and use no network.
+
+## Programmatic Acceptance
+
+=== AC terminal-grader ===
+Intent: The supplied end-to-end grader passes against the completed application.
+Suite: full
+
+import subprocess
+
+result = subprocess.run(
+    [&quot;sh&quot;, &quot;sources/run.sh&quot;],
+    capture_output=True,
+    text=True,
+)
+print(result.stdout)
+print(result.stderr)
+assert result.returncode == 0
+=== END AC terminal-grader ===
+
+=== AC pytest-launcher ===
+Intent: The project&#x27;s POSIX test launcher runs the complete pytest suite successfully.
+
+import subprocess
+
+result = subprocess.run(
+    [&quot;sh&quot;, &quot;bin/test.sh&quot;],
+    capture_output=True,
+    text=True,
+)
+print(result.stdout)
+print(result.stderr)
+assert result.returncode == 0
+=== END AC pytest-launcher ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Do not modify, rewrite, regenerate, or substitute files under `sources/`.
+- Automated tests stub ECB downloads and never use the network.
+- The supplied grader is run as the terminal full-suite acceptance gate.
+=== END ARTIFACT===</pre></article>
+</main>
+</body>
+</html>

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>build/FxRates/tests/test_foundations.py</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>build/FxRates/tests/test_foundations.py</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../build/FxRates/tests/test_foundations.py">Raw file</a></div></header>
+<article class="doc"><pre>&quot;&quot;&quot;Deterministic checks for the database and application foundation contracts.&quot;&quot;&quot;
+
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+
+from app_server.main import app, create_app
+from app_server.testing import web_client
+from cli import main
+from cli.testing import cli_runner
+from config import Config
+from persistence import SCHEMA, UnknownOperation
+from persistence.testing import db_session
+
+
+def test_rates_schema_declares_all_operations() -&gt; None:
+    assert [operation.name for operation in SCHEMA.operations] == [
+        &quot;get&quot;, &quot;list&quot;, &quot;upsert&quot;, &quot;delete&quot;
+    ]
+    assert SCHEMA.tables[0].name == &quot;rates&quot;
+
+
+def test_rate_upsert_reads_back_exact_text_and_is_idempotent() -&gt; None:
+    with db_session() as db:
+        first = db.rates.upsert(date=&quot;2099-04-01&quot;, currency=&quot;TST&quot;, rate=&quot;1.2300&quot;)
+        second = db.rates.upsert(date=&quot;2099-04-01&quot;, currency=&quot;TST&quot;, rate=&quot;1.2300&quot;)
+        assert first is not None and second is not None
+        assert second.rate == &quot;1.2300&quot;
+        assert db.rates.get(date=second.date, currency=second.currency) == second
+
+
+def test_rate_list_accepts_absent_and_present_optional_filters() -&gt; None:
+    with db_session() as db:
+        row = db.rates.upsert(date=&quot;2099-04-02&quot;, currency=&quot;TSU&quot;, rate=&quot;2.5&quot;)
+        assert row is not None
+        assert row in db.rates.list(date=row.date)
+        assert row in db.rates.list(currency=row.currency)
+        assert row in db.rates.list()
+
+
+def test_rate_get_and_list_cover_empty_and_many_results() -&gt; None:
+    with db_session() as db:
+        assert db.rates.get(date=&quot;2099-04-10&quot;, currency=&quot;TSA&quot;) is None
+        assert db.rates.list(date=&quot;2099-04-10&quot;) == []
+        one = db.rates.upsert(date=&quot;2099-04-10&quot;, currency=&quot;TSA&quot;, rate=&quot;1&quot;)
+        two = db.rates.upsert(date=&quot;2099-04-10&quot;, currency=&quot;TSB&quot;, rate=&quot;2&quot;)
+        assert one is not None and two is not None
+        assert len(db.rates.list(date=&quot;2099-04-10&quot;)) == 2
+
+
+def test_undeclared_rate_operation_is_rejected() -&gt; None:
+    with db_session() as db:
+        try:
+            db.rates.reprice(rate=&quot;1&quot;)
+        except UnknownOperation:
+            pass
+        else:
+            raise AssertionError(&quot;undeclared operation was allowed&quot;)
+
+
+def test_rate_delete_returns_key_and_removes_only_match() -&gt; None:
+    with db_session() as db:
+        row = db.rates.upsert(date=&quot;2099-04-03&quot;, currency=&quot;TSV&quot;, rate=&quot;3.5&quot;)
+        assert row is not None
+        deleted = db.rates.delete(date=row.date, currency=row.currency)
+        assert deleted is not None
+        assert (deleted.date, deleted.currency) == (row.date, row.currency)
+        assert db.rates.get(date=row.date, currency=row.currency) is None
+
+
+def test_app_factory_and_module_instance_are_fastapi() -&gt; None:
+    assert isinstance(create_app(), FastAPI)
+    assert isinstance(app, FastAPI)
+
+
+def test_web_client_uses_application_factory() -&gt; None:
+    client = web_client()
+    assert isinstance(client, TestClient)
+    assert client.get(&quot;/health&quot;).status_code in (200, 404)
+    client.close()
+
+
+def test_cli_entry_and_runner_return_codes_and_streams() -&gt; None:
+    assert isinstance(main([]), int)
+    code, stdout, stderr = cli_runner()
+    assert code == 2
+    assert stdout == &quot;&quot;
+    assert stderr
+
+
+def test_cli_help_is_a_usage_path() -&gt; None:
+    code, stdout, _ = cli_runner(&quot;--help&quot;)
+    assert code == 0
+    assert &quot;serve&quot; in stdout
+
+
+def test_database_configuration_precedence(monkeypatch) -&gt; None:
+    monkeypatch.setenv(&quot;DATABASE_PATH&quot;, &quot;fallback.db&quot;)
+    monkeypatch.setenv(&quot;DATABASE_URL&quot;, &quot;sqlite:///preferred.db&quot;)
+    assert Config.load().database_url == &quot;sqlite:///preferred.db&quot;
+    monkeypatch.delenv(&quot;DATABASE_URL&quot;)
+    assert Config.load().database_url == &quot;fallback.db&quot;
+
+
+def test_database_configuration_default(monkeypatch) -&gt; None:
+    monkeypatch.delenv(&quot;DATABASE_URL&quot;, raising=False)
+    monkeypatch.delenv(&quot;DATABASE_PATH&quot;, raising=False)
+    assert Config.load().database_url == &quot;data/app.db&quot;
+</pre></article>
+</main>
+</body>
+</html>

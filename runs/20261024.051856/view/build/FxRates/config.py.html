@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>build/FxRates/config.py</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>build/FxRates/config.py</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../build/FxRates/config.py">Raw file</a></div></header>
+<article class="doc"><pre>&quot;&quot;&quot;Typed runtime configuration for the application.&quot;&quot;&quot;
+
+from __future__ import annotations
+
+import os
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True)
+class Config:
+    database_url: str
+
+    @classmethod
+    def load(cls) -&gt; &quot;Config&quot;:
+        return cls(
+            database_url=(
+                os.environ.get(&quot;DATABASE_URL&quot;)
+                or os.environ.get(&quot;DATABASE_PATH&quot;)
+                or &quot;data/app.db&quot;
+            )
+        )
+</pre></article>
+</main>
+</body>
+</html>

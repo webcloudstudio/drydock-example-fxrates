@@ -1,0 +1,17 @@
+[project]
+name = "fxrates"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.139.0",
+    "uvicorn>=0.51.0",
+]
+
+[project.scripts]
+fxrates = "cli:main"
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=9.0.3",
+]

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>build/FxRates/cli/__init__.py</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>build/FxRates/cli/__init__.py</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../build/FxRates/cli/__init__.py">Raw file</a></div></header>
+<article class="doc"><pre>&quot;&quot;&quot;Command line entry point for FxRates.&quot;&quot;&quot;
+
+from __future__ import annotations
+
+import sys
+
+from .commands import dispatch
+from .parser import build_parser
+
+
+def main(argv: list[str] | None = None) -&gt; int:
+    try:
+        args = build_parser().parse_args(argv)
+    except SystemExit as exc:
+        return int(exc.code or 0)
+    try:
+        return dispatch(args)
+    except (OSError, RuntimeError, ValueError) as exc:
+        print(f&quot;error: {exc}&quot;, file=sys.stderr)
+        return 1
+</pre></article>
+</main>
+</body>
+</html>
