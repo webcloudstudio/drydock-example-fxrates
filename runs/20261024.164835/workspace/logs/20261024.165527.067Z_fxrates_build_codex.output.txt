@@ -1,0 +1,24 @@
+<reusable-compact filename="ARCHITECTURE.md">
+- `config.database_dsn()` resolves `DATABASE_URL`, then `DATABASE_PATH`, then `data/app.db`; runtime settings belong at the configuration boundary.
+- `cli` owns command parsing and dispatch; `app_server` owns the FastAPI and HTTP boundary; `services` owns application behavior; `persistence` owns database access through the shipped persistence library.
+- Application modules must not import database drivers or issue SQL. Store ECB rates as published text and use `decimal.Decimal` for arithmetic.
+- Stack: Python 3.11+, FastAPI, uvicorn, SQLite, pytest, and POSIX sh.
+</reusable-compact>
+
+RESULT: SUCCESS
+
+FILES CHANGED:
+- `.env.example`
+- `app_server/__init__.py`
+- `cli/__init__.py`
+- `config.py`
+- `pyproject.toml`
+- `services/__init__.py`
+- `tests/test_architecture_imports.py`
+- `tests/test_config.py`
+
+SUMMARY:
+Added the configuration boundary, importable application boundary packages, environment-variable documentation, project dependencies, and focused tests. Verified the declared import and DSN precedence assertions; `uv run pytest -q` passed all 6 tests, and `uv lock --check` succeeded.
+
+BLOCKERS:
+- None

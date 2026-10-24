@@ -1,0 +1,16 @@
+Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
+Drydock status — workspace
+
+Target: FxRates
+   Phase:     Implement
+   State:     Error: plan cannot be built as written
+   Detail:    5 imported · 13 authored · metadata planned
+   Analysis:  Ready · 11 stories · 0 questions · 0 blockers
+   Plan:      13 pending
+   Next Step: drydock run quarterdeck FxRates
+   10-24:     ✅  drydock build status FxRates
+   10-24:     ✅  drydock plan verify FxRates
+   10-24:     ✅  drydock plan repair FxRates
+   10-24:     ❌  drydock plan verify FxRates
+   10-24:     ✅  drydock plan FxRates --override
+

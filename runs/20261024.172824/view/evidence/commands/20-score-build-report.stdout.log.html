@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/commands/20-score-build-report.stdout.log</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/commands/20-score-build-report.stdout.log</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/commands/20-score-build-report.stdout.log">Raw file</a></div></header>
+<article class="doc"><pre>Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
+
+Build report: FxRates
+  evidence: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261024.172824/workspace/targets/FxRates/evidence
+  usage:    /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261024.172824/workspace/logs/llm.jsonl
+
+  Blueprint acceptance (last `score ac`): PASS 28  FAIL 0  UNVERIFIED 0  PREPASSED 5  (33 AC)
+
+  Block                     Build AC  Calls     Cached  Uncached    Hit  Output    Time
+  ─────────────────────────────────────────────────────────────────────────────────────
+  ✓ Block 2 · Foundational       4/4      1          0         0      —       0      0s
+  ✓ Block 1 · Foundational       1/1      1    204,032    26,314  88.6%   3,044  1m 06s
+  ✓ Block 3 · Service          28/28      3  1,998,464   163,653  92.4%  11,354  6m 05s
+  ─────────────────────────────────────────────────────────────────────────────────────
+  TOTAL                        33/33      5  2,202,496   189,967  92.1%  14,398  7m 11s
+
+  Blocks: 3/3 verified · 2 on first call · 1 repaired
+  Model:  gpt-6-luna
+  Tokens: 2,202,496 cached · 189,967 uncached · 14,398 out
+
+  Repairs
+    Block 3 · Service [block-3]
+      initial build  incomplete 24/28 AC · 35/35 cases · 893,817 in · 93.9% hit · 1m 29s
+                     not yet passing: initialize-clears-rates, initialize-repeat, serve-uses-port-and-stops, cli-usage-error-status
+      repair 1       incomplete 26/28 AC · 35/35 cases · 741,139 in · 92.7% hit · 2m 48s
+                     not yet passing: initialize-clears-rates, initialize-repeat
+      repair 2       built      28/28 AC · 35/35 cases · 527,161 in · 89.5% hit · 1m 46s
+
+  Note: 1 execution(s) have no usage record; their tokens read as zero.
+
+</pre></article>
+</main>
+</body>
+</html>

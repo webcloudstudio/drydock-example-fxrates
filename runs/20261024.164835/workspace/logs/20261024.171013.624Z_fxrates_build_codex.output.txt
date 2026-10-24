@@ -1,0 +1,15 @@
+RESULT: FAILED
+
+FILES CHANGED:
+- cli/parser.py
+
+SUMMARY:
+- Updated CLI usage errors to emit a single diagnostic line with no stdout.
+- The remaining init acceptance checks cannot pass through the current persistence contract: it declares no delete operation, and the shipped library forbids DDL during acceptance transactions. I did not modify generated persistence or protected files.
+
+BLOCKERS:
+- `DATABASE.md` must declare a supported way to clear rates, or the init acceptance contract must be revised; rebuild persistence before rerunning.
+- Other reported acceptance failures remain unresolved.
+
+FAILURE_SUMMARY: Persistence contract prevents init from clearing rates
+FAILURE_DETAIL: `init` currently attempts DDL, which the shipped persistence library rejects during acceptance transactions. No declared repository operation can delete rates. Update the database contract and rebuild persistence, then rerun acceptance.

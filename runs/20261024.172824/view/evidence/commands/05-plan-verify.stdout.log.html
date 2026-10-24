@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/commands/05-plan-verify.stdout.log</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/commands/05-plan-verify.stdout.log</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/commands/05-plan-verify.stdout.log">Raw file</a></div></header>
+<article class="doc"><pre>Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
+plan verify: FxRates
+  1 criterion cannot run as written
+  ✗  ARCHITECTURE.md [architecture-imports]: imports `persistence`, which Drydock generates from DATABASE.md at block 2 (story `database`), after story `architecture` builds at block 1; assert only what that story delivers and leave persistence to DATABASE.md&#x27;s criteria
+  ⚠  FEATURE-Serve.md [serve-uses-port-and-stops]: captures a program&#x27;s output and prints none of it; print its pass/fail counts before asserting so repair can see progress
+  Run: drydock plan repair FxRates
+Target - committed project workspace git store
+</pre></article>
+</main>
+</body>
+</html>

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>build/FxRates/tests/test_architecture_imports.py</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>build/FxRates/tests/test_architecture_imports.py</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../build/FxRates/tests/test_architecture_imports.py">Raw file</a></div></header>
+<article class="doc"><pre>&quot;&quot;&quot;Declared architecture importability contract.&quot;&quot;&quot;
+
+from app_server.main import app, create_app
+from app_server.testing import web_client
+from cli import main
+from cli.testing import cli_runner
+
+
+def test_application_and_command_entry_points_are_importable() -&gt; None:
+    assert callable(create_app)
+    assert app is not None
+    assert callable(web_client)
+    assert callable(main)
+    assert callable(cli_runner)
+</pre></article>
+</main>
+</body>
+</html>

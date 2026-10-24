@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/prompt_outputs/20261024.172908.183Z_fxrates_plan_codex.output.txt</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/prompt_outputs/20261024.172908.183Z_fxrates_plan_codex.output.txt</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/prompt_outputs/20261024.172908.183Z_fxrates_plan_codex.output.txt">Raw file</a></div></header>
+<article class="doc"><pre>=== BEGIN ARTIFACT TOPOLOGY.md ===
+## Declarations
+
+## story architecture
+summary:      Establish the application structure and module boundaries.
+type:         foundational
+kind:         capability
+phase:        1
+implements:   ARCHITECTURE.md
+stack:        python.md, fastapi.md, sqlite.md, cli.md
+provides:     app_server.main:create_app, cli.main, persistence.open_database
+acceptance:   yes
+instructions: |
+  Establish the Python application structure and the ownership boundaries described in ARCHITECTURE.md. Keep database access behind the shipped persistence library.
+
+## story database
+summary:      Declare the rates schema and repository operations.
+type:         foundational
+kind:         capability
+phase:        1
+implements:   DATABASE.md
+stack:        python.md, sqlite.md, persistence.md
+depends:      architecture
+provides:     rates.get, rates.list, rates.upsert, rates.delete
+acceptance:   yes
+instructions: |
+  Declare the rates table and typed repository operations needed by initialization, loading, and API reads. Include acceptance for every declared operation.
+
+## story initialize_store
+summary:      Initialize an empty rates store from the command line.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-Initialize.md
+covers:       DATA-001
+accepts:      st-008
+stack:        python.md, cli.md, sqlite.md
+depends:      architecture, database
+provides:     fxrates init
+acceptance:   yes
+instructions: |
+  Implement fxrates init so it drops and recreates the rates table empty, using the persistence boundary and configured database location.
+
+## story load_history
+summary:      Validate and load ECB history CSV files atomically.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-Load.md
+covers:       DATA-002
+accepts:      st-003, st-008
+context:      sources/eurofxref-hist_2025-01.csv, sources/eurofxref-hist_bad.csv
+stack:        python.md, cli.md, sqlite.md
+depends:      architecture, database
+provides:     fxrates load
+acceptance:   yes
+instructions: |
+  Validate the entire CSV before writing. Store non-N/A rates as their published text, replace matching date and currency rows, and report the date and rate counts.
+
+## story fetch_history
+summary:      Fetch and load the ECB history archive.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-Fetch.md
+covers:       DATA-003
+accepts:      st-009
+stack:        python.md, cli.md, sqlite.md
+depends:      architecture, database, load_history
+provides:     fxrates fetch
+acceptance:   yes
+instructions: |
+  Download the ECB archive, extract eurofxref-hist.csv, and pass it through the same validation and storage behavior as fxrates load. Tests must stub the download.
+
+## story cli_errors
+summary:      Handle CLI usage errors and operational failures.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-CLI-Errors.md
+covers:       CLI-001
+accepts:      st-002
+stack:        python.md, cli.md
+depends:      architecture, initialize_store, load_history, fetch_history, serve_api
+provides:     fxrates usage and failure responses
+acceptance:   yes
+instructions: |
+  Implement the documented command usage and failure exit codes. Failures write no stdout and one diagnostic line to stderr. Provide bin/test.sh for the project pytest suite.
+
+## story serve_api
+summary:      Start the API server on the requested local port.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-Serve.md
+covers:       CLI-002
+accepts:      st-004
+stack:        python.md, fastapi.md, cli.md
+depends:      architecture
+provides:     fxrates serve
+acceptance:   yes
+instructions: |
+  Run uvicorn in the foreground on 127.0.0.1, honor --port with default 8000, and stop cleanly on SIGTERM.
+
+## story api_health_stats
+summary:      Report API health and stored rate statistics.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-Health-Stats.md
+covers:       API-001
+stack:        python.md, fastapi.md, sqlite.md
+depends:      architecture, database, load_history
+provides:     GET /health, GET /stats
+acceptance:   yes
+instructions: |
+  Implement health and statistics responses, including null date bounds when no rates are stored.
+
+## story api_currencies
+summary:      List the base and available currencies.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-Currencies.md
+covers:       API-002
+stack:        python.md, fastapi.md, sqlite.md
+depends:      architecture, database, load_history
+provides:     GET /currencies
+acceptance:   yes
+instructions: |
+  Return EUR as the base and stored currencies in ascending order.
+
+## story api_rates
+summary:      Retrieve rates for a requested or latest effective date.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-Rates.md
+covers:       API-003
+accepts:      st-005, st-007
+context:      sources/eurofxref-hist_2025-01.csv
+stack:        python.md, fastapi.md, sqlite.md
+depends:      architecture, database, load_history
+provides:     GET /rates/{date}, GET /rates/latest
+acceptance:   yes
+instructions: |
+  Resolve requests to the latest publication on or before the date. Return 404 when none exists and 422 for malformed dates.
+
+## story api_convert
+summary:      Convert amounts between currencies using exact decimal arithmetic.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-Convert.md
+covers:       API-004
+accepts:      st-005, st-006, st-007, st-008
+stack:        python.md, fastapi.md, sqlite.md
+depends:      architecture, database, load_history
+provides:     GET /convert
+acceptance:   yes
+instructions: |
+  Implement conversion with exact Decimal arithmetic and half-even rounding. Validate amount and date inputs, resolve the effective date, and return 404 for unavailable currencies or dates.
+
+## story api_history
+summary:      Retrieve currency history and exact summary statistics.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-History.md
+covers:       API-005
+accepts:      st-006, st-007, st-008
+stack:        python.md, fastapi.md, sqlite.md
+depends:      architecture, database, load_history
+provides:     GET /history/{code}
+acceptance:   yes
+instructions: |
+  Return ascending points within inclusive optional bounds and compute min, max, and mean with exact Decimal arithmetic. Return null statistics for an empty range and 404 for a currency with no stored rate.
+
+## story conformance
+summary:      Pass the supplied end-to-end conformance grader.
+type:         service
+kind:         test harness
+phase:        1
+implements:   VERIFICATION.md
+covers:       VERIFY-001
+accepts:      st-001
+context:      sources/run.sh, sources/eurofxref-hist_2025-01.csv, sources/eurofxref-hist_2025-02-03_04.csv, sources/eurofxref-hist_bad.csv
+stack:        common.md, python.md, fastapi.md, sqlite.md, cli.md
+depends:      initialize_store, load_history, fetch_history, cli_errors, serve_api, api_health_stats, api_currencies, api_rates, api_convert, api_history
+acceptance:   yes
+instructions: |
+  Run the supplied grader as the terminal full-suite acceptance gate. Keep all staged sources assets unchanged.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT DECISIONS.json ===
+[
+  {
+    &quot;id&quot;: &quot;D-001&quot;,
+    &quot;type&quot;: &quot;choice&quot;,
+    &quot;severity&quot;: &quot;material&quot;,
+    &quot;blueprint&quot;: &quot;ARCHITECTURE.md&quot;,
+    &quot;story&quot;: &quot;architecture&quot;,
+    &quot;title&quot;: &quot;Shared project foundation&quot;,
+    &quot;description&quot;: &quot;The source requires a CLI, API, and SQLite persistence but does not prescribe module ownership. Use a small shared application structure with route handlers calling services and services using only the generated persistence package.&quot;,
+    &quot;options&quot;: [
+      {
+        &quot;value&quot;: &quot;shared-boundaries&quot;,
+        &quot;label&quot;: &quot;Shared application, service, and persistence boundaries&quot;
+      },
+      {
+        &quot;value&quot;: &quot;command-local&quot;,
+        &quot;label&quot;: &quot;Keep persistence and behavior inside command handlers&quot;
+      }
+    ],
+    &quot;system_choice&quot;: &quot;shared-boundaries&quot;
+  }
+]
+=== END ARTIFACT ===</pre></article>
+</main>
+</body>
+</html>

@@ -1,0 +1,372 @@
+=== BEGIN ARTIFACT FEATURE-API-History.md ===
+# FEATURE: API History
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Serves a currency's stored rate history and summary statistics. |
+| Depends On  | DATABASE.md, FEATURE-API-Foundation.md |
+| Provides    | GET /history/{code} |
+| Consumes    | rates.history |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Return a currency's publication points and statistics for an optional date range.
+
+## Workflow
+
+1. Receive a currency code and optional `start` and `end` dates.
+2. Return 404 if the currency has no stored rate at all, including EUR.
+3. Query the inclusive date range in ascending date order.
+4. Return the points, count, minimum and maximum published rate text, and the exact mean rounded half to even to six decimal places.
+5. If the range has no points, return count zero, null statistics, and an empty points list.
+
+## Database Interface
+
+- `FEATURE-API-004` — read: list a currency's rates in an inclusive date range - supplies: `currency`, `start_date`, `end_date` - returns: `date`, `currency`, `rate`
+
+## Programmatic Acceptance
+
+=== AC history-points-and-statistics ===
+Intent: The history route returns inclusive, ascending points and statistics derived from the seeded rates.
+
+from decimal import Decimal, ROUND_HALF_EVEN
+from persistence.testing import db_session
+from app_server.testing import web_client
+
+currency = "ZZZ"
+seed = [("2099-01-02", "1.1"), ("2099-01-03", "1.2")]
+with db_session() as db:
+    for date, rate in seed:
+        db.rates.replace_rate(date=date, currency=currency, rate=rate)
+
+response = web_client().get(f"/history/{currency}", params={"start": seed[0][0], "end": seed[1][0]})
+assert response.status_code == 200
+body = response.json()
+assert [point["date"] for point in body["points"]] == [date for date, _ in seed]
+assert [point["rate"] for point in body["points"]] == [rate for _, rate in seed]
+assert body["count"] == len(seed)
+values = [Decimal(rate) for _, rate in seed]
+assert body["min"] == str(min(values))
+assert body["max"] == str(max(values))
+mean = (sum(values) / len(values)).quantize(Decimal("0.000001"), rounding=ROUND_HALF_EVEN)
+assert body["mean"] == f"{mean:.6f}"
+=== END AC history-points-and-statistics ===
+
+=== AC history-empty-range ===
+Intent: A known currency with no points inside the selected bounds returns empty-range statistics.
+
+from persistence.testing import db_session
+from app_server.testing import web_client
+
+currency = "ZZZ"
+date = "2099-01-02"
+with db_session() as db:
+    db.rates.replace_rate(date=date, currency=currency, rate="1.1")
+
+response = web_client().get(f"/history/{currency}", params={"start": "2100-01-01"})
+assert response.status_code == 200
+body = response.json()
+assert body["currency"] == currency
+assert body["count"] == 0
+assert body["min"] is None and body["max"] is None and body["mean"] is None
+assert body["points"] == []
+=== END AC history-empty-range ===
+
+=== AC history-unknown-currency ===
+Intent: A currency with no stored history returns 404.
+
+from app_server.testing import web_client
+
+response = web_client().get("/history/ZZZ")
+assert response.status_code == 404
+=== END AC history-unknown-currency ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Date bounds are optional and inclusive.
+- Points are returned in ascending date order.
+- Rate text is preserved; statistics use exact Decimal arithmetic.
+- The mean uses half-even rounding to six decimal places.
+- A currency with no stored rates returns 404; a known currency with no points in the selected range returns empty statistics.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-API-Validation.md ===
+# FEATURE: API Validation
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Enforces the API's malformed-input and unavailable-currency response statuses. |
+| Depends On  | FEATURE-API-Foundation.md, FEATURE-API-Rates.md, FEATURE-API-Convert.md, FEATURE-API-History.md |
+| Provides    | API request validation behavior |
+| Consumes     | GET /rates/{date}, GET /convert, GET /history/{code} |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Ensure malformed dates and amounts and missing required query parameters return 422, and unknown or unavailable currencies return 404 on the applicable routes.
+
+## Request rules
+
+- A malformed date in a path or query returns 422.
+- A malformed conversion amount returns 422.
+- Missing required conversion parameters return 422.
+- A conversion naming an unknown currency returns 404.
+- A history request for a currency without stored rates returns 404.
+
+## Programmatic Acceptance
+
+=== AC validation-malformed-date ===
+Intent: A malformed date on a provided route is refused with status 422.
+
+from app_server.testing import web_client
+
+client = web_client()
+assert client.get("/rates/2025-13-01").status_code == 422
+assert client.get("/history/GBP", params={"start": "2025-01-31-x"}).status_code == 422
+=== END AC validation-malformed-date ===
+
+=== AC validation-convert-parameters ===
+Intent: Missing required conversion input and a malformed amount return status 422.
+
+from app_server.testing import web_client
+
+client = web_client()
+assert client.get("/convert", params={"from": "USD", "to": "GBP"}).status_code == 422
+assert client.get("/convert", params={"from": "USD", "to": "GBP", "amount": "abc"}).status_code == 422
+=== END AC validation-convert-parameters ===
+
+=== AC validation-unavailable-currencies ===
+Intent: A conversion to an unavailable currency and history for an unstored currency return 404.
+
+from persistence.testing import db_session
+from app_server.testing import web_client
+
+date = "2099-01-02"
+with db_session() as db:
+    db.rates.replace_rate(date=date, currency="USD", rate="1.1")
+
+client = web_client()
+assert client.get("/convert", params={"from": "USD", "to": "XXX", "amount": "1"}).status_code == 404
+assert client.get("/history/HRK").status_code == 404
+=== END AC validation-unavailable-currencies ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Use the specified HTTP status codes; error response body wording is not part of this contract.
+- Malformed dates and amounts and missing required query parameters return 422.
+- Unknown or unavailable currencies return 404.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-CLI-Serve.md ===
+# FEATURE: CLI Serve
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Runs the local JSON API in the foreground on the requested port or the default port. |
+| Depends On  | FEATURE-CLI-Foundation.md, FEATURE-API-Foundation.md, FEATURE-API-Health.md |
+| Provides    | fxrates serve |
+| Consumes     | app_server.main:app |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Run the FastAPI application with uvicorn bound to `127.0.0.1`. Accept an optional integer port and default to port 8000. Keep serving until stopped and exit cleanly on SIGTERM.
+
+## Programmatic Acceptance
+
+Requires: python-package=httpx; scope=test
+
+=== AC serve-requested-port ===
+Intent: The serve command starts the health route on an available requested local port and stops on SIGTERM.
+
+import socket
+import subprocess
+import time
+import httpx
+
+with socket.socket() as sock:
+    sock.bind(("127.0.0.1", 0))
+    port = sock.getsockname()[1]
+
+process = subprocess.Popen(["./fxrates", "serve", "--port", str(port)])
+try:
+    response = None
+    for _ in range(100):
+        if process.poll() is not None:
+            break
+        try:
+            response = httpx.get(f"http://127.0.0.1:{port}/health", timeout=0.5)
+            break
+        except httpx.HTTPError:
+            time.sleep(0.05)
+    assert response is not None
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
+finally:
+    process.terminate()
+    assert process.wait(timeout=10) == 0
+=== END AC serve-requested-port ===
+
+=== AC serve-default-port-contract ===
+Intent: The command accepts the serve invocation without a port argument.
+
+from cli.testing import cli_runner
+
+code, stdout, stderr = cli_runner("serve", "--help")
+assert code == 0
+=== END AC serve-default-port-contract ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Bind only to `127.0.0.1`.
+- The server runs in the foreground and stops cleanly on SIGTERM.
+- The default port is 8000.
+=== END ARTIFACT===
+=== BEGIN ARTIFACT FEATURE-CLI-Errors.md ===
+# FEATURE: CLI Errors
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Reports command usage, operational, and rejected-file failures through exit codes and diagnostics. |
+| Depends On  | FEATURE-CLI-Foundation.md, FEATURE-ECB-Init.md, FEATURE-ECB-Load.md, FEATURE-ECB-Fetch.md, FEATURE-CLI-Serve.md |
+| Provides    | CLI exit codes and diagnostics |
+| Consumes     | fxrates init, fxrates load, fxrates fetch, fxrates serve |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Apply the command-line exit contract across commands. Successful operations return zero. Operational failures return one, usage errors return two, and rejected history files return three. Any failing command writes no standard output and one diagnostic line to standard error.
+
+## Programmatic Acceptance
+
+=== AC cli-usage-errors ===
+Intent: Missing and unknown commands and invalid command arguments return the usage exit status without standard output.
+
+from cli.testing import cli_runner
+
+for args in ((), ("frobnicate",), ("load",), ("serve", "--port", "notaport")):
+    code, stdout, stderr = cli_runner(*args)
+    assert code == 2
+    assert stdout == ""
+    assert len(stderr.splitlines()) == 1
+=== END AC cli-usage-errors ===
+
+=== AC cli-load-errors ===
+Intent: A rejected file and an unreadable file return their distinct failure statuses without standard output.
+
+from cli.testing import cli_runner
+
+code, stdout, stderr = cli_runner("load", "sources/eurofxref-hist_bad.csv")
+assert code == 3
+assert stdout == ""
+assert len(stderr.splitlines()) == 1
+
+code, stdout, stderr = cli_runner("load", "sources/no-such-file.csv")
+assert code == 1
+assert stdout == ""
+assert len(stderr.splitlines()) == 1
+=== END AC cli-load-errors ===
+
+=== AC cli-success-status ===
+Intent: A successful initialization returns zero and no standard output.
+
+from cli.testing import cli_runner
+
+code, stdout, stderr = cli_runner("init")
+assert code == 0
+assert stdout == ""
+=== END AC cli-success-status ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Exit codes are 0 for success, 1 for operational failure, 2 for usage error, and 3 for rejected file.
+- Failing commands write nothing to standard output and one diagnostic line to standard error.
+- Diagnostics are not specified by message text.
+=== END ARTIFACT===
+=== BEGIN ARTIFACT FEATURE-Verification-Suite.md ===
+# FEATURE: Verification Suite
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Provides a pytest suite and POSIX runner for application behavior, with fetch downloads stubbed. |
+| Depends On  | ARCHITECTURE.md, DATABASE.md, FEATURE-API-Foundation.md, FEATURE-CLI-Foundation.md |
+| Provides    | bin/test.sh, pytest suite |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Provide an application-owned automated suite, run by `sh bin/test.sh` from the application root, that exits zero only when every project test passes.
+
+## Coverage
+
+The suite covers every command, each CSV loading rule, each HTTP endpoint, effective-date behavior, decimal rounding, and each specified error status. It uses a real temporary database for project tests. Fetch tests replace the download with a stub and never make a network connection.
+
+## Programmatic Acceptance
+
+=== AC project-test-runner ===
+Intent: The project's POSIX test runner exits zero after running the complete automated suite.
+
+import subprocess
+
+result = subprocess.run(["sh", "bin/test.sh"], capture_output=True, text=True)
+print(result.stdout)
+print(result.stderr)
+assert result.returncode == 0
+=== END AC project-test-runner ===
+
+=== AC fetch-tests-stub-network ===
+Intent: The automated suite passes with fetch covered by stubbed downloads and no network access.
+
+import subprocess
+
+result = subprocess.run(["sh", "bin/test.sh"], capture_output=True, text=True)
+print(result.stdout)
+print(result.stderr)
+assert result.returncode == 0
+=== END AC fetch-tests-stub-network ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- `bin/test.sh` is POSIX-compatible and runs pytest from the application root.
+- Tests must stub fetch downloads; automated tests do not open a network connection.
+- The suite uses a real temporary database and covers the stated command, loader, API, arithmetic, and error behavior.
+=== END ARTIFACT

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/VERIFICATION.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/VERIFICATION.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/VERIFICATION.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: End-to-End Verification</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Runs the supplied end-to-end grader against the completed FxRates application.</td></tr><tr><td>Depends On</td><td>FEATURE-Initialize.md, FEATURE-Load.md, FEATURE-Fetch.md, FEATURE-CLI-Errors.md, FEATURE-Serve.md, FEATURE-Health-Stats.md, FEATURE-Currencies.md, FEATURE-Rates.md, FEATURE-Convert.md, FEATURE-History.md</td></tr><tr><td>Provides</td><td>supplied end-to-end conformance grader</td></tr></tbody></table></div>
+<h2>Scope</h2>
+<p>The supplied <code>sources/run.sh</code> is the authoritative, externally authored conformance grader. It exercises the executable, command output and exit codes, server startup, HTTP status codes and JSON bodies, and visibility of data loaded while the server is running. It is staged with its CSV inputs and must remain unchanged. Run it only after the implementation stories have completed.</p>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC fxrates-full-conformance ===<br>Intent: The supplied end-to-end grader passes all of its checks.<br>Suite: full</p>
+<p>import subprocess</p>
+<p>result = subprocess.run( [&quot;sh&quot;, &quot;sources/run.sh&quot;], capture_output=True, text=True, ) print(result.stdout) print(result.stderr) assert result.returncode == 0 === END AC fxrates-full-conformance ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Do not modify, rewrite, regenerate, or substitute any file under <code>sources/</code>.</li><li>Keep the supplied grader as the terminal full-suite gate; do not run it in intermediate stories.</li><li>Application code must not read the grader or embed its known answers.</li></ul></article>
+</main>
+</body>
+</html>

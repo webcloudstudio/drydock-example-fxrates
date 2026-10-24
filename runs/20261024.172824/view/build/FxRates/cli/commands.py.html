@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>build/FxRates/cli/commands.py</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>build/FxRates/cli/commands.py</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../build/FxRates/cli/commands.py">Raw file</a></div></header>
+<article class="doc"><pre>&quot;&quot;&quot;CLI command behavior.&quot;&quot;&quot;
+
+import csv
+import io
+from pathlib import Path
+import re
+import signal
+import sys
+import tempfile
+import urllib.request
+import zipfile
+from datetime import date
+
+from persistence import PersistenceError, open_database
+from services.common import database_dsn, load_csv_text
+
+
+def dispatch(args: object) -&gt; int:
+    &quot;&quot;&quot;Dispatch parsed arguments to their command implementation.&quot;&quot;&quot;
+    try:
+        if args.command == &quot;init&quot;:
+            with open_database(database_dsn()) as db:
+                # A fresh configured store has not received the build&#x27;s default-store DDL.
+                # Provision the generated schema only in that case; ordinary initialization
+                # clears rows using the declared repository operation.
+                try:
+                    rows = db.rates.list()
+                except PersistenceError as exc:
+                    if &quot;no such table&quot; not in str(exc).lower():
+                        raise
+                    db.execute_script((Path(__file__).resolve().parent.parent / &quot;schema.sql&quot;).read_text(encoding=&quot;utf-8&quot;))
+                    rows = db.rates.list()
+                for row in rows:
+                    db.rates.delete(date=row.date, currency=row.currency)
+            return 0
+        if args.command == &quot;load&quot;:
+            try:
+                text = open(args.csv, encoding=&quot;utf-8&quot;, newline=&quot;&quot;).read()
+            except OSError as exc:
+                print(f&quot;error: {exc}&quot;, file=sys.stderr)
+                return 1
+            try:
+                dates, rates = load_csv_text(text)
+            except ValueError as exc:
+                print(f&quot;error: {exc}&quot;, file=sys.stderr)
+                return 3
+            print(&quot;dates,rates&quot;)
+            print(f&quot;{dates},{rates}&quot;)
+            return 0
+        if args.command == &quot;fetch&quot;:
+            try:
+                with urllib.request.urlopen(&quot;https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist.zip&quot;) as response:
+                    payload = response.read()
+                with zipfile.ZipFile(io.BytesIO(payload)) as archive:
+                    text = archive.read(&quot;eurofxref-hist.csv&quot;).decode(&quot;utf-8&quot;)
+                dates, rates = load_csv_text(text)
+            except (OSError, KeyError, zipfile.BadZipFile, UnicodeError) as exc:
+                print(f&quot;error: {exc}&quot;, file=sys.stderr)
+                return 1 if not isinstance(exc, ValueError) else 3
+            except ValueError as exc:
+                print(f&quot;error: {exc}&quot;, file=sys.stderr)
+                return 3
+            print(&quot;dates,rates&quot;)
+            print(f&quot;{dates},{rates}&quot;)
+            return 0
+        if args.command == &quot;serve&quot;:
+            import uvicorn
+            server = uvicorn.Server(
+                uvicorn.Config(&quot;app_server.main:app&quot;, host=&quot;127.0.0.1&quot;, port=args.port)
+            )
+            previous = signal.getsignal(signal.SIGTERM)
+            signal.signal(signal.SIGTERM, lambda signum, frame: setattr(server, &quot;should_exit&quot;, True))
+            try:
+                server.run()
+            finally:
+                signal.signal(signal.SIGTERM, previous)
+            return 0
+        return 2
+    except Exception as exc:
+        print(f&quot;error: {exc}&quot;, file=sys.stderr)
+        return 1
+</pre></article>
+</main>
+</body>
+</html>

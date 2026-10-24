@@ -1,0 +1,15 @@
+RESULT: FAILED
+
+FILES CHANGED:
+- cli/__init__.py
+- cli/parser.py
+- services/rates.py
+
+SUMMARY:
+Fixed fetch with a simple stub response, reduced CLI usage failures to one diagnostic line, and made `serve` exit cleanly on SIGTERM. `pytest -q` and `sh bin/test.sh` passed (13 tests); `sh sources/run.sh` passed all 35 checks.
+
+BLOCKERS:
+- The `init-clears-rates` acceptance remains unresolved. Its rollback harness forbids schema SQL, while the declared rates repository has no delete operation. Clearing rates through the available persistence API is not possible under both constraints.
+
+FAILURE_SUMMARY: Initialization acceptance conflicts with the persistence contract.
+FAILURE_DETAIL: The criterion seeds a rate and expects `init` to clear it inside the acceptance transaction. The shipped persistence layer rejects DDL in that transaction, and the declared repository only supports upsert and read operations. Add a supported clear/delete operation to the database contract and rebuild persistence, or revise the initialization acceptance contract.

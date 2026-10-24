@@ -1,0 +1,24 @@
+Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
+Drydock status
+
+  Target          /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261024.164835/workspace/targets/FxRates
+  Name            drydock FxRates Uat Case
+  Description     Drydock uat - FxRates is the web-service kit and the first to exercise FastAPI. The source is an
+                  original brief for a currency rates service: a command line loads the European Central Bank euro…
+  Phase           Implement
+  State           17 pending
+  Metadata        planned · approved
+  Sources         5 imported · 17 authored blueprint files
+  Analysis        Ready · 14 stories · 0 questions · 0 blockers
+  Blueprint       ⚠  0 errors · 1 warnings
+    ⚠  Acceptance snippets: FEATURE-API-History.md [history-points-and-statistics]: expects "f'{mean:.6f}'", a value re-
+       typed rather than derived from the input or read back from the system. This criterion is reported but does
+       not gate its story; bind the value to a name and use that name on both sides to make it binding
+  Plan            17 pending
+  Frontier        architecture-foundation: Establish the Python application structure and boundary ownership.
+  Workflow        4 steps
+                  Initialize         complete at 2026-10-24T16:48:38.159+00:00
+                  Import             complete at 2026-10-24T16:48:45.305+00:00
+                  Analyze            complete at 2026-10-24T16:49:18.072+00:00
+                  Plan               complete at 2026-10-24T16:54:03.792+00:00
+  Next step       drydock build FxRates  (frontier: Establish the Python application structure and boundary ownership.)

@@ -1,0 +1,10 @@
+{"label": "INITIALIZED", "result": "pass", "at": "2026-10-24T17:28:26.508+00:00", "detail": "", "command": "drydock init FxRates", "attempts": 1}
+{"label": "IMPORTED", "result": "pass", "at": "2026-10-24T17:28:33.180+00:00", "detail": "", "command": "drydock import FxRates", "attempts": 1}
+{"label": "ANALYZED", "result": "pass", "at": "2026-10-24T17:29:01.460+00:00", "detail": "", "command": "drydock analyze FxRates", "attempts": 1}
+{"label": "PLAN CREATED", "result": "fail", "at": "2026-10-24T17:33:47.635+00:00", "detail": "1 criterion cannot run", "command": "drydock plan verify FxRates", "attempts": 2}
+{"label": "PLAN REPAIRED", "result": "pass", "at": "2026-10-24T17:34:46.484+00:00", "detail": "", "command": "drydock plan repair FxRates", "attempts": 1}
+{"label": "BUILDING", "result": "pass", "at": "2026-10-24T17:35:29.567+00:00", "detail": "", "command": "drydock build FxRates", "attempts": 1}
+{"label": "BUILT", "result": "pass", "at": "2026-10-24T17:55:44.094+00:00", "detail": "", "command": "drydock build FxRates", "attempts": 1}
+{"label": "SCORE AC", "result": "pass", "at": "2026-10-24T17:58:47.363+00:00", "detail": "", "command": "drydock score ac FxRates", "attempts": 1}
+{"label": "SCORE RELEASE", "result": "fail", "at": "2026-10-24T18:01:05.988+00:00", "detail": "release gate FAILED", "command": "drydock score release FxRates", "attempts": 1}
+{"state": "SCORE RELEASE", "result": "fail", "at": "2026-10-24T18:01:05.988+00:00", "attempts": 1}

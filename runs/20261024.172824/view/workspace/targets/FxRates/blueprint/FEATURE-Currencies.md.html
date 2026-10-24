@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-Currencies.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-Currencies.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-Currencies.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: List Currencies</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Lists EUR and currencies with stored rates in ascending order.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md, DATABASE.md</td></tr><tr><td>Provides</td><td>GET /currencies</td></tr><tr><td>Consumes</td><td>rates.list</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Return the EUR base and every currency with at least one stored rate, sorted by currency code in ascending order.</p>
+<h2>Routes</h2>
+<div class="scroll"><table><thead><tr><th>Method</th><th>Path</th><th>Behavior</th></tr></thead><tbody><tr><td>GET</td><td><code>/currencies</code></td><td>Return the EUR base and the ascending list of currencies with stored rates.</td></tr></tbody></table></div>
+<h2>Database Interface</h2>
+<ul><li><code>FEATURE-RATE-002</code> — read: list rates for a publication date - supplies: <code>date</code> - returns: <code>date</code>, <code>currency</code>, <code>rate</code></li></ul>
+<p>The repository operation supports listing by publication date, not all currencies. The implementation may derive the currency set from persisted data through the declared interface only; it must not open SQLite directly or introduce an undeclared query.</p>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC currencies-route ===<br>Intent: The currencies route returns a successful JSON response with the EUR base and currency codes.</p>
+<p>from app_server.testing import web_client from persistence.testing import db_session</p>
+<p>with db_session() as db: db.rates.upsert(date=&quot;2001-04-01&quot;, currency=&quot;USD&quot;, rate=&quot;1.2&quot;) db.rates.upsert(date=&quot;2001-04-01&quot;, currency=&quot;JPY&quot;, rate=&quot;130&quot;)</p>
+<p>response = web_client().get(&quot;/currencies&quot;) assert response.status_code == 200 body = response.json() assert body[&quot;base&quot;] == &quot;EUR&quot; assert &quot;currencies&quot; in body assert isinstance(body[&quot;currencies&quot;], list) assert len(body[&quot;currencies&quot;]) &gt;= 2 === END AC currencies-route ===</p></article>
+</main>
+</body>
+</html>

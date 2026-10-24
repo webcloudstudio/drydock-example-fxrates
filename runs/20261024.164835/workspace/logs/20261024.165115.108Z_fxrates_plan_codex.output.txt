@@ -1,0 +1,360 @@
+=== BEGIN ARTIFACT FEATURE-ECB-Fetch.md ===
+# FEATURE: ECB Fetch
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Downloads the ECB history ZIP and loads its CSV using the standard loader rules. |
+| Depends On  | FEATURE-ECB-Load.md |
+| Provides    | fxrates fetch |
+| Consumes    | fxrates load |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Fetch provides the ECB history ZIP as a command-line workflow. It extracts `eurofxref-hist.csv` and loads it through the same validation, storage, and reporting behavior as `fxrates load`.
+
+## Workflow
+
+1. Download `https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist.zip`.
+2. Extract `eurofxref-hist.csv`.
+3. Pass the extracted CSV through the loader.
+4. Report the loader’s result. Return exit code `1` with a diagnostic on download failure.
+
+Use Python’s standard-library `urllib` for the download. Tests stub the download and make no network connection.
+
+## Programmatic Acceptance
+
+=== AC fetch-loads-stubbed-archive ===
+Intent: The fetch command loads the CSV from a stubbed ECB archive and returns success.
+
+import io
+import zipfile
+from unittest.mock import patch
+
+from cli.testing import cli_runner
+
+csv_data = "Date,ZZZ,\n2099-01-02,0.943,\n"
+archive = io.BytesIO()
+with zipfile.ZipFile(archive, "w") as bundle:
+    bundle.writestr("eurofxref-hist.csv", csv_data)
+archive_bytes = archive.getvalue()
+
+class StubResponse:
+    def read(self):
+        return archive_bytes
+
+with patch("urllib.request.urlopen", return_value=StubResponse()):
+    code, stdout, stderr = cli_runner("fetch")
+assert code == 0
+=== END AC fetch-loads-stubbed-archive ===
+
+=== AC fetch-download-failure ===
+Intent: A failed download returns the operational-failure exit code.
+
+from unittest.mock import patch
+
+from cli.testing import cli_runner
+
+with patch("urllib.request.urlopen", side_effect=OSError):
+    code, stdout, stderr = cli_runner("fetch")
+assert code == 1
+=== END AC fetch-download-failure ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Tests replace the download with a stub; tests never use the network.
+- Extract and load the archive’s `eurofxref-hist.csv` using the same rules as the file loader.
+- Use the standard-library `urllib` download implementation.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-API-Stats.md ===
+# FEATURE: API Statistics and Currencies
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Reports publication statistics and currencies with stored rates. |
+| Depends On  | DATABASE.md, FEATURE-API-Foundation.md |
+| Provides    | GET /stats, GET /currencies |
+| Consumes    | rates repository operations |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Expose stored publication counts, date bounds, and the sorted set of currencies that have rates.
+
+## Database Interface
+
+- `FEATURE-API-005` — read: list stored rates for statistics and currencies - supplies: — - returns: `date`, `currency`, `rate`
+
+## Routes
+
+### `GET /stats`
+
+Return the number of distinct publication dates, the number of stored rates, and the first and last publication dates. Both date fields are `null` when there are no rates.
+
+### `GET /currencies`
+
+Return base EUR and every currency with at least one stored rate, in ascending order.
+
+## Programmatic Acceptance
+
+=== AC stats-and-currencies-read-store ===
+Intent: The statistics and currencies endpoints reflect rates stored through the persistence interface.
+
+from app_server.testing import web_client
+from persistence.testing import db_session
+
+date = "2099-01-02"
+currencies = ("ZZZ", "AAA")
+rates = ("0.943", "1.25")
+with db_session() as db:
+    before = db.rates.all()
+    for currency, rate in zip(currencies, rates):
+        db.rates.replace_rate(date=date, currency=currency, rate=rate)
+    after = db.rates.all()
+
+expected_dates = {row.date for row in before}
+expected_dates.add(date)
+expected_rate_count = len(before) + len(currencies)
+expected_currencies = sorted({row.currency for row in after})
+
+client = web_client()
+stats = client.get("/stats")
+assert stats.status_code == 200
+body = stats.json()
+assert body["dates"] == len(expected_dates)
+assert body["rates"] == expected_rate_count
+assert body["first"] == min(row.date for row in after)
+assert body["last"] == max(row.date for row in after)
+
+currencies_response = client.get("/currencies")
+assert currencies_response.status_code == 200
+currency_body = currencies_response.json()
+assert currency_body["base"] == "EUR"
+assert currency_body["currencies"] == expected_currencies
+=== END AC stats-and-currencies-read-store ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Derive counts, bounds, and currencies from stored rates.
+- Return only currencies with at least one stored rate, sorted ascending.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-API-Health.md ===
+# FEATURE: API Health
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Provides a JSON health response for the service. |
+| Depends On  | FEATURE-API-Foundation.md |
+| Provides    | GET /health |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Provide a lightweight health endpoint for the local JSON API.
+
+## Route
+
+### `GET /health`
+
+Return status 200 and a JSON object whose `status` value is `ok`.
+
+## Programmatic Acceptance
+
+=== AC health-route ===
+Intent: The health route answers successfully with the declared JSON status.
+
+from app_server.testing import web_client
+
+response = web_client().get("/health")
+assert response.status_code == 200
+assert response.json()["status"] == "ok"
+=== END AC health-route ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- The health response is JSON.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-API-Rates.md ===
+# FEATURE: API Rates
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Returns rates for an effective publication date or the latest publication. |
+| Depends On  | DATABASE.md, FEATURE-API-Foundation.md, FEATURE-ECB-Load.md |
+| Provides    | GET /rates/{date}, GET /rates/latest |
+| Consumes    | rates repository operations |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Serve stored rates using the latest publication on or before the requested date. The latest route identifies its request as `latest`.
+
+## Database Interface
+
+- `FEATURE-API-001` — read: list rates for an effective date - supplies: `date` - returns: `date`, `currency`, `rate`
+- `FEATURE-API-002` — read: find the latest publication on or before a date - supplies: `requested_date` - returns: `date`, `currency`, `rate`
+- `FEATURE-API-003` — read: find the latest publication - supplies: — - returns: `date`, `currency`, `rate`
+
+## Routes
+
+### `GET /rates/{date}`
+
+Return the effective publication date, requested date, EUR base, and all rates stored for that publication. Return 404 if no publication exists on or before the requested date.
+
+### `GET /rates/latest`
+
+Return the same shape using the latest publication, with `requested` set to `latest`. Return 404 when the store has no publication.
+
+## Programmatic Acceptance
+
+=== AC effective-and-latest-rates ===
+Intent: Both rates routes return persisted values for the effective and latest publication.
+
+from app_server.testing import web_client
+from persistence.testing import db_session
+
+dates = ("2099-01-02", "2099-01-03")
+currency = "ZZZ"
+rates = ("0.943", "1.25")
+with db_session() as db:
+    for date, rate in zip(dates, rates):
+        db.rates.replace_rate(date=date, currency=currency, rate=rate)
+
+client = web_client()
+effective = client.get(f"/rates/{dates[1]}")
+assert effective.status_code == 200
+effective_body = effective.json()
+assert effective_body["date"] == dates[1]
+assert effective_body["requested"] == dates[1]
+assert effective_body["base"] == "EUR"
+assert effective_body["rates"] == {currency: rates[1]}
+
+latest = client.get("/rates/latest")
+assert latest.status_code == 200
+latest_body = latest.json()
+assert latest_body["date"] == dates[1]
+assert latest_body["requested"] == "latest"
+assert latest_body["rates"] == {currency: rates[1]}
+
+earliest_request = client.get("/rates/2098-12-31")
+assert earliest_request.status_code == 404
+=== END AC effective-and-latest-rates ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Resolve dates to the latest stored publication on or before the requested date.
+- Rates are returned as their stored text; EUR is the base currency.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-API-Convert.md ===
+# FEATURE: API Convert
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Converts amounts between currencies using exact decimal arithmetic. |
+| Depends On  | DATABASE.md, FEATURE-API-Foundation.md, FEATURE-ECB-Load.md |
+| Provides    | GET /convert |
+| Consumes    | rates repository operations |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Convert an amount between two currencies at the effective publication date. EUR has an implicit rate of one unit per euro.
+
+## Database Interface
+
+- `FEATURE-API-002` — read: find the latest publication on or before a date - supplies: `requested_date` - returns: `date`, `currency`, `rate`
+
+## Route
+
+### `GET /convert`
+
+Required query parameters are `from`, `to`, and `amount`; `date` is optional. Without a date, use the latest publication. Return 404 when there is no effective publication or a non-EUR currency has no rate on that date. Amounts match `[0-9]+(\.[0-9]+)?` and are echoed as supplied.
+
+Compute the cross-rate as `rate(to) / rate(from)` and the result from the unrounded stored rates. Use exact `Decimal` arithmetic and half-even rounding. Format the rate with six decimal places and the result with two.
+
+## Programmatic Acceptance
+
+=== AC convert-exact-decimal ===
+Intent: Conversion returns the effective date and values computed from the supplied rates with the specified decimal rounding.
+
+from decimal import Decimal, ROUND_HALF_EVEN
+from app_server.testing import web_client
+from persistence.testing import db_session
+
+date = "2099-01-02"
+from_code = "ZZZ"
+to_code = "YYY"
+from_rate = "0.943"
+to_rate = "1.25"
+amount = "100.25"
+with db_session() as db:
+    db.rates.replace_rate(date=date, currency=from_code, rate=from_rate)
+    db.rates.replace_rate(date=date, currency=to_code, rate=to_rate)
+
+response = web_client().get(
+    "/convert",
+    params={"from": from_code, "to": to_code, "amount": amount, "date": date},
+)
+assert response.status_code == 200
+body = response.json()
+cross_rate = (Decimal(to_rate) / Decimal(from_rate)).quantize(
+    Decimal("0.000001"), rounding=ROUND_HALF_EVEN
+)
+result = (Decimal(amount) * Decimal(to_rate) / Decimal(from_rate)).quantize(
+    Decimal("0.01"), rounding=ROUND_HALF_EVEN
+)
+assert body["date"] == date
+assert body["from"] == from_code
+assert body["to"] == to_code
+assert body["amount"] == amount
+assert body["rate"] == format(cross_rate, ".6f")
+assert body["result"] == format(result, ".2f")
+=== END AC convert-exact-decimal ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Never use floating-point arithmetic for rates or conversions.
+- Compute the result from unrounded rates, not the rounded cross-rate.
+- Use half-even rounding and the specified fixed decimal places.
+- EUR has an implicit rate of one.
+=== END ARTIFACT

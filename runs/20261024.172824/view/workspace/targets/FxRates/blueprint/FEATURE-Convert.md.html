@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-Convert.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-Convert.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-Convert.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Currency Conversion</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Converts an amount between currencies using rates from an effective publication date.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md, DATABASE.md</td></tr><tr><td>Provides</td><td>GET /convert</td></tr><tr><td>Consumes</td><td>rates.list</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Convert between any two currencies using EUR as the base. If no date is supplied, use the latest publication. If a date is supplied, resolve it to the latest publication on or before that date.</p>
+<h2>Workflow</h2>
+<p>Require <code>from</code>, <code>to</code>, and <code>amount</code>. Amount must match <code>[0-9]+(\.[0-9]+)?</code> and is echoed as supplied. EUR has an implicit rate of 1. Compute <code>rate(to) / rate(from)</code> exactly and round half to even to six decimal places. Compute <code>amount × rate(to) / rate(from)</code> from the unrounded rates and round half to even to two decimal places. Return both as strings with exactly six and two decimal places respectively.</p>
+<p>Return 404 if there is no effective publication or a non-EUR currency has no rate for it. Return 422 for a malformed amount or date, or a missing required parameter.</p>
+<h2>Database Interface</h2>
+<ul><li><code>FEATURE-RATE-002</code> — read: list rates for a publication date - supplies: <code>date</code> - returns: <code>date</code>, <code>currency</code>, <code>rate</code></li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC convert-exact-values ===<br>Intent: Conversion returns the supplied amount and the exact same-currency ratio with contract precision.</p>
+<p>from app_server.testing import web_client from persistence.testing import db_session</p>
+<p>date = &quot;2001-01-07&quot; currency = &quot;USD&quot; rate = &quot;1.25&quot; amount = &quot;2.50&quot;</p>
+<p>with db_session() as db: db.rates.upsert(date=date, currency=currency, rate=rate)</p>
+<p>response = web_client().get( &quot;/convert&quot;, params={&quot;from&quot;: currency, &quot;to&quot;: currency, &quot;amount&quot;: amount, &quot;date&quot;: date}, ) body = response.json() assert response.status_code == 200 assert body[&quot;date&quot;] == date assert body[&quot;from&quot;] == currency assert body[&quot;to&quot;] == currency assert body[&quot;amount&quot;] == amount assert body[&quot;rate&quot;] == &quot;1.000000&quot; assert body[&quot;result&quot;] == &quot;2.50&quot; === END AC convert-exact-values ===</p>
+<p>=== AC convert-eur-base ===<br>Intent: EUR conversions use the implicit base rate and return the supplied amount rounded to the result precision.</p>
+<p>from app_server.testing import web_client from persistence.testing import db_session</p>
+<p>date = &quot;2001-01-08&quot; currency = &quot;GBP&quot; rate = &quot;0.80&quot; amount = &quot;10&quot;</p>
+<p>with db_session() as db: db.rates.upsert(date=date, currency=currency, rate=rate)</p>
+<p>response = web_client().get( &quot;/convert&quot;, params={&quot;from&quot;: &quot;EUR&quot;, &quot;to&quot;: currency, &quot;amount&quot;: amount, &quot;date&quot;: date}, ) body = response.json() assert response.status_code == 200 assert body[&quot;date&quot;] == date assert body[&quot;rate&quot;] == &quot;0.800000&quot; assert body[&quot;result&quot;] == &quot;8.00&quot; === END AC convert-eur-base ===</p>
+<p>=== AC convert-invalid-amount ===<br>Intent: A malformed amount is rejected with 422.</p>
+<p>from app_server.testing import web_client</p>
+<p>response = web_client().get( &quot;/convert&quot;, params={&quot;from&quot;: &quot;EUR&quot;, &quot;to&quot;: &quot;USD&quot;, &quot;amount&quot;: &quot;abc&quot;}, ) assert response.status_code == 422 === END AC convert-invalid-amount ===</p>
+<p>=== AC convert-missing-parameter ===<br>Intent: A missing required conversion parameter is rejected with 422.</p>
+<p>from app_server.testing import web_client</p>
+<p>response = web_client().get(&quot;/convert&quot;, params={&quot;from&quot;: &quot;EUR&quot;, &quot;to&quot;: &quot;USD&quot;}) assert response.status_code == 422 === END AC convert-missing-parameter ===</p>
+<p>=== AC convert-unknown-currency ===<br>Intent: An unavailable currency is rejected with 404.</p>
+<p>from app_server.testing import web_client from persistence.testing import db_session</p>
+<p>date = &quot;2001-01-09&quot; currency = &quot;USD&quot; rate = &quot;1.2&quot;</p>
+<p>with db_session() as db: db.rates.upsert(date=date, currency=currency, rate=rate)</p>
+<p>response = web_client().get( &quot;/convert&quot;, params={&quot;from&quot;: currency, &quot;to&quot;: &quot;XXX&quot;, &quot;amount&quot;: &quot;1&quot;, &quot;date&quot;: date}, ) assert response.status_code == 404 === END AC convert-unknown-currency ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Use exact decimal arithmetic; never use floating point.</li><li>Calculate the result from unrounded rates, not from the rounded response rate.</li><li>Round using half to even and preserve the specified decimal places in response strings.</li><li>Reach persistence only through the declared persistence library.</li></ul></article>
+</main>
+</body>
+</html>

@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/ARCHITECTURE_compact.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/ARCHITECTURE_compact.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/ARCHITECTURE_compact.md">Raw file</a></div></header>
+<article class="doc"><p>&lt;!-- Compacted from ARCHITECTURE.md sha256=2117d9b60b76e3cb1122735faf06c04b4a2eec03c7650e4549abb34fc11a5baf on 2026-10-24 by drydock build agent --&gt;</p>
+<h1>FxRates Architecture Contract</h1>
+<ul><li>Python 3.11+, FastAPI, SQLite through the generated persistence package, CLI executable <code>./fxrates</code>, and pytest.</li><li>Boundaries: <code>app_server</code> registers routes and calls services; <code>services</code> owns rate behavior and calls declared persistence operations; <code>cli</code> parses and dispatches to services or the server runner; <code>persistence</code> owns database access; <code>bin</code> provides the POSIX test launcher.</li><li>Interfaces: <code>app_server.main:create_app() -&gt; FastAPI</code>, module-level <code>app</code>; <code>cli.main(argv: list[str] | None = None) -&gt; int</code>; <code>persistence.open_database(dsn)</code> and <code>db.rates</code>; <code>app_server.testing.web_client()</code>; <code>cli.testing.cli_runner(*args) -&gt; (exit_code, stdout, stderr)</code>.</li><li>Database location precedence: <code>DATABASE_URL</code>, then <code>DATABASE_PATH</code>, then <code>data/app.db</code>. Store published rates as text and use <code>decimal</code> for arithmetic.</li><li>CLI commands: <code>init</code>, <code>load</code>, <code>fetch</code>, <code>serve</code>. The root executable is <code>fxrates</code>.</li><li>Acceptance contract <code>architecture-imports</code>: the app factory, app, web client, CLI entry point, and CLI runner must be importable and callable as applicable.</li><li>Do not access SQLite directly from the CLI or API, and do not read grader scripts or supplied data from application code.</li></ul></article>
+</main>
+</body>
+</html>

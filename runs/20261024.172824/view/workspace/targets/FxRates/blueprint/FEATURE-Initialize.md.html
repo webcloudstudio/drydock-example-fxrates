@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-Initialize.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-Initialize.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-Initialize.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Initialize Rates Store</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Initializes an empty rates store through the command line.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md, DATABASE.md</td></tr><tr><td>Provides</td><td>fxrates init</td></tr><tr><td>Consumes</td><td>rates.delete</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p><code>fxrates init</code> drops and recreates the <code>rates</code> table empty, using the configured database location and the generated persistence boundary.</p>
+<h2>Trigger and Workflow</h2>
+<ol><li>The user runs <code>./fxrates init</code>.</li><li>The command opens the configured database through <code>persistence.open_database</code>.</li><li>It deletes existing rates through the declared persistence operation and succeeds with no standard output.</li></ol>
+<p>Initialization must be safe to run repeatedly. It affects the rates table only.</p>
+<h2>Database Interface</h2>
+<ul><li><code>FEATURE-RATE-004</code> — write: delete rates by date and currency - supplies: <code>date</code>, <code>currency</code> - returns: <code>date</code>, <code>currency</code></li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC initialize-clears-rates ===<br>Intent: Initialization removes existing rates and produces no standard output.</p>
+<p>from cli.testing import cli_runner from persistence.testing import db_session</p>
+<p>date = &quot;2001-02-03&quot; currency = &quot;USD&quot; rate = &quot;1.25&quot;</p>
+<p>with db_session() as db: db.rates.upsert(date=date, currency=currency, rate=rate)</p>
+<p>code, stdout, stderr = cli_runner(&quot;init&quot;) assert code == 0 assert stdout == &quot;&quot;</p>
+<p>with db_session() as db: assert db.rates.get(date=date, currency=currency) is None === END AC initialize-clears-rates ===</p>
+<p>=== AC initialize-repeat ===<br>Intent: Initialization can be run again after the rates table is empty.</p>
+<p>from cli.testing import cli_runner from persistence.testing import db_session</p>
+<p>first = cli_runner(&quot;init&quot;) second = cli_runner(&quot;init&quot;) assert first[0] == 0 assert second[0] == 0 === END AC initialize-repeat ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Use the configured database location and the generated persistence library.</li><li>Initialization clears only rates data.</li></ul></article>
+</main>
+</body>
+</html>

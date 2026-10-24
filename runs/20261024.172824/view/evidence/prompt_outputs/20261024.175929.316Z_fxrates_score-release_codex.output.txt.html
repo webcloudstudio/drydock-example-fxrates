@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/prompt_outputs/20261024.175929.316Z_fxrates_score-release_codex.output.txt</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/prompt_outputs/20261024.175929.316Z_fxrates_score-release_codex.output.txt</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/prompt_outputs/20261024.175929.316Z_fxrates_score-release_codex.output.txt">Raw file</a></div></header>
+<article class="doc"><pre>{
+  &quot;criteria&quot;: [
+    {
+      &quot;id&quot;: &quot;st-001&quot;,
+      &quot;verdict&quot;: &quot;MET&quot;,
+      &quot;rationale&quot;: &quot;The supplied grader exited zero with all 35 checks passing.&quot;,
+      &quot;evidence&quot;: [&quot;sources/run.sh: outcome PASS, return code 0&quot;, &quot;sources/run.sh output: FxRates: 35 passed, 0 failed (of 35)&quot;]
+    },
+    {
+      &quot;id&quot;: &quot;st-002&quot;,
+      &quot;verdict&quot;: &quot;MET&quot;,
+      &quot;rationale&quot;: &quot;The shipped POSIX shell test script ran successfully and its automated test passed.&quot;,
+      &quot;evidence&quot;: [&quot;bin/test.sh: POSIX shell script invoking pytest&quot;, &quot;bin/test.sh: 1 passed, 0 failed&quot;]
+    },
+    {
+      &quot;id&quot;: &quot;st-003&quot;,
+      &quot;verdict&quot;: &quot;MET&quot;,
+      &quot;rationale&quot;: &quot;A probe of the real CSV loader confirmed published rate text is preserved, N/A is skipped, matching keys are replaced, and an invalid row leaves stored rates unchanged.&quot;,
+      &quot;evidence&quot;: [&quot;services/common.py: load_csv_text parses all rows before upserting rates&quot;, &quot;probe: loaded 1.23450, skipped N/A, replaced it with 9.8700, and invalid input stored nothing&quot;]
+    },
+    {
+      &quot;id&quot;: &quot;st-004&quot;,
+      &quot;verdict&quot;: &quot;MET&quot;,
+      &quot;rationale&quot;: &quot;The supplied grader started the service and verified GET /health returned status 200 with the expected JSON body.&quot;,
+      &quot;evidence&quot;: [&quot;sources/run.sh: start_server waits for GET /health on 127.0.0.1&quot;, &quot;sources/run.sh output: PASS H1: GET /health&quot;]
+    },
+    {
+      &quot;id&quot;: &quot;st-005&quot;,
+      &quot;verdict&quot;: &quot;MET&quot;,
+      &quot;rationale&quot;: &quot;The grader verified effective-date lookup, prior publication selection, and 404 when no publication exists for the requested date.&quot;,
+      &quot;evidence&quot;: [&quot;sources/run.sh output: PASS H4, H5, H6, L4&quot;]
+    },
+    {
+      &quot;id&quot;: &quot;st-006&quot;,
+      &quot;verdict&quot;: &quot;MET&quot;,
+      &quot;rationale&quot;: &quot;The supplied known-answer checks for conversion results and history statistics all passed.&quot;,
+      &quot;evidence&quot;: [&quot;sources/run.sh output: PASS H9–H12 and H17–H18&quot;]
+    },
+    {
+      &quot;id&quot;: &quot;st-007&quot;,
+      &quot;verdict&quot;: &quot;MET&quot;,
+      &quot;rationale&quot;: &quot;The grader verified malformed dates, amounts, and missing parameters return 422, while unknown currencies return 404.&quot;,
+      &quot;evidence&quot;: [&quot;sources/run.sh output: PASS H7, H13–H15, H21&quot;]
+    },
+    {
+      &quot;id&quot;: &quot;st-008&quot;,
+      &quot;verdict&quot;: &quot;MET&quot;,
+      &quot;rationale&quot;: &quot;Application database access goes through the shipped persistence API, and the generated schema and SQLite DDL store rates as text.&quot;,
+      &quot;evidence&quot;: [&quot;services/common.py: imports open_database from persistence&quot;, &quot;cli/commands.py: imports open_database from persistence&quot;, &quot;persistence/schema.py: Rate.rate is str&quot;, &quot;schema.sql: rates.rate is TEXT NOT NULL&quot;, &quot;persistence/db.py: selects the driver from the DSN&quot;]
+    },
+    {
+      &quot;id&quot;: &quot;st-009&quot;,
+      &quot;verdict&quot;: &quot;NOT MET&quot;,
+      &quot;rationale&quot;: &quot;The only automated test checks importability, and no test exercises fetch with a stubbed download.&quot;,
+      &quot;evidence&quot;: [&quot;tests/test_architecture_imports.py: tests importability only&quot;, &quot;rg search: no test references fetch, urlopen stubbing, or network blocking&quot;]
+    }
+  ],
+  &quot;improvements&quot;: [&quot;Add an automated fetch test that stubs the download and verifies no network connection is opened.&quot;]
+}</pre></article>
+</main>
+</body>
+</html>

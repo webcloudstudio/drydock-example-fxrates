@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-Rates.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-Rates.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-Rates.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Effective Date Rates</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Retrieves stored exchange rates for a requested or latest effective publication date.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md, DATABASE.md</td></tr><tr><td>Provides</td><td>GET /rates/{date}, GET /rates/latest</td></tr><tr><td>Consumes</td><td>rates.list</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Return all rates stored for the latest publication on or before the requested date. EUR is the base and has an implicit rate of 1; only currencies with stored rates appear in the response.</p>
+<h2>Workflow</h2>
+<ul><li><code>GET /rates/{date}</code> accepts a real calendar date in <code>YYYY-MM-DD</code> form. It returns the effective publication date, the original requested date, base <code>EUR</code>, and the rates for that publication.</li><li><code>GET /rates/latest</code> returns the latest publication and uses <code>&quot;latest&quot;</code> as the requested value.</li><li>Return 404 when no publication exists on or before the requested date. Return 422 for a malformed date.</li></ul>
+<h2>Database Interface</h2>
+<ul><li><code>FEATURE-RATE-002</code> — read: list rates for a publication date - supplies: <code>date</code> - returns: <code>date</code>, <code>currency</code>, <code>rate</code></li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC rates-effective-date ===<br>Intent: The date endpoint resolves a seeded date to the latest available publication and returns its stored rate text.</p>
+<p>from app_server.testing import web_client from persistence.testing import db_session</p>
+<p>date = &quot;2001-01-02&quot; requested = &quot;2001-01-03&quot; currency = &quot;USD&quot; rate = &quot;1.2345&quot;</p>
+<p>with db_session() as db: db.rates.upsert(date=date, currency=currency, rate=rate)</p>
+<p>response = web_client().get(f&quot;/rates/{requested}&quot;) body = response.json() assert response.status_code == 200 assert body[&quot;date&quot;] == date assert body[&quot;requested&quot;] == requested assert body[&quot;base&quot;] == &quot;EUR&quot; assert body[&quot;rates&quot;][currency] == rate === END AC rates-effective-date ===</p>
+<p>=== AC rates-latest ===<br>Intent: The latest endpoint returns the newest publication and its stored rates.</p>
+<p>from app_server.testing import web_client from persistence.testing import db_session</p>
+<p>date = &quot;2001-01-04&quot; currency = &quot;JPY&quot; rate = &quot;120.5&quot;</p>
+<p>with db_session() as db: db.rates.upsert(date=date, currency=currency, rate=rate)</p>
+<p>response = web_client().get(&quot;/rates/latest&quot;) body = response.json() assert response.status_code == 200 assert body[&quot;date&quot;] == date assert body[&quot;requested&quot;] == &quot;latest&quot; assert body[&quot;rates&quot;][currency] == rate === END AC rates-latest ===</p>
+<p>=== AC rates-no-publication ===<br>Intent: A date before every stored publication returns 404.</p>
+<p>from app_server.testing import web_client from persistence.testing import db_session</p>
+<p>date = &quot;2001-01-06&quot; currency = &quot;CAD&quot; rate = &quot;1.4&quot;</p>
+<p>with db_session() as db: db.rates.upsert(date=date, currency=currency, rate=rate)</p>
+<p>response = web_client().get(&quot;/rates/2000-12-31&quot;) assert response.status_code == 404 === END AC rates-no-publication ===</p>
+<p>=== AC rates-malformed-date ===<br>Intent: A malformed date returns 422.</p>
+<p>from app_server.testing import web_client</p>
+<p>response = web_client().get(&quot;/rates/2025-13-01&quot;) assert response.status_code == 422 === END AC rates-malformed-date ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Preserve stored rate text in JSON strings.</li><li>Resolve dates using the latest publication on or before the requested date.</li><li>Do not include currencies without a stored rate for the effective publication.</li><li>Reach persistence only through the declared persistence library.</li></ul></article>
+</main>
+</body>
+</html>

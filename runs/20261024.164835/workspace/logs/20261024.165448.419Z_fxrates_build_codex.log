@@ -1,0 +1,60 @@
+Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
+Build: FxRates
+scope: entire project
+frontier: architecture-foundation
+git: baseline FxRates ac7fc22386ac
+git: baseline FxRates c6ce25d02c6c
+
+BLOCK block-1  name="Block 1 · Foundational"  calls_max=7
+  story=architecture-foundation  "Establish the Python application structure and boundary ownership."
+
+  [call 1/7]  kind=initial  llm=codex/gpt-6-luna
+    result=ok  rc=0  execution=20261024.165527.067Z-b312190b
+    acceptance=2/2
+git: block-1 | python.md, ARCHITECTURE.md | call=1 | app=e55ff4fa8e6f target=a94bf65559c3
+
+  DONE  story=architecture-foundation  state=closed/implemented  execution=20261024.165527.067Z-b312190b  elapsed=2m06s
+git: block-1 | python.md, ARCHITECTURE.md | step_completed | app=unchanged target=bc7e9b9d4a6b
+
+BLOCK block-2  name="Block 2 · Foundational"  calls_max=7
+  story=database-foundation  "Declare the rates store and generated persistence operations."
+  story=api-foundation  "Establish the FastAPI application and test client."
+  story=cli-foundation  "Establish the fxrates command entry point."
+
+  [call 1/7]  kind=initial  llm=codex/gpt-6-luna
+    result=ok  rc=0  execution=20261024.165747.279Z-17e50eb1
+    acceptance=7/7
+git: block-2 | DATABASE.md, FEATURE-API-Foundation.md, FEATURE-CLI-Foundation.md | call=1 | app=3f47afb0bcf3 target=b528a91fc1a6
+
+  DONE  story=database-foundation  state=closed/implemented  execution=20261024.165747.279Z-17e50eb1  elapsed=1m48s
+git: block-2 | DATABASE.md, FEATURE-API-Foundation.md, FEATURE-CLI-Foundation.md | step_completed | app=unchanged target=df49335b2d42
+
+BLOCK block-3  name="Block 3 · Service"  calls_max=7
+  story=ecb-init  "Initialize an empty rates store from the command line."
+  story=ecb-load  "Validate and atomically load ECB CSV history."
+  story=ecb-fetch  "Download and load ECB history from the published ZIP."
+  story=api-stats  "Report stored publication statistics and currencies."
+  story=api-rates  "Retrieve rates for an effective or latest publication date."
+  story=api-convert  "Convert amounts between currencies using exact decimal arithmetic."
+  story=api-history  "Retrieve currency history and exact summary statistics."
+  story=api-health  "Report service health."
+  story=cli-serve  "Serve the local JSON API with the command line."
+  story=cli-errors  "Report CLI usage and operational failures."
+  story=api-validation  "Return the specified errors for invalid API requests."
+  story=verification-suite  "Provide the project pytest suite and POSIX test runner."
+  story=release-verification  "Pass the supplied end-to-end grader."
+
+  [call 1/7]  kind=initial  llm=codex/gpt-6-luna
+    result=ok  rc=0  execution=20261024.170057.626Z-1b7bd45b
+    acceptance=17/25  failed=init-clears-rates,init-repeat,fetch-loads-stubbed-archive,stats-and-currencies-read-store,history-unknown-currency,serve-requested-port,cli-usage-errors,cli-success-status
+git: block-3 | FEATURE-ECB-Init.md, FEATURE-ECB-Load.md, FEATURE-ECB-Fetch.md, FEATURE-API-Stats.md, FEATURE-API-Rates.md, FEATURE-API-Convert.md, FEATURE-API-History.md, FEATURE-API-Health.md, FEATURE-CLI-Serve.md, FEATURE-CLI-Errors.md, FEATURE-API-Validation.md, FEATURE-Verification-Suite.md, FEATURE-Release-Verification.md | call=1 | app=61158518f743 target=30753da633db
+
+  [call 2/7]  kind=repair(1/6)  llm=codex/gpt-6-luna
+    fixing=init-clears-rates,init-repeat,fetch-loads-stubbed-archive,stats-and-currencies-read-store,history-unknown-currency,serve-requested-port,cli-usage-errors,cli-success-status
+    result=ok  rc=0  execution=20261024.170528.703Z-cb18e0dc
+    acceptance=20/25  failed=init-clears-rates,init-repeat,stats-and-currencies-read-store,history-unknown-currency,cli-success-status
+git: block-3 | FEATURE-ECB-Init.md, FEATURE-ECB-Load.md, FEATURE-ECB-Fetch.md, FEATURE-API-Stats.md, FEATURE-API-Rates.md, FEATURE-API-Convert.md, FEATURE-API-History.md, FEATURE-API-Health.md, FEATURE-CLI-Serve.md, FEATURE-CLI-Errors.md, FEATURE-API-Validation.md, FEATURE-Verification-Suite.md, FEATURE-Release-Verification.md | call=2 | app=ffeb90033fde target=164f7d2f70c7
+
+  [call 3/7]  kind=repair(2/6)  llm=codex/gpt-6-luna
+    fixing=init-clears-rates,init-repeat,stats-and-currencies-read-store,history-unknown-currency,cli-success-status
+    result=ok  rc=0  execution=20261024.171013.624Z-935f72b1

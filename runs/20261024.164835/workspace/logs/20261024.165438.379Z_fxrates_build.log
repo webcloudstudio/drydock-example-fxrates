@@ -1,0 +1,32 @@
+Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
+Next: drydock build FxRates
+
+Blueprint: FxRates
+Target: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261024.164835/workspace/targets/FxRates
+Rows: <state> <type>  <Name>  [<id>]   — pass [<id>] to --step
+
+Block: Build Block 1 · Foundational  [block-1]   — 0/1 stories complete
+  [pending] story  Establish the Python application structure and boundary ownership.  [architecture-foundation]  <- next
+
+Block: Build Block 2 · Foundational  [block-2]   — 0/3 stories complete
+  [pending] story  Declare the rates store and generated persistence operations.  [database-foundation]
+  [pending] story  Establish the FastAPI application and test client.  [api-foundation]
+  [pending] story  Establish the fxrates command entry point.  [cli-foundation]
+
+Block: Build Block 3 · Service  [block-3]   — 0/13 stories complete
+  [pending] story  Initialize an empty rates store from the command line.  [ecb-init]
+  [pending] story  Validate and atomically load ECB CSV history.  [ecb-load]
+  [pending] story  Download and load ECB history from the published ZIP.  [ecb-fetch]
+  [pending] story  Report stored publication statistics and currencies.  [api-stats]
+  [pending] story  Retrieve rates for an effective or latest publication date.  [api-rates]
+  [pending] story  Convert amounts between currencies using exact decimal arithmetic.  [api-convert]
+  [pending] story  Retrieve currency history and exact summary statistics.  [api-history]
+  [pending] story  Report service health.  [api-health]
+  [pending] story  Serve the local JSON API with the command line.  [cli-serve]
+  [pending] story  Report CLI usage and operational failures.  [cli-errors]
+  [pending] story  Return the specified errors for invalid API requests.  [api-validation]
+  [pending] story  Provide the project pytest suite and POSIX test runner.  [verification-suite]
+  [pending] story  Pass the supplied end-to-end grader.  [release-verification]
+
+Steps: 17 total — 0 done, 0 built (await verify), 0 in review, 17 pending, 0 blocked by questions, 0 failed (0% complete)
+Buildable now: block-1

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>inputs/DECISIONS.json</title>
+<link rel="stylesheet" href="../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>inputs/DECISIONS.json</h1><div class="filenav"><a href="../../index.html">&larr; Report</a><a href="../../inputs/DECISIONS.json">Raw file</a></div></header>
+<article class="doc"><pre>[
+  {
+    &quot;id&quot;: &quot;D-001&quot;,
+    &quot;type&quot;: &quot;choice&quot;,
+    &quot;severity&quot;: &quot;material&quot;,
+    &quot;origin&quot;: &quot;plan&quot;,
+    &quot;blueprint&quot;: &quot;ARCHITECTURE.md&quot;,
+    &quot;story&quot;: &quot;architecture&quot;,
+    &quot;status&quot;: &quot;recommended&quot;,
+    &quot;archived&quot;: false,
+    &quot;title&quot;: &quot;Shared project foundation&quot;,
+    &quot;description&quot;: &quot;The source requires a CLI, API, and SQLite persistence but does not prescribe module ownership. Use a small shared application structure with route handlers calling services and services using only the generated persistence package.&quot;,
+    &quot;options&quot;: [
+      {
+        &quot;value&quot;: &quot;shared-boundaries&quot;,
+        &quot;label&quot;: &quot;Shared application, service, and persistence boundaries&quot;
+      },
+      {
+        &quot;value&quot;: &quot;command-local&quot;,
+        &quot;label&quot;: &quot;Keep persistence and behavior inside command handlers&quot;
+      }
+    ],
+    &quot;system_choice&quot;: &quot;shared-boundaries&quot;
+  },
+  {
+    &quot;id&quot;: &quot;build-schema-derived-indexes&quot;,
+    &quot;type&quot;: &quot;text&quot;,
+    &quot;severity&quot;: &quot;informational&quot;,
+    &quot;origin&quot;: &quot;build&quot;,
+    &quot;blueprint&quot;: &quot;DATABASE.md&quot;,
+    &quot;story&quot;: null,
+    &quot;status&quot;: &quot;recommended&quot;,
+    &quot;archived&quot;: false,
+    &quot;title&quot;: &quot;Indexes derived from the persistence declaration&quot;,
+    &quot;description&quot;: &quot;The rendered schema indexes rates(date). Each is implied by the declaration \u2014 a foreign key is looked up by its child column, and a read pattern&#x27;s Input fields are the predicate it filters on. Declare an `- INDEX (...)` bullet in DATABASE.md for any index this does not cover.&quot;,
+    &quot;options&quot;: [],
+    &quot;system_choice&quot;: &quot;rates(date)&quot;
+  }
+]
+</pre></article>
+</main>
+</body>
+</html>

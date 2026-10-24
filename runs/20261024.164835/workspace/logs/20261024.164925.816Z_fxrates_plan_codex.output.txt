@@ -1,0 +1,305 @@
+=== BEGIN ARTIFACT TOPOLOGY.md ===
+## Declarations
+
+## story architecture-foundation
+summary:      Establish the Python application structure and boundary ownership.
+type:         foundational
+kind:         capability
+phase:        1
+implements:   ARCHITECTURE.md
+stack:        python.md
+provides:     application modules, configuration boundary
+accepts:       st-008
+acceptance:   yes
+instructions: |
+  Establish the Python application structure, module ownership, and configuration boundary described by ARCHITECTURE.md.
+
+  Keep database-driver access inside the shipped persistence library. Resolve database configuration from DATABASE_URL, then DATABASE_PATH, then data/app.db.
+
+## story database-foundation
+summary:      Declare the rates store and generated persistence operations.
+type:         foundational
+kind:         capability
+phase:        1
+implements:   DATABASE.md
+context:      sources/INSTRUCTIONS.md
+stack:        persistence.md, sqlite.md
+depends:      architecture-foundation
+provides:     rates repository operations
+acceptance:   yes
+instructions: |
+  Declare the rates table and every repository operation required by loading, statistics, effective-date rates, conversions, and history.
+
+  Preserve rate values as text and use the generated persistence package for all database access.
+
+## story api-foundation
+summary:      Establish the FastAPI application and test client.
+type:         foundational
+kind:         capability
+phase:        1
+implements:   FEATURE-API-Foundation.md
+stack:        fastapi.md
+depends:      architecture-foundation
+provides:     app_server.main:create_app, app_server.testing:web_client
+acceptance:   yes
+instructions: |
+  Establish the FastAPI application factory, module-level app, and published TestClient helper. Provide the shared service foundation used by the API capability stories.
+
+## story cli-foundation
+summary:      Establish the fxrates command entry point.
+type:         foundational
+kind:         capability
+phase:        1
+implements:   FEATURE-CLI-Foundation.md
+stack:        cli.md
+depends:      architecture-foundation
+provides:     ./fxrates, cli.main, cli.testing:cli_runner
+acceptance:   yes
+instructions: |
+  Establish the executable and callable CLI entry point with the published in-process test helper. Provide the shared command foundation used by CLI capability stories.
+
+## story ecb-init
+summary:      Initialize an empty rates store from the command line.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-ECB-Init.md
+covers:       ECB-001
+context:      DATABASE.md, sources/INSTRUCTIONS.md
+stack:        python.md, sqlite.md, cli.md
+depends:      database-foundation, cli-foundation
+provides:     fxrates init
+consumes:     rates repository operations
+acceptance:   yes
+instructions: |
+  Implement fxrates init so it drops and recreates the rates table empty, using the configured store and the persistence boundary.
+
+## story ecb-load
+summary:      Validate and atomically load ECB CSV history.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-ECB-Load.md
+covers:       ECB-002
+accepts:       st-003
+context:      DATABASE.md, sources/INSTRUCTIONS.md, sources/eurofxref-hist_2025-01.csv, sources/eurofxref-hist_bad.csv
+stack:        python.md, sqlite.md, cli.md
+depends:      database-foundation, cli-foundation
+provides:     fxrates load
+consumes:     rates repository operations
+acceptance:   yes
+instructions: |
+  Implement complete-file validation before writes. Ignore the trailing empty CSV field, skip N/A values, preserve published rate text, reject invalid or repeated dates and invalid values atomically, replace matching date/currency rates, and report date and rate counts.
+
+## story ecb-fetch
+summary:      Download and load ECB history from the published ZIP.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-ECB-Fetch.md
+covers:       ECB-003
+context:      DATABASE.md, sources/INSTRUCTIONS.md
+stack:        python.md, sqlite.md, cli.md
+depends:      ecb-load
+provides:     fxrates fetch
+consumes:     fxrates load
+acceptance:   yes
+instructions: |
+  Implement fetch by downloading the ECB history ZIP, extracting eurofxref-hist.csv, and applying the same validation, storage, and reporting rules as load.
+
+  Tests must replace the download with a stub and make no network connection.
+
+## story api-stats
+summary:      Report stored publication statistics and currencies.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-API-Stats.md
+covers:       ECB-004
+context:      DATABASE.md, sources/INSTRUCTIONS.md
+stack:        python.md, sqlite.md, fastapi.md
+depends:      database-foundation, api-foundation
+provides:     GET /stats, GET /currencies
+consumes:     rates repository operations
+acceptance:   yes
+instructions: |
+  Implement the statistics and currencies JSON endpoints. Derive counts and date bounds from stored rates; return distinct stored currencies in ascending order.
+
+## story api-health
+summary:      Report service health.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-API-Health.md
+covers:       API-001
+accepts:       st-004
+context:      sources/INSTRUCTIONS.md
+stack:        python.md, fastapi.md
+depends:      api-foundation
+provides:     GET /health
+acceptance:   yes
+instructions: |
+  Implement GET /health with the specified JSON health response.
+
+## story api-rates
+summary:      Retrieve rates for an effective or latest publication date.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-API-Rates.md
+covers:       API-002, API-003
+accepts:       st-005
+context:      DATABASE.md, sources/INSTRUCTIONS.md
+stack:        python.md, sqlite.md, fastapi.md
+depends:      database-foundation, api-foundation, ecb-load
+provides:     GET /rates/{date}, GET /rates/latest
+consumes:     rates repository operations
+acceptance:   yes
+instructions: |
+  Implement date-based and latest-rate endpoints. Resolve requests to the latest publication on or before the requested date, return all stored rates for that publication, and return 404 when no publication exists.
+
+## story api-convert
+summary:      Convert amounts between currencies using exact decimal arithmetic.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-API-Convert.md
+covers:       API-004
+accepts:       st-005, st-006
+context:      DATABASE.md, sources/INSTRUCTIONS.md
+stack:        python.md, sqlite.md, fastapi.md
+depends:      database-foundation, api-foundation, ecb-load
+provides:     GET /convert
+consumes:     rates repository operations
+acceptance:   yes
+instructions: |
+  Implement conversion with the effective publication date, EUR's implicit rate, exact Decimal arithmetic, half-even rounding, and the specified six-decimal rate and two-decimal result strings. Compute the result from unrounded stored rates.
+
+## story api-history
+summary:      Retrieve currency history and exact summary statistics.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-API-History.md
+covers:       API-005
+accepts:       st-006
+context:      DATABASE.md, sources/INSTRUCTIONS.md
+stack:        python.md, sqlite.md, fastapi.md
+depends:      database-foundation, api-foundation, ecb-load
+provides:     GET /history/{code}
+consumes:     rates repository operations
+acceptance:   yes
+instructions: |
+  Implement inclusive optional date bounds, ascending points, exact Decimal extrema and half-even six-decimal mean, plus the specified empty-range response. Return 404 for a currency with no stored rate.
+
+## story api-validation
+summary:      Return the specified errors for invalid API requests.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-API-Validation.md
+covers:       API-006
+accepts:       st-007
+context:      sources/INSTRUCTIONS.md
+stack:        python.md, fastapi.md
+depends:      api-foundation, api-rates, api-convert, api-history
+provides:     API request validation behavior
+consumes:     GET /rates/{date}, GET /convert, GET /history/{code}
+acceptance:   yes
+instructions: |
+  Ensure malformed dates and amounts and missing required query parameters return 422. Ensure unknown or unavailable currencies return 404 on the applicable routes.
+
+## story cli-serve
+summary:      Serve the local JSON API with the command line.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-CLI-Serve.md
+covers:       CLI-001
+accepts:       st-004
+context:      sources/INSTRUCTIONS.md
+stack:        python.md, fastapi.md, cli.md
+depends:      api-foundation, cli-foundation, api-health
+provides:     fxrates serve
+consumes:     app_server.main:app
+acceptance:   yes
+instructions: |
+  Implement foreground serving on 127.0.0.1 with the requested port or default 8000. Ensure the process stops cleanly on SIGTERM.
+
+## story cli-errors
+summary:      Report CLI usage and operational failures.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-CLI-Errors.md
+covers:       CLI-002
+context:      sources/INSTRUCTIONS.md
+stack:        python.md, cli.md
+depends:      cli-foundation, ecb-init, ecb-load, ecb-fetch, cli-serve
+provides:     CLI exit codes and diagnostics
+consumes:     fxrates init, fxrates load, fxrates fetch, fxrates serve
+acceptance:   yes
+instructions: |
+  Implement the specified exit codes for success, operational failures, usage errors, and rejected files. A failing command writes no stdout and one diagnostic line to stderr.
+
+## story verification-suite
+summary:      Provide the project pytest suite and POSIX test runner.
+type:         service
+kind:         test harness
+phase:        1
+implements:   FEATURE-Verification-Suite.md
+covers:       VERIFY-001
+accepts:       st-002, st-009
+context:      sources/INSTRUCTIONS.md
+stack:        python.md
+depends:      architecture-foundation, database-foundation, api-foundation, cli-foundation, ecb-init, ecb-load, ecb-fetch, ecb-stats, api-health, api-rates, api-convert, api-history, api-validation, cli-serve, cli-errors
+provides:     bin/test.sh, pytest suite
+acceptance:   yes
+instructions: |
+  Provide a POSIX-compatible bin/test.sh and a pytest suite covering the commands, loading rules, endpoints, effective-date behavior, rounding, and error statuses against a real temporary database. Stub fetch downloads so tests never use the network.
+
+## story release-verification
+summary:      Pass the supplied end-to-end grader.
+type:         service
+kind:         test harness
+phase:        1
+implements:   FEATURE-Release-Verification.md
+covers:       VERIFY-002
+accepts:       st-001
+context:      sources/run.sh, sources/eurofxref-hist_2025-01.csv, sources/eurofxref-hist_2025-02-03_04.csv, sources/eurofxref-hist_bad.csv
+context_roles: |
+  sources/run.sh: context
+  sources/eurofxref-hist_2025-01.csv: asset
+  sources/eurofxref-hist_2025-02-03_04.csv: asset
+  sources/eurofxref-hist_bad.csv: asset
+stack:        python.md, common.md
+depends:      architecture-foundation, database-foundation, api-foundation, cli-foundation, ecb-init, ecb-load, ecb-fetch, api-stats, api-health, api-rates, api-convert, api-history, api-validation, cli-serve, cli-errors, verification-suite
+provides:     full supplied grader acceptance
+acceptance:   yes
+instructions: |
+  As the terminal story, run the complete supplied grader using its documented invocation and require exit status zero. Do not modify or substitute any staged source asset.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT DECISIONS.json ===
+[
+  {
+    "id": "Q-001",
+    "type": "choice",
+    "severity": "material",
+    "blueprint": "FEATURE-ECB-Fetch.md",
+    "story": "ecb-fetch",
+    "title": "ECB ZIP download implementation",
+    "description": "The sources require downloading the ECB ZIP but do not select a download library. Use Python's standard-library urllib so fetch has no additional runtime dependency.",
+    "options": [
+      {
+        "value": "urllib",
+        "label": "Python standard-library urllib"
+      },
+      {
+        "value": "http-client",
+        "label": "Add an HTTP client dependency"
+      }
+    ],
+    "system_choice": "urllib"
+  }
+]
+=== END ARTIFACT

@@ -1,0 +1,234 @@
+=== BEGIN ARTIFACT ANALYSIS.md ===
+# Blueprint Analysis: FxRates
+
+## Commander Expectations
+
+- assert the product loads ECB euro reference rates and serves date-based rates, conversions, and currency history through a JSON API.
+- assert rates are stored as published text and calculations use exact decimal arithmetic.
+- assert the supplied grader passes.
+
+## Crew
+
+| Crew | Charge |
+|---|---|
+| Commander | Defines intent and decides what done means. |
+| Team Lead | Confirms epic completeness and stakeholder expectations. |
+| Planning Crew | Authors atomic specifications and the ordered Manifest. |
+| Shipyard Crew | Builds the tickets without synchronous Commander access. |
+
+## Story List
+
+### Feature: ECB Rate Data
+
+| ID | Story | High-level AC |
+|---|---|---|
+| DATA-001 | Initialize the rates store | `fxrates init` creates an empty rates store, replacing any existing table. |
+| DATA-002 | Load ECB history files | `fxrates load` validates the whole CSV before writing, skips `N/A`, stores published rate text, replaces matching date and currency rates, and reports stored date and rate counts. |
+| DATA-003 | Fetch ECB history files | `fxrates fetch` downloads and extracts the ECB history archive, then loads it using the same validation and storage rules. |
+
+### Feature: Command Line
+
+| ID | Story | High-level AC |
+|---|---|---|
+| CLI-001 | Handle command usage and failures | The executable returns the specified exit codes for success, usage errors, rejected files, and operational failures; failures print no standard output and one diagnostic line to standard error. |
+| CLI-002 | Serve the API process | `fxrates serve` starts the API on the requested port, defaulting to 8000, bound to `127.0.0.1`. |
+
+### Feature: Rates API
+
+| ID | Story | High-level AC |
+|---|---|---|
+| API-001 | Report service health and rate statistics | `/health` reports status; `/stats` reports date and rate counts and first and last publication dates, using null bounds for an empty store. |
+| API-002 | List available currencies | `/currencies` returns EUR as the base and stored currencies in ascending order. |
+| API-003 | Retrieve rates for an effective date | `/rates/{date}` and `/rates/latest` return stored rates for the latest publication on or before the requested date; return 404 when none exists and 422 for malformed dates. |
+| API-004 | Convert between currencies | `/convert` uses the latest publication by default or resolves the supplied date; it returns the exact rate rounded half to even to six decimal places and the result rounded half to even to two places. |
+| API-005 | Retrieve currency history | `/history/{code}` returns ascending points and exact min, max, and mean statistics for inclusive optional date bounds; an empty range returns no points and null statistics. |
+
+### Feature: Verification
+
+| ID | Story | High-level AC |
+|---|---|---|
+| VERIFY-001 | Pass the supplied conformance grader | Every supplied grader check passes when the staged `sources/run.sh` runs from the application root. |
+
+## Surfaced Acceptance Criteria
+
+None.
+
+## Relationship Model
+
+| Source or group | Relationship type | Related source or group | Evidence | Delivery implication |
+|---|---|---|---|---|
+| `sources/INSTRUCTIONS.md` | instruction-to-test | `sources/run.sh` | The instructions define the commands, API behavior, and known-answer harness contract. | Implement the described behavior and use the staged harness as the final conformance gate. |
+| `sources/run.sh` | test-kit-to-implementation | `fxrates` executable and API | The harness invokes the CLI, starts the server, and checks its HTTP responses. | The executable and API must be integrated before terminal verification. |
+| `sources/eurofxref-hist_2025-01.csv` | fixture-before-verification | `DATA-002`, `API-001`–`API-005`, `VERIFY-001` | The harness loads this file and checks January rates and derived answers. | Stage this fixture for CLI and end-to-end checks. |
+| `sources/eurofxref-hist_2025-02-03_04.csv` | fixture-before-verification | `DATA-002`, `API-001`–`API-005`, `VERIFY-001` | The harness loads this file while the server runs and checks live visibility. | Stage this fixture and verify subsequent requests see newly loaded rates. |
+| `sources/eurofxref-hist_bad.csv` | fixture-before-verification | `DATA-002`, `CLI-001`, `VERIFY-001` | The harness checks that an invalid second row rejects the load. | Stage this fixture and verify the rejected load stores nothing. |
+| `sources/run.sh` | test-kit-to-implementation | `VERIFY-001` | The script is the supplied scoring entry point and exits zero only when all checks pass. | Keep this as the single terminal full-suite story and gate. |
+
+## Source Roles
+
+| Path | Role | Plan disposition | Build disposition |
+|---|---|---|---|
+| `sources/INSTRUCTIONS.md` | author intent | prompt-only | none |
+| `sources/eurofxref-hist_2025-01.csv` | asset | context | stage |
+| `sources/eurofxref-hist_2025-02-03_04.csv` | asset | context | stage |
+| `sources/eurofxref-hist_bad.csv` | asset | context | stage |
+| `sources/run.sh` | conformance harness | context | stage |
+
+## Planning Instructions
+
+### Delivery Shape
+
+Build an executable CLI and a FastAPI JSON service backed by SQLite. The CLI initializes the store and loads ECB CSV data; the API reads the resulting rates to answer health, statistics, currency, date-rate, conversion, and history requests. The main flow is initialize, load data, serve requests, then run the supplied grader.
+
+### Story Realization Map
+
+| Story ID | Durable Blueprint scope | Evidence | Related files | Delivery need |
+|---|---|---|---|---|
+| DATA-001 | Initialize the rates store | `sources/INSTRUCTIONS.md` — Database and Command line | persistence layer | Capability |
+| DATA-002 | Validate and load ECB history CSV | `sources/INSTRUCTIONS.md` — ECB history file rules; `sources/eurofxref-hist_bad.csv` | staged CSV fixtures | Capability, integration |
+| DATA-003 | Download and load ECB history archive | `sources/INSTRUCTIONS.md` — fetch command | fetch downloader and archive handling | Capability, integration |
+| CLI-001 | CLI usage, errors, and exit codes | `sources/INSTRUCTIONS.md` — Command line and Exit codes | `fxrates` | Capability |
+| CLI-002 | Start the API service | `sources/INSTRUCTIONS.md` — serve command | FastAPI application | Capability, integration |
+| API-001 | Health and statistics routes | `sources/INSTRUCTIONS.md` — HTTP API | persisted rates | Capability |
+| API-002 | Currency listing route | `sources/INSTRUCTIONS.md` — HTTP API | persisted rates | Capability |
+| API-003 | Effective-date rate routes | `sources/INSTRUCTIONS.md` — HTTP API and Effective date | persisted rates | Capability |
+| API-004 | Exact currency conversion route | `sources/INSTRUCTIONS.md` — HTTP API and Values | persisted rates | Capability |
+| API-005 | Currency history route | `sources/INSTRUCTIONS.md` — HTTP API and Values | persisted rates | Capability |
+| VERIFY-001 | Complete supplied grader verification | `sources/run.sh` | all staged grader fixtures | Acceptance contract; depends on every implementation story |
+
+### Test and Acceptance Strategy
+
+Use focused tests for command behavior, CSV validation and atomicity, route responses, effective-date resolution, and exact decimal rounding. Stub fetch downloads in tests so tests do not open network connections. The terminal verification story runs the complete supplied grader once as the project conformance gate. Sea Trials separately records the supplied grader as the acceptance proof.
+
+### Sequencing and Dependencies
+
+Implement the persistence boundary and initialization before loading and API reads. Complete CSV validation before writes; build fetch on the load capability. Implement API routes and service startup before terminal verification. Stage the supplied harness and all three CSV fixtures before its run. The terminal verification story depends on all implementation stories.
+
+### Source Conflicts and Gaps
+
+No unresolved conflicts or human-owned decisions. The source specifies the product purpose, stack, persistence model, commands, API behavior, errors, and supplied acceptance harness.
+
+## Analysis Notes
+
+generated: 2026-10-24
+blueprint: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261024.172824/workspace/targets/FxRates/blueprint
+
+Quality: Ready
+  blockers: 0
+  questions: 0
+  features: 4
+  stories: 11
+  stack: Python 3.11+, FastAPI, uvicorn, SQLite, pytest, shipped persistence library and generated relational layer
+  display_name: not proposed
+  short_description: not proposed
+
+None.
+=== END ARTIFACT ===
+
+=== BEGIN ARTIFACT SEA_TRIALS.md ===
+# Sea Trials: FxRates
+
+## st-001: The supplied grader passes
+Type: technical
+Required: yes
+Criterion: The completed fxrates shall make sh sources/run.sh exit zero; that script's exit status is the sole acceptance verdict.
+Testability: deterministic
+Consequence: blocks
+Verification: proof
+Command: ["sh", "sources/run.sh"]
+Pattern: ubiquitous
+
+## st-002: Test suite passes
+Type: technical
+Required: yes
+Criterion: The application shall provide a POSIX-compatible bin/test.sh that exits zero when every automated test passes.
+Testability: deterministic
+Consequence: blocks
+Verification: proof
+Pattern: ubiquitous
+
+## st-003: ECB history files load exactly and atomically
+Type: behavioral
+Required: yes
+Criterion: When an ECB history file is loaded, the application shall store every non-N/A rate as published text, replace rates already stored for the same date and currency, and, if any row is invalid, exit 3 and store nothing.
+Testability: deterministic
+Consequence: blocks
+Verification: proof
+Command: ["bin/test.sh"]
+Pattern: event
+
+## st-004: The service starts and reports health
+Type: technical
+Required: yes
+Criterion: When fxrates serve --port is run, the application shall answer GET /health on 127.0.0.1 at that port with status 200 and {"status": "ok"}.
+Testability: deterministic
+Consequence: blocks
+Verification: proof
+Pattern: event
+
+## st-005: Rates resolve to the effective publication date
+Type: behavioral
+Required: yes
+Criterion: When rates or a conversion are requested for a date, the application shall use the latest publication date on or before it, and respond 404 when there is none.
+Testability: deterministic
+Consequence: blocks
+Verification: proof
+Pattern: event
+
+## st-006: Conversions and history match the known answers
+Type: behavioral
+Required: yes
+Criterion: The application shall compute /convert rates and results and /history statistics with exact decimal arithmetic rounded half to even, matching the known answers in sources/run.sh.
+Testability: deterministic
+Consequence: blocks
+Verification: proof
+Command: ["sh", "sources/run.sh"]
+Pattern: ubiquitous
+
+## st-007: Invalid requests are refused with the right status
+Type: behavioral
+Required: yes
+Criterion: If a request has a malformed date or amount or lacks a required parameter, then the application shall respond 422; if it names an unknown currency, then it shall respond 404.
+Testability: deterministic
+Consequence: blocks
+Verification: proof
+Pattern: unwanted
+
+## st-008: Persistence goes through the shipped library
+Type: technical
+Required: yes
+Criterion: The application shall reach the database only through the shipped persistence library, selected by DATABASE_URL, with rates stored as text and never as floating point.
+Testability: judgeable
+Consequence: scores
+Verification: llm
+Pattern: ubiquitous
+
+## st-009: Tests never use the network
+Type: technical
+Required: yes
+Criterion: The application's automated tests shall exercise fetch through a stubbed download and shall not open a network connection.
+Testability: judgeable
+Consequence: scores
+Verification: llm
+Pattern: ubiquitous
+
+## Questions
+
+- None.
+=== END ARTIFACT ===
+
+=== BEGIN ARTIFACT TECHNOLOGY_STACK.md ===
+# Technology Stack
+
+| Technology | Rigging | Notes |
+|---|---|---|
+| Python 3.11+ | python.md | Application language. |
+| FastAPI | fastapi.md | JSON HTTP API framework. |
+| uvicorn | — | ASGI server serving FastAPI. |
+| SQLAlchemy | sqlalchemy.md | Conventional relational integration proposal; use the shipped persistence library and generated relational layer as the database boundary. |
+| Alembic | alembic.md | Included per Python relational persistence stack workflow; schema is created by init for this application. |
+| SQLite | sqlite.md | Database engine specified by the source. |
+| pytest | python.md | Test runner specified by the source. |
+| CLI | cli.md | Executable command interface and exit behavior. |
+| Persistence boundary | persistence.md | Shipped library and generated relational layer specified by the source. |
+=== END ARTIFACT===

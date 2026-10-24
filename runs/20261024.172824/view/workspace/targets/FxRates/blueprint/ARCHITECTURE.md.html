@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/ARCHITECTURE.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/ARCHITECTURE.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/ARCHITECTURE.md">Raw file</a></div></header>
+<article class="doc"><h1>ARCHITECTURE: FxRates</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Defines the application modules and boundaries for the FxRates service.</td></tr><tr><td>Provides</td><td>app_server.main:create_app, cli.main, persistence.open_database</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>FxRates is a Python application with a CLI for initializing and loading ECB reference rates and a FastAPI service for querying them. The CLI and API share services and the generated persistence package.</p>
+<h2>Technology Stack</h2>
+<div class="scroll"><table><thead><tr><th>Technology</th><th>Use</th></tr></thead><tbody><tr><td>Python</td><td>Application and tests, Python 3.11 or newer.</td></tr><tr><td>FastAPI</td><td>JSON API application and test client.</td></tr><tr><td>SQLite</td><td>Local rates database, accessed only through the generated persistence package.</td></tr><tr><td>CLI</td><td>Root <code>fxrates</code> executable with <code>init</code>, <code>load</code>, <code>fetch</code>, and <code>serve</code> commands.</td></tr><tr><td>pytest</td><td>Project test suite, invoked by <code>bin/test.sh</code>.</td></tr><tr><td>ECB reference rates</td><td><code>eurofxref-hist.csv</code> history downloaded from the ECB archive.</td></tr><tr><td>Shell</td><td>POSIX shell launchers and supplied grader.</td></tr></tbody></table></div>
+<h2>Module Boundaries</h2>
+<div class="scroll"><table><thead><tr><th>Module</th><th>Owns</th><th>Allowed access</th></tr></thead><tbody><tr><td><code>app_server</code></td><td>FastAPI app factory and route registration</td><td>Calls application services.</td></tr><tr><td><code>services</code></td><td>Rate loading, validation, date resolution, conversion, and history calculations</td><td>Calls <code>persistence</code> operations.</td></tr><tr><td><code>cli</code></td><td>Command parsing and command dispatch</td><td>Calls services and the server runner.</td></tr><tr><td><code>persistence</code></td><td>Generated SQLite access layer and schema contract</td><td>Uses the shipped persistence library and selected database driver internally.</td></tr><tr><td><code>bin</code></td><td>POSIX test launcher</td><td>Runs pytest from the application root.</td></tr></tbody></table></div>
+<p>The CLI and API do not open database connections or issue SQL directly. Route handlers call services; services call only declared <code>db.rates</code> operations. Configuration resolves <code>DATABASE_URL</code>, then <code>DATABASE_PATH</code>, then <code>data/app.db</code>.</p>
+<h2>Interfaces</h2>
+<ul><li><code>app_server.main:create_app()</code> returns the FastAPI application; <code>app_server.main:app</code> is the uvicorn entry point.</li><li><code>cli.main(argv: list[str] | None = None) -&gt; int</code> is the command dispatcher.</li><li><code>persistence.open_database(dsn)</code> and <code>db.rates</code> expose the generated persistence interface.</li><li><code>app_server.testing.web_client()</code> returns a FastAPI <code>TestClient</code> for acceptance criteria and project tests.</li><li><code>cli.testing.cli_runner(*args)</code> returns <code>(exit_code, stdout, stderr)</code> for in-process command checks.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC architecture-imports ===<br>Intent: The declared application entry points and test clients are importable.</p>
+<p>from app_server.main import create_app, app from app_server.testing import web_client from cli import main from cli.testing import cli_runner</p>
+<p>assert callable(create_app) assert app is not None assert callable(web_client) assert callable(main) assert callable(cli_runner) === END AC architecture-imports ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Store rates exactly as published text and use <code>decimal</code> for arithmetic.</li><li>Keep application database access behind the generated persistence library.</li><li>Resolve the database location from <code>DATABASE_URL</code>, then <code>DATABASE_PATH</code>, then <code>data/app.db</code>.</li><li>Do not read grader scripts or supplied data directly from application code.</li></ul></article>
+</main>
+</body>
+</html>
