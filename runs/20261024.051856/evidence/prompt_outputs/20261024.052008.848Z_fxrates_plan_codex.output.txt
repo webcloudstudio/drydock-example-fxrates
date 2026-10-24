@@ -1,0 +1,227 @@
+=== BEGIN ARTIFACT DATABASE.md ===
+# DATABASE: FxRates
+
+| Field | Value |
+|-------|-------|
+| Version | 20261024 V1 |
+| Description | Persistence schema and typed repository operations for ECB exchange rates. |
+| Depends On | ARCHITECTURE.md |
+| Provides | rates repository operations |
+
+## Questions
+
+- None.
+
+## Persistence Boundary
+
+| Boundary | Rule |
+|----------|------|
+| Raw storage access | Only the generated `persistence/` package reaches the store. |
+| Caller dependency | Features use declared access patterns and DTOs, not schemas or SQL. |
+| Implementation | Generated from this file at the DATABASE build step; application code never opens a database driver directly. |
+| Store selection | Resolve `DATABASE_URL`, then `DATABASE_PATH`, then `data/app.db`. |
+
+## Access Patterns
+
+### FEATURE-INGEST-001 — Replace a rate
+
+| Field | Value |
+|-------|-------|
+| Owner | FEATURE-Load-History.md |
+| Access | write |
+| Repository operation | `rates.upsert` |
+| Kind | upsert |
+| Match | `date`, `currency` |
+| Compatibility | unchanged |
+
+Input:
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+| rate | str |
+
+Output:
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+| rate | str |
+
+### FEATURE-RATES-001 — Read a rate
+
+| Field | Value |
+|-------|-------|
+| Owner | FEATURE-Rates.md |
+| Access | read |
+| Repository operation | `rates.get` |
+| Compatibility | unchanged |
+
+Input:
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+
+Output:
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+| rate | str |
+
+### FEATURE-RATES-002 — List rates
+
+| Field | Value |
+|-------|-------|
+| Owner | FEATURE-Rates.md |
+| Access | read |
+| Repository operation | `rates.list` |
+| Compatibility | unchanged |
+
+Input:
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+
+Output:
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+| rate | str |
+
+The list filters are optional equality filters. Callers may list all rows and apply date bounds, ordering, or aggregation in the service layer.
+
+### FEATURE-INITIALIZE-001 — Clear stored rates
+
+| Field | Value |
+|-------|-------|
+| Owner | FEATURE-Initialize-Store.md |
+| Access | write |
+| Repository operation | `rates.clear_all` |
+| Kind | delete |
+| Compatibility | unchanged |
+
+Input:
+
+| Field | Type |
+|-------|------|
+
+Output:
+
+| Field | Type |
+|-------|------|
+
+This operation deletes all rows and returns the affected-row count.
+
+## Schemas
+
+## `rates`
+
+| Field | Type | Notes |
+|-------|------|-------|
+| date | TEXT NOT NULL | ECB publication date in `YYYY-MM-DD` form. |
+| currency | TEXT NOT NULL | Three-letter uppercase currency code. |
+| rate | TEXT NOT NULL | ECB-published rate text; `N/A` values are not stored. |
+
+- UNIQUE (date, currency)
+
+## Migrations
+
+| Access Pattern | Revision | State |
+|----------------|----------|-------|
+
+## Config (.env)
+
+| Key | Type | Required | Notes |
+|-----|------|----------|-------|
+| DATABASE_URL | str | No | Database DSN; takes precedence over `DATABASE_PATH`. |
+| DATABASE_PATH | str | No | Database file path used when `DATABASE_URL` is unset. |
+
+## File Stores
+
+| Store | Root dir | Notes |
+|-------|----------|-------|
+
+## External Services
+
+| Service | Wrapper | Notes |
+|---------|---------|-------|
+
+## External Libraries
+
+| Library | Ownership | Distribution | Consumer Contract |
+|---------|-----------|--------------|-------------------|
+| Shipped persistence library | Persistence boundary | Generated `persistence/` package | Application code calls declared repository operations only. |
+
+## Programmatic Acceptance
+
+=== AC rates-upsert-roundtrip ===
+Intent: The declared upsert operation stores and replaces a rate, and a separate get reads it back.
+
+from persistence.testing import db_session
+
+date = "2099-01-02"
+currency = "ZZZ"
+rate = "1.2345"
+replacement = "1.23450"
+
+with db_session() as db:
+    first = db.rates.upsert(date=date, currency=currency, rate=rate)
+    assert first.date == date
+    assert first.currency == currency
+    assert first.rate == rate
+
+    replaced = db.rates.upsert(date=date, currency=currency, rate=replacement)
+    assert replaced.rate == replacement
+
+    stored = db.rates.get(date=date, currency=currency)
+    assert stored is not None
+    assert stored.date == date
+    assert stored.currency == currency
+    assert stored.rate == replacement
+=== END AC rates-upsert-roundtrip ===
+
+=== AC rates-list ===
+Intent: The declared list operation returns rows with the declared rate fields.
+
+from persistence.testing import db_session
+
+with db_session() as db:
+    rows = db.rates.list()
+    assert isinstance(rows, list)
+    for row in rows:
+        assert isinstance(row.date, str)
+        assert isinstance(row.currency, str)
+        assert isinstance(row.rate, str)
+=== END AC rates-list ===
+
+=== AC rates-clear-all ===
+Intent: The declared delete operation clears the rows and a separate list confirms the store is empty.
+
+from persistence.testing import db_session
+
+with db_session() as db:
+    db.rates.clear_all()
+    rows = db.rates.list()
+    assert rows == []
+=== END AC rates-clear-all ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Preserve every published rate as text; never store or compute rates as floating-point values.
+- Validate the complete history file before the first write.
+- Do not modify or read the supplied scoring harness from application code.
+=== END ARTIFACT ===

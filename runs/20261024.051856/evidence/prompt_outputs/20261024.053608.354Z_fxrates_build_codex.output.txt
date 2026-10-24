@@ -1,0 +1,15 @@
+AC_BROKEN: history-route-empty-range, date-resolves-to-effective-publication, latest-rates-route-works, euro-conversion-uses-implicit-unit-rate
+
+RESULT: FAILED
+
+FILES CHANGED:
+- None
+
+SUMMARY:
+Reran the four failing cases. Each seeds data inside `db_session()`, whose declared behavior rolls back when the context exits; the subsequent HTTP request therefore cannot see those rows. The existing lookup behavior is consistent with the stored data. The supplied grader passes all 35 checks, and `sh bin/test.sh` passes all 18 tests.
+
+BLOCKERS:
+- The four acceptance criteria require data to remain visible after an explicit rollback. Update their setup to use committed data with cleanup, or change the fixture contract before rerunning.
+
+FAILURE_SUMMARY: Four HTTP acceptance criteria use rolled-back setup data
+FAILURE_DETAIL: Each criterion exits `db_session()` before its request. `persistence.testing.db_session()` explicitly rolls back on exit, so the seeded rate is absent when the API queries the store. The API returns 404 or the latest remaining publication; no implementation can return the rolled-back values through the declared persistence behavior. Use committed setup with criterion-owned cleanup, or keep setup and request within one shared rollback session.
