@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/prompt_outputs/20261024.162154.204Z_fxrates_plan_codex.output.txt</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/prompt_outputs/20261024.162154.204Z_fxrates_plan_codex.output.txt</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/prompt_outputs/20261024.162154.204Z_fxrates_plan_codex.output.txt">Raw file</a></div></header>
+<article class="doc"><pre>=== BEGIN ARTIFACT TOPOLOGY.md ===
+## Declarations
+
+## story architecture
+summary:      Define application boundaries and runtime configuration.
+type:         foundational
+kind:         capability
+phase:        1
+implements:   ARCHITECTURE.md
+stack:        python.md, fastapi.md, sqlite.md, cli.md
+provides:     fxrates application boundary, app_server.create_app, CLI entry point
+consumes:     API-008
+acceptance:   yes
+instructions: |
+  Establish the Python application structure, configuration boundary, FastAPI application factory, CLI entry point, and module ownership boundaries. Resolve the configured database location in the documented precedence order. Keep all database access behind the shipped persistence package.
+
+## story database
+summary:      Declare the rates schema and repository operations.
+type:         foundational
+kind:         migration
+phase:        1
+implements:   DATABASE.md
+stack:        python.md, persistence.md, sqlite.md
+provides:     rates persistence contract
+consumes:     open_database, db_session
+depends:      architecture
+acceptance:   yes
+instructions: |
+  Declare the rates table and typed repository operations needed by the loader and API. Rates remain published text. Define operations for replacing rates, listing rates by effective date, querying statistics and currencies, and reading bounded currency history.
+
+## story data_001
+summary:      Initialize the rates database.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-DatabaseInitialization.md
+covers:       DATA-001, FEATURE-DatabaseInitialization
+stack:        python.md, cli.md, sqlite.md
+provides:     fxrates init
+consumes:     rates persistence contract
+depends:      architecture, database
+accepts:
+acceptance:   yes
+instructions: |
+  Implement `fxrates init` so it drops and recreates the rates table empty and writes nothing to standard output.
+
+## story data_002
+summary:      Validate and load ECB history files.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-HistoryLoading.md
+covers:       DATA-002, FEATURE-HistoryLoading
+accepts:      st-003
+stack:        python.md, cli.md, sqlite.md
+provides:     fxrates load
+consumes:     rates persistence contract
+depends:      architecture, database
+acceptance:   yes
+instructions: |
+  Validate the entire CSV before the first write. Store each non-N/A rate exactly as published, replace matching date and currency rates, count dates with stored rates and stored rates from the file, and use the specified exit codes and output contract.
+
+## story data_003
+summary:      Fetch and import ECB history.
+type:         service
+kind:         integration
+phase:        1
+implements:   FEATURE-HistoryFetch.md
+covers:       DATA-003, FEATURE-HistoryFetch
+stack:        python.md, cli.md, sqlite.md
+provides:     fxrates fetch
+consumes:     fxrates load
+depends:      architecture, database, data_002
+acceptance:   yes
+instructions: |
+  Download and extract the ECB history archive, then reuse the validated loading behavior. Keep download handling replaceable so project tests can stub it without network access.
+
+## story api_001
+summary:      Start the HTTP service and report health.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-Health.md
+covers:       API-001, FEATURE-Health
+accepts:      st-004
+stack:        python.md, fastapi.md, sqlite.md
+provides:     GET /health
+consumes:     app_server.create_app
+depends:      architecture
+acceptance:   yes
+instructions: |
+  Serve the API on 127.0.0.1 at the requested port, defaulting to 8000, and return the specified health JSON response.
+
+## story api_002
+summary:      Report stored rate statistics.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-Statistics.md
+covers:       API-002, FEATURE-Statistics
+stack:        python.md, fastapi.md, sqlite.md
+provides:     GET /stats
+consumes:     rates statistics query
+depends:      architecture, database
+acceptance:   yes
+instructions: |
+  Return publication-date and rate counts, first and last publication dates, and null dates when no rates are stored.
+
+## story api_003
+summary:      List available currencies.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-Currencies.md
+covers:       API-003, FEATURE-Currencies
+stack:        python.md, fastapi.md, sqlite.md
+provides:     GET /currencies
+consumes:     rates currency-list query
+depends:      architecture, database
+acceptance:   yes
+instructions: |
+  Return EUR as the base and currencies with stored rates in ascending order.
+
+## story api_004
+summary:      Resolve rates for a requested date.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-DateRates.md
+covers:       API-004, FEATURE-DateRates
+accepts:      st-005
+stack:        python.md, fastapi.md, sqlite.md
+provides:     GET /rates/{date}
+consumes:     effective publication lookup, rates-by-date query
+depends:      architecture, database
+acceptance:   yes
+instructions: |
+  Resolve the latest publication on or before the requested date, return all rates published on that date, and return 404 when no publication exists. Malformed dates return 422.
+
+## story api_005
+summary:      Resolve the latest published rates.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-LatestRates.md
+covers:       API-005, FEATURE-LatestRates
+stack:        python.md, fastapi.md, sqlite.md
+provides:     GET /rates/latest
+consumes:     latest publication lookup, rates-by-date query
+depends:      architecture, database, api_004
+acceptance:   yes
+instructions: |
+  Return every rate on the latest publication date and identify the request as `latest`.
+
+## story api_006
+summary:      Convert amounts between currencies.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-Conversion.md
+covers:       API-006, FEATURE-Conversion
+accepts:      st-006, st-007
+stack:        python.md, fastapi.md, sqlite.md
+provides:     GET /convert
+consumes:     effective publication lookup, rates-by-date query
+depends:      architecture, database, api_004
+acceptance:   yes
+instructions: |
+  Resolve omitted dates to the latest publication. Validate required parameters, date and amount; return 404 for unavailable dates or currencies. Use Decimal arithmetic and half-even rounding for the cross-rate and result with the specified precision and string formatting.
+
+## story api_007
+summary:      Retrieve currency history and summary statistics.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-CurrencyHistory.md
+covers:       API-007, FEATURE-CurrencyHistory
+accepts:      st-006, st-007
+stack:        python.md, fastapi.md, sqlite.md
+provides:     GET /history/{code}
+consumes:     bounded ordered currency-history query
+depends:      architecture, database
+acceptance:   yes
+instructions: |
+  Return ordered history points over inclusive optional bounds, stored text for point and extrema rates, and an exact Decimal mean rounded half-even to six places. Return the specified empty result when the currency has rates but none in the range; return 404 if the currency has no stored rate at all, and 422 for malformed bounds.
+
+## story verify_001
+summary:      Run the complete automated test suite.
+type:         service
+kind:         test harness
+phase:        1
+implements:   FEATURE-TestSuite.md
+covers:       VERIFY-001
+acceptance:   yes
+depends:      data_001, data_002, data_003, api_001, api_002, api_003, api_004, api_005, api_006, api_007
+context:      sources/INSTRUCTIONS.md, sources/run.sh
+context_roles: |
+  INSTRUCTIONS.md: prompt-only
+  run.sh: context
+stack:        python.md, common.md
+provides:     bin/test.sh
+consumes:     implemented application, pytest
+acceptance:   yes
+accepts:      st-002, st-008, st-009
+instructions: |
+  Provide the POSIX test runner and a pytest suite covering the commands, validation and atomicity rules, API routes, date resolution, exact rounding, and error statuses. Stub fetch downloads so tests never open a network connection. This is the terminal story and its Programmatic Acceptance runs the complete project suite with `Suite: full`; do not run the supplied release grader as story acceptance.
+=== END ARTIFACT ===</pre></article>
+</main>
+</body>
+</html>

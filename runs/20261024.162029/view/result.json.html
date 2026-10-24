@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>result.json</title>
+<link rel="stylesheet" href="../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>result.json</h1><div class="filenav"><a href="../index.html">&larr; Report</a><a href="../result.json">Raw file</a></div></header>
+<article class="doc"><pre>{
+  &quot;acceptance_status&quot;: &quot;NOT_RUN&quot;,
+  &quot;assertions&quot;: {
+    &quot;failed&quot;: 0,
+    &quot;harness_defects&quot;: 0,
+    &quot;passed&quot;: 0,
+    &quot;product_defects&quot;: 0,
+    &quot;unverified&quot;: 0
+  },
+  &quot;attestations&quot;: [],
+  &quot;build_passes&quot;: 0,
+  &quot;commands&quot;: [
+    {
+      &quot;argv&quot;: [
+        &quot;/mnt/c/Users/barlo/projects/drydock/.venv/bin/python&quot;,
+        &quot;-m&quot;,
+        &quot;drydock&quot;,
+        &quot;init&quot;,
+        &quot;FxRates&quot;
+      ],
+      &quot;cwd&quot;: &quot;workspace&quot;,
+      &quot;elapsed_ms&quot;: 3139,
+      &quot;label&quot;: &quot;01-init&quot;,
+      &quot;llm_executions&quot;: [],
+      &quot;returncode&quot;: 0,
+      &quot;stderr_path&quot;: &quot;evidence/commands/01-init.stderr.log&quot;,
+      &quot;stdout_path&quot;: &quot;evidence/commands/01-init.stdout.log&quot;
+    },
+    {
+      &quot;argv&quot;: [
+        &quot;/mnt/c/Users/barlo/projects/drydock/.venv/bin/python&quot;,
+        &quot;-m&quot;,
+        &quot;drydock&quot;,
+        &quot;import&quot;,
+        &quot;FxRates&quot;,
+        &quot;sources&quot;,
+        &quot;--format&quot;,
+        &quot;markdown&quot;
+      ],
+      &quot;cwd&quot;: &quot;workspace&quot;,
+      &quot;elapsed_ms&quot;: 6412,
+      &quot;label&quot;: &quot;02-import-sources&quot;,
+      &quot;llm_executions&quot;: [],
+      &quot;returncode&quot;: 0,
+      &quot;stderr_path&quot;: &quot;evidence/commands/02-import-sources.stderr.log&quot;,
+      &quot;stdout_path&quot;: &quot;evidence/commands/02-import-sources.stdout.log&quot;
+    },
+    {
+      &quot;argv&quot;: [
+        &quot;/mnt/c/Users/barlo/projects/drydock/.venv/bin/python&quot;,
+        &quot;-m&quot;,
+        &quot;drydock&quot;,
+        &quot;analyze&quot;,
+        &quot;FxRates&quot;
+      ],
+      &quot;cwd&quot;: &quot;workspace&quot;,
+      &quot;elapsed_ms&quot;: 35170,
+      &quot;label&quot;: &quot;03-analyze&quot;,
+      &quot;llm_executions&quot;: [
+        &quot;20261024.162042.034Z-b2ea4170&quot;
+      ],
+      &quot;returncode&quot;: 0,
+      &quot;stderr_path&quot;: &quot;evidence/commands/03-analyze.stderr.log&quot;,
+      &quot;stdout_path&quot;: &quot;evidence/commands/03-analyze.stdout.log&quot;
+    },
+    {
+      &quot;argv&quot;: [
+        &quot;/mnt/c/Users/barlo/projects/drydock/.venv/bin/python&quot;,
+        &quot;-m&quot;,
+        &quot;drydock&quot;,
+        &quot;plan&quot;,
+        &quot;FxRates&quot;,
+        &quot;--override&quot;
+      ],
+      &quot;cwd&quot;: &quot;workspace&quot;,
+      &quot;elapsed_ms&quot;: 163411,
+      &quot;label&quot;: &quot;04-plan&quot;,
+      &quot;llm_executions&quot;: [
+        &quot;20261024.162119.398Z-1fdc78de&quot;,
+        &quot;20261024.162138.513Z-90584a4c&quot;,
+        &quot;20261024.162154.204Z-35524613&quot;,
+        &quot;20261024.162207.449Z-140a377f&quot;,
+        &quot;20261024.162225.545Z-fd3f033a&quot;,
+        &quot;20261024.162243.413Z-c84c293b&quot;,
+        &quot;20261024.162301.903Z-8388c6f8&quot;
+      ],
+      &quot;returncode&quot;: 1,
+      &quot;stderr_path&quot;: &quot;evidence/commands/04-plan.stderr.log&quot;,
+      &quot;stdout_path&quot;: &quot;evidence/commands/04-plan.stdout.log&quot;
+    }
+  ],
+  &quot;degraded&quot;: [],
+  &quot;elapsed_ms&quot;: 211600,
+  &quot;environment&quot;: {
+    &quot;drydock_version&quot;: &quot;0.8.0&quot;,
+    &quot;effort&quot;: &quot;&quot;,
+    &quot;finished_at&quot;: &quot;2026-10-24T16:24:01.718690Z&quot;,
+    &quot;git_commit&quot;: &quot;82405871728fdbcbe34ecaa43a44024d859926d5&quot;,
+    &quot;model&quot;: &quot;gpt-6-luna&quot;,
+    &quot;plan_model&quot;: &quot;&quot;,
+    &quot;platform&quot;: &quot;Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.35&quot;,
+    &quot;provider&quot;: &quot;codex&quot;,
+    &quot;python_version&quot;: &quot;3.12.13&quot;,
+    &quot;requested_model&quot;: &quot;gpt-6-luna&quot;,
+    &quot;started_at&quot;: &quot;2026-10-24T16:20:29.961202Z&quot;
+  },
+  &quot;error&quot;: &quot;FxRates: plan exited 1&quot;,
+  &quot;evidence_dir&quot;: &quot;evidence&quot;,
+  &quot;execution_status&quot;: &quot;ERROR&quot;,
+  &quot;expected_verdict&quot;: &quot;PASSED&quot;,
+  &quot;fixture&quot;: &quot;FxRates&quot;,
+  &quot;observed_verdict&quot;: &quot;ERROR&quot;,
+  &quot;output_dir&quot;: &quot;.&quot;,
+  &quot;release_verdict&quot;: &quot;&quot;,
+  &quot;resumed_from&quot;: &quot;&quot;,
+  &quot;run_id&quot;: &quot;20261024.162029&quot;,
+  &quot;score_exit_codes&quot;: {},
+  &quot;status&quot;: &quot;failed&quot;,
+  &quot;target&quot;: &quot;FxRates&quot;,
+  &quot;usage&quot;: {
+    &quot;cached_input_tokens&quot;: 85760,
+    &quot;calls&quot;: 8,
+    &quot;fresh_input_tokens&quot;: 249403,
+    &quot;input_tokens&quot;: 335163,
+    &quot;invalid_records&quot;: 0,
+    &quot;llm_elapsed_ms&quot;: 188269,
+    &quot;output_tokens&quot;: 18302
+  }
+}
+</pre></article>
+</main>
+</body>
+</html>

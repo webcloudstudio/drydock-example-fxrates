@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/commands/04-plan.stderr.log</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/commands/04-plan.stderr.log</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/commands/04-plan.stderr.log">Raw file</a></div></header>
+<article class="doc"><pre>========================================================================
+POST-LLM FAILURE  ·  plan  ·  plan generation stalled
+========================================================================
+
+  Blueprint generation stalled after TOPOLOGY.md was accepted and
+  frozen, after 3 Stage 2 pass(es).
+    last rejection: DATABASE.md does not parse: DATABASE.md: FEATURE-RATE-001 Match names `date`, `currency`, which are not Input fields. Every Match field is an Input field the caller supplies.
+    last rejection: DATABASE.md: FEATURE-RATE-002 Match names `date`, which is not Input fields. Every Match field is an Input field the caller supplies.
+    last rejection: DATABASE.md: FEATURE-RATE-005 declares `rates.by_date`, which FEATURE-RATE-002 already declares. An operation name is one method, `db.rates.by_date(...)`; give this one its own name and `| Kind |`, or merge the two patterns.
+  … (19 more lines truncated)
+
+  Recovery
+    Inspect the failed Stage 2 batch, then run: drydock plan FxRates
+
+========================================================================
+</pre></article>
+</main>
+</body>
+</html>
