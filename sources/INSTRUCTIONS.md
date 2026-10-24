@@ -88,9 +88,9 @@ A failing command writes nothing to standard output and one diagnostic line to s
 `fetch` is never run by the harness. Its tests replace the download with a stub and never use the
 network.
 
-**Exit codes.** `0` success. `1` operational failure: the file cannot be read, the database cannot
-be reached, or a `fetch` download fails. `2` usage error: unknown command, wrong argument count,
-`--port` not an integer. `3` rejected file.
+**Exit codes.** `0` success. `1` operational failure: the file cannot be read, or a `fetch`
+download fails. `2` usage error: unknown command, wrong argument count, `--port` not an integer.
+`3` rejected file.
 
 ## HTTP API
 

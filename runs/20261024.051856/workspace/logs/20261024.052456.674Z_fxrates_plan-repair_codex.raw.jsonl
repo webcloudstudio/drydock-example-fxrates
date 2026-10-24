@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a16c5e-8900-7d33-8c50-85756ac9fe8f"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"=== AC FEATURE-Reject-History.md :: reject-invalid-file ===\nIntent: The staged malformed history file is rejected with the specified exit status.\n\nfrom cli.testing import cli_runner\n\ncode, stdout, stderr = cli_runner(\"load\", \"sources/eurofxref-hist_bad.csv\")\nassert code == 3\n=== END AC FEATURE-Reject-History.md :: reject-invalid-file ==="}}
+{"type":"turn.completed","usage":{"input_tokens":15910,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":82,"reasoning_output_tokens":0}}

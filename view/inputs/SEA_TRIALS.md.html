@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>inputs/SEA_TRIALS.md</title>
+<link rel="stylesheet" href="../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Project document</div><h1>inputs/SEA_TRIALS.md</h1><div class="filenav"><a href="../../index.html">&larr; Report</a><a href="../../inputs/SEA_TRIALS.md">Raw file</a></div></header>
+<article class="doc"><h1>Sea Trials: FxRates</h1>
+<h2>Policy</h2>
+<div class="scroll"><table><thead><tr><th>Consequence</th><th>On FAIL</th><th>On INCONCLUSIVE</th></tr></thead><tbody><tr><td>blocks</td><td>fail</td><td>attest</td></tr><tr><td>scores</td><td>score</td><td>score</td></tr><tr><td>attests</td><td>report</td><td>report</td></tr></tbody></table></div>
+<h2>st-001: The supplied grader passes</h2>
+<p>Type: technical<br>Required: yes<br>Criterion: The completed fxrates shall make sh sources/run.sh exit zero; that script&#x27;s exit status is the sole acceptance verdict.<br>Testability: deterministic<br>Consequence: blocks<br>Verification: proof<br>Command: [&quot;sh&quot;, &quot;sources/run.sh&quot;]<br>Pattern: ubiquitous</p>
+<h2>st-002: Test suite passes</h2>
+<p>Type: technical<br>Required: yes<br>Criterion: The application shall provide a POSIX-compatible bin/test.sh that exits zero when every automated test passes.<br>Testability: deterministic<br>Consequence: blocks<br>Verification: proof<br>Pattern: ubiquitous</p>
+<h2>st-003: ECB history files load exactly and atomically</h2>
+<p>Type: behavioral<br>Required: yes<br>Criterion: When an ECB history file is loaded, the application shall store every non-N/A rate as published text, replace rates already stored for the same date and currency, and, if any row is invalid, exit 3 and store nothing.<br>Testability: deterministic<br>Consequence: blocks<br>Verification: proof<br>Pattern: event</p>
+<h2>st-004: The service starts and reports health</h2>
+<p>Type: technical<br>Required: yes<br>Criterion: When fxrates serve --port is run, the application shall answer GET /health on 127.0.0.1 at that port with status 200 and {&quot;status&quot;: &quot;ok&quot;}.<br>Testability: deterministic<br>Consequence: blocks<br>Verification: proof<br>Pattern: event</p>
+<h2>st-005: Rates resolve to the effective publication date</h2>
+<p>Type: behavioral<br>Required: yes<br>Criterion: When rates or a conversion are requested for a date, the application shall use the latest publication date on or before it, and respond 404 when there is none.<br>Testability: deterministic<br>Consequence: blocks<br>Verification: proof<br>Pattern: event</p>
+<h2>st-006: Conversions and history match the known answers</h2>
+<p>Type: behavioral<br>Required: yes<br>Criterion: The application shall compute /convert rates and results and /history statistics with exact decimal arithmetic rounded half to even, matching the known answers in sources/run.sh.<br>Testability: deterministic<br>Consequence: blocks<br>Verification: proof<br>Pattern: ubiquitous</p>
+<h2>st-007: Invalid requests are refused with the right status</h2>
+<p>Type: behavioral<br>Required: yes<br>Criterion: If a request has a malformed date or amount or lacks a required parameter, then the application shall respond 422; if it names an unknown currency, then it shall respond 404.<br>Testability: deterministic<br>Consequence: blocks<br>Verification: proof<br>Pattern: unwanted</p>
+<h2>st-008: Persistence goes through the shipped library</h2>
+<p>Type: technical<br>Required: yes<br>Criterion: The application shall reach the database only through the shipped persistence library, selected by DATABASE_URL, with rates stored as text and never as floating point.<br>Testability: judgeable<br>Consequence: scores<br>Verification: llm<br>Pattern: ubiquitous</p>
+<h2>st-009: Tests never use the network</h2>
+<p>Type: technical<br>Required: yes<br>Criterion: The application&#x27;s automated tests shall exercise fetch through a stubbed download and shall not open a network connection.<br>Testability: judgeable<br>Consequence: scores<br>Verification: llm<br>Pattern: ubiquitous</p></article>
+</main>
+</body>
+</html>

@@ -1,0 +1,56 @@
+Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
+Build: FxRates
+scope: entire project
+frontier: architecture
+git: baseline FxRates 86556499f811
+git: baseline FxRates 182e6268f32b
+
+BLOCK block-1  name="Block 1 · Foundational"  calls_max=7
+  story=architecture  "Define application modules and their ownership boundaries."
+
+  [call 1/7]  kind=initial  llm=codex/gpt-6-luna
+    result=ok  rc=0  execution=20261024.052600.827Z-fe3180dc
+    acceptance=1/1
+git: block-1 | python.md, ARCHITECTURE.md | call=1 | app=ba69465efaa8 target=b7596fe7845e
+
+  DONE  story=architecture  state=closed/implemented  execution=20261024.052600.827Z-fe3180dc  elapsed=39.1s
+git: block-1 | python.md, ARCHITECTURE.md | step_completed | app=unchanged target=8e58852fa53b
+
+BLOCK block-2  name="Block 2 · Foundational"  calls_max=7
+  story=database  "Declare the rates schema and generated persistence operations."
+  story=app-server-foundation  "Establish the FastAPI application and server test client."
+  story=cli-foundation  "Establish the fxrates command entry point."
+
+  [call 1/7]  kind=initial  llm=codex/gpt-6-luna
+    result=ok  rc=0  execution=20261024.052707.533Z-f67e7d93
+    acceptance=9/9
+git: block-2 | DATABASE.md, FEATURE-API-Foundation.md, FEATURE-CLI-Foundation.md | call=1 | app=ccb396049ec1 target=e24c8a020226
+
+  DONE  story=database  state=closed/implemented  execution=20261024.052707.533Z-f67e7d93  elapsed=4m44s
+git: block-2 | DATABASE.md, FEATURE-API-Foundation.md, FEATURE-CLI-Foundation.md | step_completed | app=unchanged target=4d7e76e9e94b
+WARNING: fastapi_compact.md is stale (fastapi.md changed) — using full file; run drydock rigging compact --include-file /mnt/c/Users/barlo/projects/drydock/Rigging/stack/fastapi.md
+WARNING: common_compact.md is stale (common.md changed) — using full file; run drydock rigging compact --include-file /mnt/c/Users/barlo/projects/drydock/Rigging/stack/common.md
+
+BLOCK block-3  name="Block 3 · Service"  calls_max=7
+  story=ingest_001  "Initialize the rates store from the CLI."
+  story=ingest_002  "Validate and load ECB history files."
+  story=ingest_003  "Reject invalid ECB history files atomically."
+  story=ingest_004  "Fetch and load the ECB history archive."
+  story=api_002  "List currencies available in stored rates."
+  story=api_001  "Serve health and rate-store statistics."
+  story=api_005  "Return bounded currency history and summary statistics."
+  story=api_003  "Resolve rates for requested and latest dates."
+  story=api_004  "Convert amounts between currencies."
+  story=cli_002  "Run the HTTP service on the requested localhost port."
+  story=cli_001  "Return usage errors for invalid CLI invocations."
+  story=api_006  "Validate API dates, amounts, and currencies."
+  story=verify_001  "Verify the completed application with the supplied grader."
+
+  [call 1/7]  kind=initial  llm=codex/gpt-6-luna
+    result=ok  rc=0  execution=20261024.053324.021Z-3d282252
+    acceptance=27/33  failed=history-route-empty-range,date-resolves-to-effective-publication,latest-rates-route-works,euro-conversion-uses-implicit-unit-rate  disputed=history-route-returns-bounded-summary,convert-route-returns-computed-values
+git: block-3 | FEATURE-Initialize-Store.md, FEATURE-Load-History.md, FEATURE-Reject-History.md, FEATURE-Fetch-History.md, FEATURE-Currencies.md, FEATURE-Health-Stats.md, FEATURE-History.md, FEATURE-Rates.md, FEATURE-Convert.md, FEATURE-Serve.md, FEATURE-CLI-Usage.md, FEATURE-API-Validation.md, VERIFICATION.md | call=1 | app=bd1cb287746a target=e5f6d7d7842b
+
+  [call 2/7]  kind=repair(1/6)  llm=codex/gpt-6-luna
+    fixing=history-route-empty-range,date-resolves-to-effective-publication,latest-rates-route-works,euro-conversion-uses-implicit-unit-rate
+    result=ok  rc=0  execution=20261024.053608.354Z-27e31631

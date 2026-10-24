@@ -1,0 +1,17 @@
+"""FastAPI application factory."""
+
+from fastapi import FastAPI
+
+
+def create_app() -> FastAPI:
+    application = FastAPI(title="FxRates")
+
+    @application.get("/health")
+    def health() -> dict[str, str]:
+        return {"status": "ok"}
+
+    return application
+
+
+app = create_app()
+
