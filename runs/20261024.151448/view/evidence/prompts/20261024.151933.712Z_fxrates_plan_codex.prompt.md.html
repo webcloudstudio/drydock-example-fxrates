@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/prompts/20261024.151933.712Z_fxrates_plan_codex.prompt.md</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/prompts/20261024.151933.712Z_fxrates_plan_codex.prompt.md</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/prompts/20261024.151933.712Z_fxrates_plan_codex.prompt.md">Raw file</a></div></header>
+<article class="doc"><p>&lt;pblock label=&quot;Plan artifact repair&quot; kind=&quot;repair&quot;&gt;</p>
+<h1>Plan Artifact Repair</h1>
+<p>Drydock accepted the Plan response shape but rejected the emitted Blueprint artifact(s) below. Repair only the deterministic defect. Preserve all unrelated content, contracts, headings, decisions, and acceptance assertions byte-for-byte where possible. Do not remove or weaken a valid assertion while adding a missing one. Every artifact with a programmatic surface retains at least two concrete Python acceptance assertions. Every DECISIONS.json is the sole decision disclosure surface; do not emit Markdown question sections.</p>
+<p>Emit each artifact below in exactly this form, and emit no other text:</p>
+<p>=== BEGIN ARTIFACT &lt;FILENAME&gt; === &lt;the complete file body&gt; === END ARTIFACT ===</p>
+<p>The filename appears once, in the opening delimiter. The closing delimiter is the constant token above and never carries a name.</p>
+<p>Emit exactly one such block for each of: DATABASE.md.</p>
+<p>Repair pass: 2</p>
+<p>Deterministic validation defect: Plan integrity check failed: analyzed stories are not delivered by any Manifest story: DEL-001 — name each analyzed Story ID in the covers: field of the story that delivers it. A foundational story and the story implementing DATABASE.md own no analyzed story; their covers: is dropped, so name the Feature or Screen instead</p>
+<p>Every <code>| Owner |</code> names one of these Features, exactly as written, or <code>DATABASE.md</code> for a pattern no single Feature owns — a log or other surface several Features reach, which any Blueprint may then cite. There are no other legal values: a Screen, a service, a module, and a file not on this list are each a defect.</p>
+<ul><li>FEATURE-Conversion.md</li><li>FEATURE-CurrencyHistory.md</li><li>FEATURE-DatabaseInit.md</li><li>FEATURE-EffectiveRates.md</li><li>FEATURE-HealthAndSummary.md</li><li>FEATURE-RateFetch.md</li><li>FEATURE-RateLoader.md</li><li>FEATURE-SuppliedGrader.md</li><li>FEATURE-TestRunner.md</li></ul>
+<p>Normative Compass sections. They bind every assertion you write or retain, including one you add to satisfy the defect above.</p>
+<h2>Constraints</h2>
+<ul><li>Implement in Python 3.11 or newer with FastAPI and uvicorn over SQLite.</li><li>Provide an executable named <code>fxrates</code> at the application root, invoked as <code>./fxrates &lt;command&gt;</code>.</li></ul>
+<p><code>fxrates serve</code> runs the server in the foreground and stops cleanly on SIGTERM.</p>
+<ul><li>Read the database location from <code>DATABASE_URL</code>, then <code>DATABASE_PATH</code>, then <code>data/app.db</code>.</li><li>Store rates as the ECB&#x27;s published text; compute with <code>decimal</code>, never with floating point.</li><li>Check a file in full before its first write.</li><li>Tests stub the ECB download; no test opens a network connection.</li><li>Diagnostics go to standard error and are never compared.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Do not modify, rewrite, regenerate, or substitute any file under <code>sources/</code>.</li><li>Do not read <code>sources/run.sh</code> or any supplied data file from application code. Data reaches the</li></ul>
+<p>database only through <code>fxrates load</code> or <code>fxrates fetch</code>.</p>
+<ul><li>Do not hardcode a rate, a date, a count, or a computed value. Every value comes from a query.</li><li>Do not open a database driver outside the shipped persistence library.</li></ul>
+<h2>Verification Protocol</h2>
+<div class="scroll"><table><thead><tr><th>Story kind</th><th>Command</th><th>Asserts</th></tr></thead><tbody><tr><td>Every behavioral story</td><td><code>sh bin/test.sh</code></td><td>exit <code>0</code></td></tr><tr><td>Terminal story (once, last)</td><td><code>sh sources/run.sh</code></td><td>exit <code>0</code></td></tr></tbody></table></div>
+<p>&lt;!-- drydock:build-write-guardrail:start --&gt;</p>
+<p>Original DATABASE.md, in the same form your reply must use: === BEGIN ARTIFACT DATABASE.md ===</p>
+<h1>DATABASE: FxRates</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Persistence schema and typed repository operations for ECB currency rates.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md</td></tr><tr><td>Provides</td><td>rates repository operations</td></tr><tr><td>Build Order</td><td></td></tr></tbody></table></div>
+<h2>Questions</h2>
+<ul><li>None.</li></ul>
+<h2>Persistence Boundary</h2>
+<div class="scroll"><table><thead><tr><th>Boundary</th><th>Rule</th></tr></thead><tbody><tr><td>Raw storage access</td><td>Only the generated <code>persistence/</code> package reaches SQLite.</td></tr><tr><td>Caller dependency</td><td>Features use the declared rates access patterns and DTOs, not the schema.</td></tr><tr><td>Implementation</td><td>Drydock generates the persistence package from this declaration; application code does not write SQL or open a database driver.</td></tr></tbody></table></div>
+<h2>Access Patterns</h2>
+<h3>FEATURE-RATE-001 — List rates</h3>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Owner</td><td>FEATURE-HealthAndSummary.md</td></tr><tr><td>Access</td><td>read</td></tr><tr><td>Repository operation</td><td><code>rates.list</code></td></tr><tr><td>Compatibility</td><td>unchanged</td></tr></tbody></table></div>
+<p>Input: <code>RateFilters</code></p>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Type</th></tr></thead><tbody><tr><td>date</td><td>str</td></tr><tr><td>currency</td><td>str</td></tr></tbody></table></div>
+<p>Output: <code>Rate</code></p>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Type</th></tr></thead><tbody><tr><td>date</td><td>str</td></tr><tr><td>currency</td><td>str</td></tr><tr><td>rate</td><td>str</td></tr></tbody></table></div>
+<p>Both filters are optional equality filters. An unfiltered list supplies the records needed by statistics, currency summaries, effective-date selection, and history calculations; callers apply date-range and effective-publication logic to the returned records.</p>
+<h3>FEATURE-RATE-002 — Replace a rate</h3>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Owner</td><td>FEATURE-RateLoader.md</td></tr><tr><td>Access</td><td>write</td></tr><tr><td>Repository operation</td><td><code>rates.upsert</code></td></tr><tr><td>Match</td><td><code>date</code>, <code>currency</code></td></tr><tr><td>Compatibility</td><td>unchanged</td></tr></tbody></table></div>
+<p>Input: <code>Rate</code></p>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Type</th></tr></thead><tbody><tr><td>date</td><td>str</td></tr><tr><td>currency</td><td>str</td></tr><tr><td>rate</td><td>str</td></tr></tbody></table></div>
+<p>Output: <code>Rate</code></p>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Type</th></tr></thead><tbody><tr><td>date</td><td>str</td></tr><tr><td>currency</td><td>str</td></tr><tr><td>rate</td><td>str</td></tr></tbody></table></div>
+<p>The <code>(date, currency)</code> match identifies one rate. Loading an existing pair replaces its stored rate text.</p>
+<h3>FEATURE-RATE-003 — Delete a rate</h3>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Owner</td><td>FEATURE-DatabaseInit.md</td></tr><tr><td>Access</td><td>write</td></tr><tr><td>Repository operation</td><td><code>rates.delete</code></td></tr><tr><td>Match</td><td><code>date</code>, <code>currency</code></td></tr><tr><td>Compatibility</td><td>unchanged</td></tr></tbody></table></div>
+<p>Input: <code>RateKey</code></p>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Type</th></tr></thead><tbody><tr><td>date</td><td>str</td></tr><tr><td>currency</td><td>str</td></tr></tbody></table></div>
+<p>Output: <code>RateKey</code></p>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Type</th></tr></thead><tbody><tr><td>date</td><td>str</td></tr><tr><td>currency</td><td>str</td></tr></tbody></table></div>
+<p>Initialization lists the stored rates and deletes each by its date and currency, leaving the table empty without issuing DDL.</p>
+<h2>Schemas</h2>
+<h2><code>rates</code></h2>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td>id</td><td>INTEGER PK</td><td>Generated row identifier.</td></tr><tr><td>date</td><td>TEXT NOT NULL</td><td>ECB publication date in <code>YYYY-MM-DD</code> form.</td></tr><tr><td>currency</td><td>TEXT NOT NULL</td><td>Three-letter uppercase currency code.</td></tr><tr><td>rate</td><td>TEXT NOT NULL</td><td>ECB-published rate text; never stored as a floating-point value.</td></tr></tbody></table></div>
+<ul><li>UNIQUE (date, currency)</li></ul>
+<h2>Migrations</h2>
+<div class="scroll"><table><thead><tr><th>Access Pattern</th><th>Revision</th><th>State</th></tr></thead><tbody><tr><td>None</td><td>—</td><td>No migration is required for the initial schema.</td></tr></tbody></table></div>
+<h2>Config (.env)</h2>
+<div class="scroll"><table><thead><tr><th>Key</th><th>Type</th><th>Required</th><th>Notes</th></tr></thead><tbody><tr><td>DATABASE_URL</td><td>str</td><td>No</td><td>SQLite file path or <code>sqlite://</code> DSN; takes precedence.</td></tr><tr><td>DATABASE_PATH</td><td>str</td><td>No</td><td>SQLite file path used when <code>DATABASE_URL</code> is unset.</td></tr></tbody></table></div>
+<p>When neither setting is present, use <code>data/app.db</code>.</p>
+<h2>File Stores</h2>
+<div class="scroll"><table><thead><tr><th>Store</th><th>Root dir</th><th>Notes</th></tr></thead><tbody><tr><td>None</td><td>—</td><td>—</td></tr></tbody></table></div>
+<h2>External Services</h2>
+<div class="scroll"><table><thead><tr><th>Service</th><th>Wrapper</th><th>Notes</th></tr></thead><tbody><tr><td>None</td><td>—</td><td>ECB downloads are owned by the fetch feature, not persisted as an external service store.</td></tr></tbody></table></div>
+<h2>External Libraries</h2>
+<div class="scroll"><table><thead><tr><th>Library</th><th>Ownership</th><th>Distribution</th><th>Consumer Contract</th></tr></thead><tbody><tr><td>Shipped persistence library</td><td>Generated <code>persistence/</code> package</td><td>Shipped library and generated relational layer</td><td>Call <code>open_database(dsn)</code> and declared <code>db.rates</code> operations; application code does not access the SQLite driver directly.</td></tr></tbody></table></div>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC rates-upsert-round-trip ===<br>Intent: A rate upsert stores the supplied published text and a separate list call reads it back.</p>
+<p>from persistence.testing import db_session</p>
+<p>rate_date = &quot;2099-01-02&quot; currency = &quot;ZZZ&quot; rate_text = &quot;0.943&quot;</p>
+<p>with db_session() as db: written = db.rates.upsert(date=rate_date, currency=currency, rate=rate_text) assert written.date == rate_date assert written.currency == currency assert written.rate == rate_text</p>
+<p>rows = db.rates.list(date=rate_date, currency=currency) assert len(rows) == 1 assert rows[0].date == rate_date assert rows[0].currency == currency assert rows[0].rate == rate_text === END AC rates-upsert-round-trip ===</p>
+<p>=== AC rates-list-filters ===<br>Intent: The rates list operation returns records matching supplied equality filters.</p>
+<p>from persistence.testing import db_session</p>
+<p>rate_date = &quot;2099-01-03&quot; currency = &quot;ZZY&quot; rate_text = &quot;1.25&quot;</p>
+<p>with db_session() as db: db.rates.upsert(date=rate_date, currency=currency, rate=rate_text) rows = db.rates.list(date=rate_date, currency=currency) assert len(rows) == 1 assert (rows[0].date, rows[0].currency, rows[0].rate) == (rate_date, currency, rate_text) === END AC rates-list-filters ===</p>
+<p>=== AC rates-delete-round-trip ===<br>Intent: A rate can be deleted by its unique date and currency and is absent on a subsequent read.</p>
+<p>from persistence.testing import db_session</p>
+<p>rate_date = &quot;2099-01-04&quot; currency = &quot;ZZX&quot; rate_text = &quot;2.5&quot;</p>
+<p>with db_session() as db: db.rates.upsert(date=rate_date, currency=currency, rate=rate_text) removed = db.rates.delete(date=rate_date, currency=currency) assert removed.date == rate_date assert removed.currency == currency assert db.rates.list(date=rate_date, currency=currency) == [] === END AC rates-delete-round-trip ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Store each published rate as text, preserving its original decimal spelling.</li><li>Do not store <code>N/A</code> values.</li><li>Do not open a database driver outside the shipped persistence library.</li><li>Do not delete unrelated records during acceptance criteria.</li></ul>
+<p>=== END ARTIFACT === &lt;/pblock&gt;</p></article>
+</main>
+</body>
+</html>

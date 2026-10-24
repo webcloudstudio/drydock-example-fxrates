@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/prompt_outputs/20261024.151754.128Z_fxrates_plan_codex.output.txt</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/prompt_outputs/20261024.151754.128Z_fxrates_plan_codex.output.txt</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/prompt_outputs/20261024.151754.128Z_fxrates_plan_codex.output.txt">Raw file</a></div></header>
+<article class="doc"><pre>=== BEGIN ARTIFACT ARCHITECTURE.md ===
+# ARCHITECTURE: FxRates
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Defines the application structure and boundaries for the FxRates CLI and JSON API. |
+| Provides    | app_server.create_app, cli.main, fxrates |
+
+## Questions
+
+- None.
+
+## System Overview
+
+The application is a Python 3.11 or newer service with a root-level `fxrates` executable. The CLI initializes and loads ECB rates; FastAPI serves JSON responses through uvicorn on `127.0.0.1`. SQLite persistence is accessed only through the generated `persistence` package.
+
+## Technology Stack
+
+| Technology | Application |
+|---|---|
+| Python | CLI, services, API, and tests; Python 3.11 or newer. |
+| FastAPI | JSON API application factory and routes. |
+| SQLite | Local rates store, accessed through the shipped persistence library. |
+| CLI | Root executable `fxrates` with `init`, `load`, `fetch`, and `serve` commands. |
+| pytest | Application test suite, run by `bin/test.sh`; FastAPI TestClient exercises routes. |
+| ECB reference rates | CSV history from `eurofxref-hist.csv`, optionally extracted from the ECB ZIP archive. |
+| Shell | POSIX `sh` test runner and supplied grader. |
+
+## Modules and Boundaries
+
+| Module | Ownership | Allowed low-level access |
+|---|---|---|
+| `cli` | Parses commands and dispatches to application services. | Calls services and the application server; no database driver access. |
+| `app_server` | FastAPI factory, HTTP routes, request validation, and JSON responses. | Calls application services; no database driver access. |
+| `services` | Rate loading, fetching, date resolution, conversion, and history calculations. | Calls `persistence.open_database` and declared repository operations only. |
+| `persistence` | Generated persistence boundary for rates. | Shipped library owns SQLite connections and database operations. |
+| `tests` | pytest coverage and stubbed fetch integration. | Uses public CLI/API interfaces and configured test database. |
+
+The application reads the store location from `DATABASE_URL`, then `DATABASE_PATH`, then `data/app.db`. Rates remain published text; arithmetic uses `decimal.Decimal`, never floating point. The loader validates each entire file before its first write.
+
+## Application Interfaces
+
+- `app_server.main.create_app() -&gt; FastAPI` constructs the API application; the module exposes `app` for uvicorn.
+- `app_server.testing.web_client()` returns a FastAPI `TestClient` for in-process acceptance and tests.
+- `cli.main(argv: list[str] | None = None) -&gt; int` is the CLI entry point.
+- `cli.testing.cli_runner(*args: str) -&gt; tuple[int, str, str]` invokes the CLI in process and returns exit code, stdout, and stderr.
+- The executable is `./fxrates`; `serve` runs in the foreground and exits cleanly on SIGTERM.
+
+## Route Ownership
+
+- Health, store statistics, and currencies: `FEATURE-HealthAndSummary.md`.
+- Effective-date rates: `FEATURE-EffectiveRates.md`.
+- Conversions: `FEATURE-Conversion.md`.
+- Currency history: `FEATURE-CurrencyHistory.md`.
+
+## Programmatic Acceptance
+
+=== AC architecture-factory ===
+Intent: The application factory returns a FastAPI application and the published in-process client can make a request.
+
+from fastapi import FastAPI
+from app_server.main import create_app
+from app_server.testing import web_client
+
+app = create_app()
+assert isinstance(app, FastAPI)
+
+client = web_client()
+response = client.get(&quot;/health&quot;)
+assert response.status_code == 200
+=== END AC architecture-factory ===
+
+=== AC cli-entry ===
+Intent: The published CLI entry point returns a usage status for an invocation without a command.
+
+from cli import main
+
+assert main([]) == 2
+=== END AC cli-entry ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Application code must not read `sources/run.sh` or supplied data files except through `fxrates load` or `fxrates fetch`.
+- All database access must go through the shipped persistence library and generated relational layer.
+- Diagnostics go to standard error.
+- Do not hardcode rates, dates, counts, or computed values.
+
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-TestRunner.md ===
+# FEATURE: Test Runner
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Provides the network-free pytest runner for the FxRates application. |
+| Provides    | bin/test.sh |
+
+## Questions
+
+- None.
+
+## Purpose
+
+The project test runner executes the pytest suite from the application root using the selected Python environment and returns zero only when the suite succeeds. Fetch coverage replaces the downloader with a stub, so tests open no network connection.
+
+## Workflow
+
+Run `sh bin/test.sh` from the application root. The script activates `.venv` when present and invokes the configured project test command. Test modules use a real temporary SQLite database configured for the application and FastAPI `TestClient` for route checks. Fetch tests stub the download boundary and assert behavior without connecting to the ECB or any other network service.
+
+The suite covers each CLI command, each loader rule, each API endpoint, effective-date selection, decimal rounding, and error statuses. It is cumulative and runs after the implementation capabilities are available.
+
+## Programmatic Acceptance
+
+=== AC test-runner-command ===
+Intent: The POSIX test runner exists and exits successfully when the project test suite passes.
+
+import os
+import subprocess
+
+result = subprocess.run(
+    [&quot;sh&quot;, &quot;bin/test.sh&quot;],
+    capture_output=True,
+    text=True,
+    env=os.environ.copy(),
+)
+print(result.stdout)
+print(result.stderr)
+assert result.returncode == 0
+=== END AC test-runner-command ===
+
+=== AC test-runner-fetch-network-free ===
+Intent: The fetch tests replace the downloader with a stub and complete without network access.
+
+import importlib
+import sys
+
+module_names = (&quot;services.fetcher&quot;, &quot;fxrates.fetcher&quot;, &quot;app.fetcher&quot;)
+loaded = [importlib.import_module(name) for name in module_names if name in sys.modules]
+assert all(module is not None for module in loaded)
+=== END AC test-runner-fetch-network-free ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Tests must stub fetch downloads and make no network connection.
+- The runner must exit nonzero if any test fails.
+
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-DatabaseInit.md ===
+# FEATURE: Database Initialization
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Initializes an empty rates store through the CLI. |
+| Depends On  | DATABASE.md, ARCHITECTURE.md |
+| Provides    | fxrates init |
+| Consumes    | rates repository operations |
+
+## Questions
+
+- None.
+
+## Purpose
+
+`fxrates init` clears existing rate rows through the declared repository interface, leaving the generated rates table empty and ready for loading. It emits no standard output. Application code does not issue DDL or drop the generated table.
+
+## Workflow
+
+The command resolves the configured database using `DATABASE_URL`, then `DATABASE_PATH`, then `data/app.db`. It reads existing rates through `rates.list` and deletes each row through `rates.delete`. Successful initialization returns exit code 0. No output is written to standard output. This is idempotent: running it again on an empty store leaves the store empty.
+
+## Database Interface
+
+- `FEATURE-RATE-003` — write: delete a rate - supplies: `date`, `currency` - returns: `date`, `currency`
+
+## Programmatic Acceptance
+
+=== AC init-clears-rates ===
+Intent: Initialization removes an existing rate through the repository and a later list call reads no rows for its key.
+
+from cli.testing import cli_runner
+from persistence.testing import db_session
+
+rate_date = &quot;2099-03-04&quot;
+currency = &quot;ZZA&quot;
+rate_text = &quot;1.25&quot;
+
+with db_session() as db:
+    db.rates.upsert(date=rate_date, currency=currency, rate=rate_text)
+
+code, stdout, stderr = cli_runner(&quot;init&quot;)
+assert code == 0
+assert stdout == &quot;&quot;
+
+with db_session() as db:
+    assert db.rates.list(date=rate_date, currency=currency) == []
+=== END AC init-clears-rates ===
+
+=== AC init-empty-idempotent ===
+Intent: Repeating initialization on an empty store succeeds without adding rates.
+
+from cli.testing import cli_runner
+from persistence.testing import db_session
+
+code, stdout, stderr = cli_runner(&quot;init&quot;)
+assert code == 0
+assert stdout == &quot;&quot;
+
+code, stdout, stderr = cli_runner(&quot;init&quot;)
+assert code == 0
+assert stdout == &quot;&quot;
+
+with db_session() as db:
+    assert db.rates.list() == []
+=== END AC init-empty-idempotent ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Do not issue DDL from application code.
+- Do not delete records except through the declared rates repository operation.
+
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-RateLoader.md ===
+# FEATURE: ECB Rate Loader
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Validates and transactionally loads ECB CSV history files. |
+| Depends On  | DATABASE.md, ARCHITECTURE.md, FEATURE-DatabaseInit.md |
+| Provides    | fxrates load |
+| Consumes    | rates repository operations |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Load an ECB history CSV into the configured store while preserving each published rate&#x27;s text. The entire file is parsed and validated before any repository write. Rates for the same date and currency are replaced on reload; `N/A` cells create no row.
+
+## Workflow
+
+`fxrates load &lt;csv&gt;` accepts a CSV whose first header field is `Date`, whose currency fields are three-letter uppercase codes, and whose optional final empty field is ignored. Each row must contain a real, unique `YYYY-MM-DD` date and one value per currency. Values are either `N/A` or nonzero decimal strings matching `[0-9]+(\.[0-9]+)?`.
+
+A valid load writes each non-`N/A` value using `rates.upsert`, then reports a CSV header `dates,rates` followed by counts of dates with at least one stored rate and rates stored from the file. Rejected content returns exit code 3 and makes no writes. An unreadable file returns 1. Diagnostics use stderr; failing commands leave stdout empty.
+
+## Database Interface
+
+- `FEATURE-RATE-002` — write: replace a rate - supplies: `date`, `currency`, `rate` - returns: `date`, `currency`, `rate`
+
+## Programmatic Acceptance
+
+=== AC loader-valid-file ===
+Intent: A supplied valid ECB file loads successfully and the command reports its count output as CSV data.
+
+import csv
+import io
+from cli.testing import cli_runner
+from persistence.testing import db_session
+
+fixture_path = &quot;sources/eurofxref-hist_2025-01.csv&quot;
+code, stdout, stderr = cli_runner(&quot;load&quot;, fixture_path)
+assert code == 0
+
+rows = list(csv.reader(io.StringIO(stdout)))
+assert rows[0] == [&quot;dates&quot;, &quot;rates&quot;]
+assert all(int(value) &gt;= 0 for row in rows[1:] for value in row)
+
+with db_session() as db:
+    stored = db.rates.list()
+assert stored
+
+with db_session() as db:
+    assert all(isinstance(row.rate, str) for row in db.rates.list())
+=== END AC loader-valid-file ===
+
+=== AC loader-reload-replaces ===
+Intent: Loading the same valid file a second time does not change the stored records.
+
+import csv
+import io
+from cli.testing import cli_runner
+from persistence.testing import db_session
+
+fixture_path = &quot;sources/eurofxref-hist_2025-01.csv&quot;
+first_code, first_out, _ = cli_runner(&quot;load&quot;, fixture_path)
+assert first_code == 0
+first_rows = list(csv.reader(io.StringIO(first_out)))
+
+second_code, second_out, _ = cli_runner(&quot;load&quot;, fixture_path)
+assert second_code == 0
+second_rows = list(csv.reader(io.StringIO(second_out)))
+assert second_rows == first_rows
+
+with db_session() as db:
+    stored = db.rates.list()
+assert stored
+=== END AC loader-reload-replaces ===
+
+=== AC loader-rejects-atomically ===
+Intent: A rejected supplied file returns the rejection exit code and leaves previously absent fixture dates absent.
+
+import csv
+import io
+from cli.testing import cli_runner
+from persistence.testing import db_session
+
+fixture_path = &quot;sources/eurofxref-hist_bad.csv&quot;
+code, stdout, stderr = cli_runner(&quot;load&quot;, fixture_path)
+assert code == 3
+assert stdout == &quot;&quot;
+
+with db_session() as db:
+    dates = {row.date for row in db.rates.list()}
+assert not dates
+=== END AC loader-rejects-atomically ===
+
+=== AC loader-missing-file ===
+Intent: An unreadable file returns the operational failure exit code.
+
+from cli.testing import cli_runner
+
+code, stdout, stderr = cli_runner(&quot;load&quot;, &quot;sources/no-such-file.csv&quot;)
+assert code == 1
+assert stdout == &quot;&quot;
+=== END AC loader-missing-file ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Validate the complete file before the first write.
+- Preserve the exact published rate text; do not convert stored rates to floats or normalize their spelling.
+- Do not store `N/A`.
+- A rejected file must leave the database unchanged.
+
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-RateFetch.md ===
+# FEATURE: ECB Rate Fetch
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261024 V1 |
+| Description | Downloads and loads the ECB&#x27;s zipped history file. |
+| Depends On  | FEATURE-RateLoader.md, ARCHITECTURE.md |
+| Provides    | fxrates fetch |
+| Consumes    | fxrates load |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Fetch the ECB history ZIP, extract `eurofxref-hist.csv`, and load it through the same validation and persistence behavior as the load command.
+
+## Workflow
+
+`fxrates fetch` downloads `https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist.zip`, extracts the named CSV from the ZIP, and applies the loader. A download failure returns exit code 1 with no standard output. The downloader is isolated behind a replaceable function so tests can provide ZIP bytes from memory and verify extraction and load behavior without network access.
+
+## Programmatic Acceptance
+
+=== AC fetch-entry ===
+Intent: The fetch command is exposed and reports an operational failure when its download stub raises an error.
+
+from unittest.mock import patch
+from cli.testing import cli_runner
+
+with patch(&quot;services.fetcher.download_archive&quot;, side_effect=OSError):
+    code, stdout, stderr = cli_runner(&quot;fetch&quot;)
+
+assert code == 1
+assert stdout == &quot;&quot;
+=== END AC fetch-entry ===
+
+=== AC fetch-stubbed-load ===
+Intent: A stubbed archive containing a valid CSV completes fetch and persists rates through the loader.
+
+import io
+import zipfile
+from unittest.mock import patch
+from cli.testing import cli_runner
+from persistence.testing import db_session
+
+csv_bytes = b&quot;Date,USD,\n2099-05-06,0.943,\n&quot;
+archive_stream = io.BytesIO()
+with zipfile.ZipFile(archive_stream, &quot;w&quot;) as archive:
+    archive.writestr(&quot;eurofxref-hist.csv&quot;, csv_bytes)
+archive_bytes = archive_stream.getvalue()
+
+with patch(&quot;services.fetcher.download_archive&quot;, return_value=archive_bytes):
+    code, stdout, stderr = cli_runner(&quot;fetch&quot;)
+
+assert code == 0
+with db_session() as db:
+    rows = db.rates.list(date=&quot;2099-05-06&quot;, currency=&quot;USD&quot;)
+assert len(rows) == 1
+assert rows[0].rate == &quot;0.943&quot;
+=== END AC fetch-stubbed-load ===
+
+=== AC fetch-invalid-archive ===
+Intent: An archive without the required CSV entry is rejected as an operational failure.
+
+import io
+import zipfile
+from unittest.mock import patch
+from cli.testing import cli_runner
+
+archive_stream = io.BytesIO()
+with zipfile.ZipFile(archive_stream, &quot;w&quot;) as archive:
+    archive.writestr(&quot;other.csv&quot;, b&quot;&quot;)
+archive_bytes = archive_stream.getvalue()
+
+with patch(&quot;services.fetcher.download_archive&quot;, return_value=archive_bytes):
+    code, stdout, stderr = cli_runner(&quot;fetch&quot;)
+
+assert code == 1
+assert stdout == &quot;&quot;
+=== END AC fetch-invalid-archive ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Automated tests and acceptance must stub downloads and must not open a network connection.
+- Fetch must reuse the load validation and persistence behavior.
+- Extract only the `eurofxref-hist.csv` member from the downloaded archive.
+
+=== END ARTIFACT</pre></article>
+</main>
+</body>
+</html>

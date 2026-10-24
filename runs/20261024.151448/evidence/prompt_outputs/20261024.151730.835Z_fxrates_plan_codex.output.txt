@@ -1,0 +1,219 @@
+=== BEGIN ARTIFACT DATABASE.md ===
+# DATABASE: FxRates
+
+| Field | Value |
+|-------|-------|
+| Version | 20261024 V1 |
+| Description | Persistence schema and typed repository operations for ECB currency rates. |
+| Depends On | ARCHITECTURE.md |
+| Provides | rates repository operations |
+| Build Order | |
+
+## Questions
+
+- None.
+
+## Persistence Boundary
+
+| Boundary | Rule |
+|----------|------|
+| Raw storage access | Only the generated `persistence/` package reaches SQLite. |
+| Caller dependency | Features use the declared rates access patterns and DTOs, not the schema. |
+| Implementation | Drydock generates the persistence package from this declaration; application code does not write SQL or open a database driver. |
+
+## Access Patterns
+
+### FEATURE-RATE-001 — List rates
+
+| Field | Value |
+|-------|-------|
+| Owner | FEATURE-HealthAndSummary.md |
+| Access | read |
+| Repository operation | `rates.list` |
+| Compatibility | unchanged |
+
+Input: `RateFilters`
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+
+Output: `Rate`
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+| rate | str |
+
+Both filters are optional equality filters. An unfiltered list supplies the records needed by statistics, currency summaries, effective-date selection, and history calculations; callers apply date-range and effective-publication logic to the returned records.
+
+### FEATURE-RATE-002 — Replace a rate
+
+| Field | Value |
+|-------|-------|
+| Owner | FEATURE-RateLoader.md |
+| Access | write |
+| Repository operation | `rates.upsert` |
+| Match | `date`, `currency` |
+| Compatibility | unchanged |
+
+Input: `Rate`
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+| rate | str |
+
+Output: `Rate`
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+| rate | str |
+
+The `(date, currency)` match identifies one rate. Loading an existing pair replaces its stored rate text.
+
+### FEATURE-RATE-003 — Delete a rate
+
+| Field | Value |
+|-------|-------|
+| Owner | FEATURE-DatabaseInit.md |
+| Access | write |
+| Repository operation | `rates.delete` |
+| Match | `date`, `currency` |
+| Compatibility | unchanged |
+
+Input: `RateKey`
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+
+Output: `RateKey`
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+
+Initialization lists the stored rates and deletes each by its date and currency, leaving the table empty without issuing DDL.
+
+## Schemas
+
+## `rates`
+
+| Field | Type | Notes |
+|-------|------|-------|
+| id | INTEGER PK | Generated row identifier. |
+| date | TEXT NOT NULL | ECB publication date in `YYYY-MM-DD` form. |
+| currency | TEXT NOT NULL | Three-letter uppercase currency code. |
+| rate | TEXT NOT NULL | ECB-published rate text; never stored as a floating-point value. |
+
+- UNIQUE (date, currency)
+
+## Migrations
+
+| Access Pattern | Revision | State |
+|----------------|----------|-------|
+| None | — | No migration is required for the initial schema. |
+
+## Config (.env)
+
+| Key | Type | Required | Notes |
+|-----|------|----------|-------|
+| DATABASE_URL | str | No | SQLite file path or `sqlite://` DSN; takes precedence. |
+| DATABASE_PATH | str | No | SQLite file path used when `DATABASE_URL` is unset. |
+
+When neither setting is present, use `data/app.db`.
+
+## File Stores
+
+| Store | Root dir | Notes |
+|-------|----------|-------|
+| None | — | — |
+
+## External Services
+
+| Service | Wrapper | Notes |
+|---------|---------|-------|
+| None | — | ECB downloads are owned by the fetch feature, not persisted as an external service store. |
+
+## External Libraries
+
+| Library | Ownership | Distribution | Consumer Contract |
+|---------|-----------|--------------|-------------------|
+| Shipped persistence library | Generated `persistence/` package | Shipped library and generated relational layer | Call `open_database(dsn)` and declared `db.rates` operations; application code does not access the SQLite driver directly. |
+
+## Programmatic Acceptance
+
+=== AC rates-upsert-round-trip ===
+Intent: A rate upsert stores the supplied published text and a separate list call reads it back.
+
+from persistence.testing import db_session
+
+rate_date = "2099-01-02"
+currency = "ZZZ"
+rate_text = "0.943"
+
+with db_session() as db:
+    written = db.rates.upsert(date=rate_date, currency=currency, rate=rate_text)
+    assert written.date == rate_date
+    assert written.currency == currency
+    assert written.rate == rate_text
+
+    rows = db.rates.list(date=rate_date, currency=currency)
+    assert len(rows) == 1
+    assert rows[0].date == rate_date
+    assert rows[0].currency == currency
+    assert rows[0].rate == rate_text
+=== END AC rates-upsert-round-trip ===
+
+=== AC rates-list-filters ===
+Intent: The rates list operation returns records matching supplied equality filters.
+
+from persistence.testing import db_session
+
+rate_date = "2099-01-03"
+currency = "ZZY"
+rate_text = "1.25"
+
+with db_session() as db:
+    db.rates.upsert(date=rate_date, currency=currency, rate=rate_text)
+    rows = db.rates.list(date=rate_date, currency=currency)
+    assert len(rows) == 1
+    assert (rows[0].date, rows[0].currency, rows[0].rate) == (rate_date, currency, rate_text)
+=== END AC rates-list-filters ===
+
+=== AC rates-delete-round-trip ===
+Intent: A rate can be deleted by its unique date and currency and is absent on a subsequent read.
+
+from persistence.testing import db_session
+
+rate_date = "2099-01-04"
+currency = "ZZX"
+rate_text = "2.5"
+
+with db_session() as db:
+    db.rates.upsert(date=rate_date, currency=currency, rate=rate_text)
+    removed = db.rates.delete(date=rate_date, currency=currency)
+    assert removed.date == rate_date
+    assert removed.currency == currency
+    assert db.rates.list(date=rate_date, currency=currency) == []
+=== END AC rates-delete-round-trip ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Store each published rate as text, preserving its original decimal spelling.
+- Do not store `N/A` values.
+- Do not open a database driver outside the shipped persistence library.
+- Do not delete unrelated records during acceptance criteria.
+=== END ARTIFACT ===
