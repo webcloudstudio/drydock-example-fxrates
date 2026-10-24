@@ -1,0 +1,261 @@
+=== BEGIN ARTIFACT TOPOLOGY.md ===
+## Declarations
+
+## story architecture-foundation
+summary:      Establish application boundaries and shared module ownership.
+type:         foundational
+kind:         capability
+phase:        1
+implements:   ARCHITECTURE.md
+stack:        python.md
+provides:     application module boundaries
+acceptance:   yes
+instructions: |
+  Establish the Python application structure and document configuration, service, and persistence
+  ownership boundaries. Application persistence access must use the shipped persistence library.
+
+## story database
+summary:      Declare the rates store and its repository contract.
+type:         foundational
+kind:         capability
+phase:        1
+implements:   DATABASE.md
+stack:        persistence.md, sqlite.md
+provides:     rates repository operations
+depends:      architecture-foundation
+acceptance:   yes
+instructions: |
+  Declare the rates table and every repository operation required for initialization, atomic file
+  loading, statistics, currency listing, effective-date lookup, conversion, and history. Rates
+  remain published text and all application access uses the generated persistence package.
+
+## story cli-foundation
+summary:      Establish the fxrates command-line entry point.
+type:         foundational
+kind:         capability
+phase:        1
+implements:   FEATURE-CLI.md
+stack:        cli.md
+provides:     fxrates executable, fxrates init, fxrates load, fxrates fetch, fxrates serve
+consumes:     rates repository operations
+depends:      architecture-foundation, database
+acceptance:   yes
+instructions: |
+  Establish the root executable and command dispatch for init, load, fetch, and serve. Follow the
+  source-defined usage, output, and exit-code contracts; command behavior is completed by the
+  implementing stories.
+
+## story api-foundation
+summary:      Establish the FastAPI application and test client.
+type:         foundational
+kind:         capability
+phase:        1
+implements:   FEATURE-API-FOUNDATION.md
+stack:        fastapi.md
+provides:     app_server.main:create_app, app_server.testing:web_client
+depends:      architecture-foundation
+acceptance:   yes
+instructions: |
+  Establish the FastAPI application factory, module-level app, and callable TestClient helper
+  required by API capabilities. Do not implement endpoint behavior owned by API stories.
+
+## story data_001
+summary:      Initialize the rates database from the command line.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-INIT.md
+covers:       DATA-001
+stack:        cli.md, sqlite.md
+provides:     fxrates init
+consumes:     rates repository operations
+depends:      cli-foundation, database
+acceptance:   yes
+instructions: |
+  Implement init so it drops and recreates the rates table empty, prints nothing on success, and
+  follows the specified usage and failure behavior.
+
+## story data_002
+summary:      Validate and atomically load ECB history files.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-LOAD.md
+covers:       DATA-002
+accepts:       st-003
+stack:        cli.md, sqlite.md
+provides:     fxrates load
+consumes:     rates repository operations
+depends:      cli-foundation, database
+acceptance:   yes
+instructions: |
+  Validate the complete CSV before writing. Store valid non-N/A rates exactly as published,
+  replace matching date and currency records, and report the counts defined by the source. Reject
+  invalid files atomically with the specified exit code and diagnostic behavior.
+
+## story data_003
+summary:      Fetch, extract, and load ECB history.
+type:         service
+kind:         integration
+phase:        1
+implements:   FEATURE-FETCH.md
+covers:       DATA-003
+stack:        cli.md
+provides:     fxrates fetch
+consumes:     fxrates load
+depends:      cli-foundation, data_002
+acceptance:   yes
+instructions: |
+  Download and extract the ECB history archive, then reuse the validated load behavior. Tests must
+  stub the download. On download failure, return the specified operational failure signal with no
+  standard output and one diagnostic line.
+
+## story api_001
+summary:      Provide health and stored-data statistics endpoints.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-API-STATUS.md
+covers:       API-001
+accepts:       st-004
+stack:        fastapi.md, sqlite.md
+provides:     GET /health, GET /stats
+consumes:     rates repository operations
+depends:      api-foundation, database
+acceptance:   yes
+instructions: |
+  Implement health and statistics responses, including null publication bounds for an empty store.
+
+## story api_002
+summary:      List currencies present in stored rates.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-CURRENCIES.md
+covers:       API-002
+stack:        fastapi.md, sqlite.md
+provides:     GET /currencies
+consumes:     rates repository operations
+depends:      api-foundation, database
+acceptance:   yes
+instructions: |
+  Return EUR as the base and currencies with stored rates in ascending order.
+
+## story api_003
+summary:      Resolve and return rates for a requested date.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-RATES.md
+covers:       API-003, API-004
+accepts:       st-005, st-007
+stack:        fastapi.md, sqlite.md
+provides:     GET /rates/{date}, GET /rates/latest
+consumes:     rates repository operations
+depends:      api-foundation, database
+acceptance:   yes
+instructions: |
+  Resolve requests to the latest publication date on or before the requested date. Return stored
+  rate text, use the specified latest-request marker, return 404 when no publication exists, and
+  return 422 for malformed dates.
+
+## story api_005
+summary:      Convert amounts between currencies.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-CONVERT.md
+covers:       API-005
+accepts:       st-005, st-006, st-007, st-008
+stack:        fastapi.md, sqlite.md
+provides:     GET /convert
+consumes:     rates repository operations
+depends:      api-foundation, database
+acceptance:   yes
+instructions: |
+  Convert using the latest publication by default or the effective date requested. Use exact
+  Decimal arithmetic with half-even rounding and the specified string formats. Return the required
+  404 and 422 statuses for missing rates, unknown currencies, malformed values, and missing
+  parameters.
+
+## story api_006
+summary:      Return currency history and summary statistics.
+type:         service
+kind:         capability
+phase:        1
+implements:   FEATURE-HISTORY.md
+covers:       API-006
+accepts:       st-006, st-007, st-008
+stack:        fastapi.md, sqlite.md
+provides:     GET /history/{code}
+consumes:     rates repository operations
+depends:      api-foundation, database
+acceptance:   yes
+instructions: |
+  Return ascending points within optional inclusive bounds, exact count, extrema, and the
+  half-even rounded mean. Empty ranges return null statistics and no points. Return 404 for a
+  currency with no stored rate, including EUR, and 422 for malformed bounds.
+
+## story test_001
+summary:      Provide a network-free automated pytest suite and runner.
+type:         service
+kind:         test harness
+phase:        1
+implements:   FEATURE-TESTS.md
+covers:       TEST-001
+accepts:       st-002, st-009
+stack:        python.md
+provides:     bin/test.sh, pytest suite
+depends:      cli-foundation, api-foundation, data_001, data_002, data_003, api_001, api_002, api_003, api_005, api_006
+acceptance:   yes
+instructions: |
+  Provide a POSIX-compatible runner for the project's pytest suite. Cover the commands, load
+  rules, API endpoints, effective-date behavior, rounding, and error statuses using a real test
+  database. Stub fetch so the suite never uses the network.
+
+## story test_002
+summary:      Verify the completed application against the supplied grader.
+type:         service
+kind:         test harness
+phase:        1
+implements:   VERIFICATION.md
+covers:       TEST-002
+accepts:       st-001
+context:       sources/run.sh, sources/eurofxref-hist_2025-01.csv, sources/eurofxref-hist_2025-02-03_04.csv, sources/eurofxref-hist_bad.csv
+context_roles: |
+  sources/run.sh: conformance harness
+  sources/eurofxref-hist_2025-01.csv: asset
+  sources/eurofxref-hist_2025-02-03_04.csv: asset
+  sources/eurofxref-hist_bad.csv: asset
+stack:        common.md, python.md
+depends:      test_001
+acceptance:   yes
+instructions: |
+  Run the complete supplied grader as the terminal verification gate after all implementation
+  stories. Its exit status is the release acceptance verdict; do not duplicate its cases as
+  hand-written assertions.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT DECISIONS.json ===
+[
+  {
+    "id": "Q-001",
+    "type": "choice",
+    "severity": "material",
+    "blueprint": "FEATURE-CLI.md",
+    "story": "cli-foundation",
+    "title": "CLI validation and operational error reporting",
+    "description": "The imported instructions specify failing-command output and exit statuses but do not distinguish the diagnostic wording for usage errors, rejected files, and operational failures. Use one concise diagnostic line on standard error for failures, while preserving the specified exit codes and empty standard output.",
+    "options": [
+      {
+        "value": "one-line-stderr",
+        "label": "One diagnostic line on standard error"
+      },
+      {
+        "value": "silence",
+        "label": "No diagnostic output"
+      }
+    ],
+    "system_choice": "one-line-stderr"
+  }
+]
+=== END ARTIFACT

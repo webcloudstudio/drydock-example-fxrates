@@ -1,0 +1,414 @@
+# DATABASE: FxRates
+
+| Field | Value |
+|-------|-------|
+| Version | 20261024 V1 |
+| Description | Persistence contract for ECB exchange rates stored as published text. |
+| Depends On | ARCHITECTURE.md |
+| Provides | rates repository operations |
+
+## Persistence Boundary
+
+| Boundary | Rule |
+|----------|------|
+| Raw storage access | Only the generated `persistence/` package reaches the store. |
+| Caller dependency | Features depend on declared access patterns and their DTOs, not on schemas. |
+| Implementation | Generated from this file at the DATABASE build step; never written by hand. |
+
+## Access Patterns
+
+### FEATURE-DATA-001 — Replace a rate
+
+| Field | Value |
+|-------|-------|
+| Owner | FEATURE-LOAD.md |
+| Access | write |
+| Repository operation | `rates.upsert` |
+| Match | `date`, `currency` |
+| Compatibility | unchanged |
+
+Input: Rate
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+| rate | str |
+
+Output: StoredRate
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+| rate | str |
+
+### FEATURE-DATA-002 — Get a rate
+
+| Field | Value |
+|-------|-------|
+| Owner | FEATURE-CONVERT.md |
+| Access | read |
+| Repository operation | `rates.get` |
+| Match | `date`, `currency` |
+| Compatibility | unchanged |
+
+Input: RateKey
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+
+Output: StoredRate
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+| rate | str |
+
+### FEATURE-DATA-003 — List rates for a publication
+
+| Field | Value |
+|-------|-------|
+| Owner | FEATURE-RATES.md |
+| Access | read |
+| Repository operation | `rates.by_date` |
+| Kind | list |
+| Match | `date` |
+| Order | `currency` asc |
+| Compatibility | unchanged |
+
+Input: PublicationFilter
+
+| Field | Type |
+|-------|------|
+| date | str |
+
+Output: StoredRate
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+| rate | str |
+
+### FEATURE-DATA-004 — List rates in history range
+
+| Field | Value |
+|-------|-------|
+| Owner | FEATURE-HISTORY.md |
+| Access | read |
+| Repository operation | `rates.history` |
+| Kind | list |
+| Match | `currency`, `date >= start_date`, `date <= end_date` |
+| Order | `date` asc |
+| Compatibility | unchanged |
+
+Input: HistoryFilter
+
+| Field | Type |
+|-------|------|
+| currency | str |
+| start_date | str |
+| end_date | str |
+
+Output: StoredRate
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+| rate | str |
+
+### FEATURE-DATA-005 — List stored currencies
+
+| Field | Value |
+|-------|-------|
+| Owner | FEATURE-CURRENCIES.md |
+| Access | read |
+| Repository operation | `rates.currencies` |
+| Kind | list |
+| Order | `currency` asc |
+| Compatibility | unchanged |
+
+Input: CurrencyFilter
+
+| Field | Type |
+|-------|------|
+| currency | str |
+
+Output: StoredCurrency
+
+| Field | Type |
+|-------|------|
+| currency | str |
+
+### FEATURE-DATA-006 — Find the effective publication date
+
+| Field | Value |
+|-------|-------|
+| Owner | FEATURE-RATES.md |
+| Access | read |
+| Repository operation | `rates.effective_date` |
+| Kind | list |
+| Match | `date <= requested_date` |
+| Order | `date` desc |
+| Compatibility | unchanged |
+
+Input: EffectiveDateFilter
+
+| Field | Type |
+|-------|------|
+| requested_date | str |
+
+Output: PublicationDate
+
+| Field | Type |
+|-------|------|
+| date | str |
+
+### FEATURE-DATA-007 — Find the latest publication date
+
+| Field | Value |
+|-------|-------|
+| Owner | FEATURE-API-STATUS.md |
+| Access | read |
+| Repository operation | `rates.latest_date` |
+| Kind | list |
+| Order | `date` desc |
+| Compatibility | unchanged |
+
+Input: LatestDateFilter
+
+| Field | Type |
+|-------|------|
+| date | str |
+
+Output: PublicationDate
+
+| Field | Type |
+|-------|------|
+| date | str |
+
+### FEATURE-DATA-008 — List publication dates
+
+| Field | Value |
+|-------|-------|
+| Owner | FEATURE-API-STATUS.md |
+| Access | read |
+| Repository operation | `rates.publication_stats` |
+| Kind | list |
+| Order | `date` asc |
+| Compatibility | unchanged |
+
+Input: PublicationStatsFilter
+
+| Field | Type |
+|-------|------|
+| date | str |
+
+Output: PublicationDate
+
+| Field | Type |
+|-------|------|
+| date | str |
+
+### FEATURE-DATA-009 — Initialize the rates store
+
+| Field | Value |
+|-------|-------|
+| Owner | FEATURE-INIT.md |
+| Access | write |
+| Repository operation | `rates.delete` |
+| Compatibility | unchanged |
+
+Input: RateKey
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+
+Output: RateKey
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+
+## Schemas
+
+## `rates`
+
+| Field | Type | Notes |
+|-------|------|-------|
+| date | TEXT NOT NULL | Publication date in YYYY-MM-DD form. |
+| currency | TEXT NOT NULL | Three-letter uppercase currency code. |
+| rate | TEXT NOT NULL | Exact ECB-published rate text. |
+| id | INTEGER PK | Generated row identifier. |
+
+- UNIQUE (date, currency)
+
+## Migrations
+
+| Access Pattern | Revision | State |
+|----------------|----------|-------|
+
+## Config (.env)
+
+| Key | Type | Required | Notes |
+|-----|------|----------|-------|
+| DATABASE_URL | str | No | SQLite database path or sqlite:// DSN; takes precedence. |
+| DATABASE_PATH | str | No | SQLite database path when DATABASE_URL is unset. |
+
+## File Stores
+
+| Store | Root dir | Notes |
+|-------|----------|-------|
+
+## External Services
+
+| Service | Wrapper | Notes |
+|---------|---------|-------|
+
+## External Libraries
+
+| Library | Ownership | Distribution | Consumer Contract |
+|---------|-----------|--------------|-------------------|
+
+## Programmatic Acceptance
+
+=== AC database-upsert-rate ===
+Intent: A rate upsert persists its input fields and can be read back by its natural key.
+
+from persistence.testing import db_session
+
+date = "2099-01-02"
+currency = "TST"
+rate = "1.2300"
+with db_session() as db:
+    db.rates.upsert(date=date, currency=currency, rate=rate)
+    stored = db.rates.get(date=date, currency=currency)
+    assert stored is not None
+    assert (stored.date, stored.currency, stored.rate) == (date, currency, rate)
+=== END AC database-upsert-rate ===
+
+=== AC database-get-rate ===
+Intent: A rate lookup returns the record stored under its date and currency.
+
+from persistence.testing import db_session
+
+date = "2099-01-03"
+currency = "TST"
+rate = "2.450"
+with db_session() as db:
+    db.rates.upsert(date=date, currency=currency, rate=rate)
+    stored = db.rates.get(date=date, currency=currency)
+    assert stored is not None
+    assert (stored.date, stored.currency, stored.rate) == (date, currency, rate)
+=== END AC database-get-rate ===
+
+=== AC database-list-publication ===
+Intent: A publication lookup returns its stored rates in currency order.
+
+from persistence.testing import db_session
+
+date = "2099-01-04"
+with db_session() as db:
+    db.rates.upsert(date=date, currency="ZZZ", rate="2")
+    db.rates.upsert(date=date, currency="AAA", rate="1")
+    rows = db.rates.by_date(date=date)
+    assert [row.currency for row in rows] == ["AAA", "ZZZ"]
+=== END AC database-list-publication ===
+
+=== AC database-list-history ===
+Intent: A bounded history lookup returns matching records in ascending date order.
+
+from persistence.testing import db_session
+
+currency = "TST"
+start_date = "2099-01-05"
+end_date = "2099-01-07"
+with db_session() as db:
+    db.rates.upsert(date="2099-01-07", currency=currency, rate="3")
+    db.rates.upsert(date="2099-01-05", currency=currency, rate="1")
+    db.rates.upsert(date="2099-01-06", currency="OTH", rate="2")
+    rows = db.rates.history(currency=currency, start_date=start_date, end_date=end_date)
+    assert [row.date for row in rows] == [start_date, "2099-01-07"]
+=== END AC database-list-history ===
+
+=== AC database-list-currencies ===
+Intent: Currency listing includes currencies with stored rates in ascending order.
+
+from persistence.testing import db_session
+
+with db_session() as db:
+    db.rates.upsert(date="2099-01-08", currency="ZZZ", rate="2")
+    db.rates.upsert(date="2099-01-08", currency="AAA", rate="1")
+    rows = db.rates.currencies()
+    assert [row.currency for row in rows] == ["AAA", "ZZZ"]
+=== END AC database-list-currencies ===
+
+=== AC database-effective-date ===
+Intent: The effective-date lookup finds the latest publication on or before the requested date.
+
+from persistence.testing import db_session
+
+requested_date = "2099-01-10"
+publication_date = "2099-01-09"
+with db_session() as db:
+    db.rates.upsert(date=publication_date, currency="TST", rate="1")
+    db.rates.upsert(date="2099-01-11", currency="TST", rate="2")
+    rows = db.rates.effective_date(requested_date=requested_date)
+    assert rows
+    assert rows[0].date == publication_date
+=== END AC database-effective-date ===
+
+=== AC database-latest-date ===
+Intent: The latest-date lookup returns the newest stored publication.
+
+from persistence.testing import db_session
+
+with db_session() as db:
+    db.rates.upsert(date="2099-01-12", currency="TST", rate="1")
+    db.rates.upsert(date="2099-01-13", currency="OTH", rate="2")
+    rows = db.rates.latest_date()
+    assert rows
+    assert rows[0].date == "2099-01-13"
+=== END AC database-latest-date ===
+
+=== AC database-publication-stats ===
+Intent: Publication statistics enumerate the dates used by statistics responses.
+
+from persistence.testing import db_session
+
+with db_session() as db:
+    db.rates.upsert(date="2099-01-14", currency="TST", rate="1")
+    db.rates.upsert(date="2099-01-15", currency="TST", rate="2")
+    rows = db.rates.publication_stats()
+    assert [row.date for row in rows] == ["2099-01-14", "2099-01-15"]
+=== END AC database-publication-stats ===
+
+=== AC database-clear-rates ===
+Intent: The rates delete operation removes the specified stored record.
+
+from persistence.testing import db_session
+
+date = "2099-01-16"
+currency = "TST"
+with db_session() as db:
+    db.rates.upsert(date=date, currency=currency, rate="1")
+    db.rates.delete(date=date, currency=currency)
+    assert db.rates.get(date=date, currency=currency) is None
+=== END AC database-clear-rates ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Application code accesses persistent storage only through the generated persistence package.
+- Rates are stored as ECB-published text; arithmetic uses Decimal in application code.

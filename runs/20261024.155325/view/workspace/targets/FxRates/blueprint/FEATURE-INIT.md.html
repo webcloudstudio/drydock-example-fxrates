@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-INIT.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-INIT.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-INIT.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Initialize Rates Database</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Defines the command behavior for initializing an empty rates table.</td></tr><tr><td>Depends On</td><td>FEATURE-CLI.md, DATABASE.md</td></tr><tr><td>Provides</td><td>fxrates init</td></tr><tr><td>Consumes</td><td>rates repository operations</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p><code>./fxrates init</code> drops the rates table if present and recreates it empty. On success it exits 0 and writes nothing to standard output.</p>
+<h2>Workflow</h2>
+<ol><li>Resolve the configured database using <code>DATABASE_URL</code>, then <code>DATABASE_PATH</code>, then <code>data/app.db</code>.</li><li>Drop and recreate the rates table through the persistence boundary.</li><li>Return success without stdout.</li></ol>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC init-success ===<br>Intent: Initialization succeeds and emits no standard output.</p>
+<p>from cli.testing import cli_runner</p>
+<p>code, stdout, stderr = cli_runner(&quot;init&quot;) assert code == 0 assert stdout == &quot;&quot; === END AC init-success ===</p>
+<p>=== AC init-repeat ===<br>Intent: Initialization can be run again successfully.</p>
+<p>from cli.testing import cli_runner</p>
+<p>first = cli_runner(&quot;init&quot;) second = cli_runner(&quot;init&quot;) assert first[0] == 0 assert second[0] == 0 assert second[1] == &quot;&quot; === END AC init-repeat ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Do not access SQLite outside the generated persistence package.</li><li>Do not print a success message.</li></ul>
+<h2>Database Interface</h2>
+<ul><li><code>FEATURE-DATA-009</code> — write: rates.delete - supplies: <code>date</code>, <code>currency</code> - returns: <code>date</code>, <code>currency</code></li></ul></article>
+</main>
+</body>
+</html>

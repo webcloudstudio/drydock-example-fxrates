@@ -1,0 +1,18 @@
+<requirement name="fetch-ecb-exchange-rates" stories="data_003">
+Date,USD,JPY,GBP,CHF,SEK,CAD,AUD,CNY,
+2025-02-04,1.0335,160.52,0.83188,0.9396,11.418,1.4894,1.6629,7.4943,
+2025-02-03,1.0274,158.87,0.83136,0.9393,11.481,1.5051,1.6671,7.45,
+</requirement>
+<unattached story="architecture-foundation"/>
+<unattached story="database"/>
+<unattached story="api-foundation"/>
+<unattached story="cli-foundation"/>
+<unattached story="data_001"/>
+<unattached story="data_002"/>
+<unattached story="api_002"/>
+<unattached story="api_001"/>
+<unattached story="api_006"/>
+<unattached story="api_003"/>
+<unattached story="api_005"/>
+<unattached story="test_001"/>
+<unattached story="test_002"/>

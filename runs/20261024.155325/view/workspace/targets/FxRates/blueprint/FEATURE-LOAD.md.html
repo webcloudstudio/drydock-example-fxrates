@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-LOAD.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-LOAD.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-LOAD.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Load ECB History</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Defines validation, atomic loading, and reporting for ECB CSV history files.</td></tr><tr><td>Depends On</td><td>FEATURE-CLI.md, DATABASE.md</td></tr><tr><td>Provides</td><td>fxrates load</td></tr><tr><td>Consumes</td><td>rates.upsert</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p><code>./fxrates load &lt;csv&gt;</code> validates the complete input before writing, then stores every non-<code>N/A</code> rate as the exact published text. A matching <code>(date, currency)</code> replaces the stored rate. Successful output is CSV with header <code>dates,rates</code> and counts for dates containing at least one stored rate and rates stored from this file.</p>
+<h2>Validation and Failure Behavior</h2>
+<ul><li>The first header field is <code>Date</code>; remaining fields are three-letter uppercase currency codes. Ignore a trailing empty field.</li><li>Every row has a real <code>YYYY-MM-DD</code> date, unique within the file, and the expected number of fields.</li><li>Values are <code>N/A</code> or nonzero strings matching <code>[0-9]+(\.[0-9]+)?</code>.</li><li>Any invalid row rejects the entire file with exit 3 and no database changes.</li><li>An unreadable file is an operational failure with exit 1.</li><li>Failures write no stdout and one diagnostic line to stderr.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC load-valid-fixture ===<br>Intent: The supplied valid January fixture loads successfully and reports its declared date and rate counts.<br>Cite: sources/INSTRUCTIONS.md:8-10<br>Cite: sources/run.sh:86-94</p>
+<p>import csv import io import subprocess</p>
+<p>result = subprocess.run( [&quot;./fxrates&quot;, &quot;load&quot;, &quot;sources/eurofxref-hist_2025-01.csv&quot;], capture_output=True, text=True, ) assert result.returncode == 0 rows = list(csv.reader(io.StringIO(result.stdout))) assert rows[0] == [&quot;dates&quot;, &quot;rates&quot;] assert rows[1] == [&quot;22&quot;, &quot;176&quot;] === END AC load-valid-fixture ===</p>
+<p>=== AC load-invalid-atomic ===<br>Intent: The supplied malformed fixture is rejected with exit 3.<br>Cite: sources/INSTRUCTIONS.md:39-42<br>Cite: sources/run.sh:95-95</p>
+<p>import subprocess</p>
+<p>result = subprocess.run( [&quot;./fxrates&quot;, &quot;load&quot;, &quot;sources/eurofxref-hist_bad.csv&quot;], capture_output=True, text=True, ) assert result.returncode == 3 assert result.stdout == &quot;&quot; === END AC load-invalid-atomic ===</p>
+<p>=== AC load-repeat ===<br>Intent: Loading the same valid file twice succeeds and reports the same file counts both times.<br>Cite: sources/run.sh:86-94</p>
+<p>import csv import io import subprocess</p>
+<p>def load(): return subprocess.run( [&quot;./fxrates&quot;, &quot;load&quot;, &quot;sources/eurofxref-hist_2025-01.csv&quot;], capture_output=True, text=True, )</p>
+<p>first = load() second = load() assert first.returncode == 0 assert second.returncode == 0 assert list(csv.reader(io.StringIO(first.stdout))) == list(csv.reader(io.StringIO(second.stdout))) === END AC load-repeat ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Validate the entire file before the first write.</li><li>Preserve rate text exactly; never convert stored rates to floating point.</li><li>Do not modify any file under <code>sources/</code>.</li></ul>
+<h2>Database Interface</h2>
+<ul><li><code>FEATURE-DATA-001</code> — write: rates.upsert - supplies: <code>date</code>, <code>currency</code>, <code>rate</code> - returns: <code>date</code>, <code>currency</code>, <code>rate</code></li></ul></article>
+</main>
+</body>
+</html>

@@ -1,0 +1,10 @@
+Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
+plan verify: FxRates
+  2 criteria cannot run as written
+  ✗  FEATURE-LOAD.md [load-valid-fixture]: Cite: sources/INSTRUCTIONS.md:8-10 sources/run.sh:86-94 does not resolve to lines of a file under sources/; cite sources/<file>:<line> or sources/<file>:<start>-<end>
+  ✗  FEATURE-LOAD.md [load-invalid-atomic]: Cite: sources/INSTRUCTIONS.md:39-42 sources/run.sh:95-95 does not resolve to lines of a file under sources/; cite sources/<file>:<line> or sources/<file>:<start>-<end>
+  ⚠  FEATURE-LOAD.md [load-valid-fixture]: captures a program's output and prints none of it; print its pass/fail counts before asserting so repair can see progress
+  ⚠  FEATURE-LOAD.md [load-invalid-atomic]: captures a program's output and prints none of it; print its pass/fail counts before asserting so repair can see progress
+  ⚠  FEATURE-LOAD.md [load-repeat]: captures a program's output and prints none of it; print its pass/fail counts before asserting so repair can see progress
+  Run: drydock plan repair FxRates
+Target - committed project workspace git store

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/ARCHITECTURE.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/ARCHITECTURE.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/ARCHITECTURE.md">Raw file</a></div></header>
+<article class="doc"><h1>ARCHITECTURE: FxRates</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261024 V1</td></tr><tr><td>Description</td><td>Defines the application modules and boundaries for the FxRates service.</td></tr><tr><td>Provides</td><td>application module boundaries</td></tr></tbody></table></div>
+<h2>Technology Stack</h2>
+<ul><li>Python 3.11 or newer provides the application language and runtime.</li><li>FastAPI provides the JSON API, served by uvicorn.</li><li>SQLite stores rates through the generated persistence package.</li><li>The root <code>fxrates</code> executable exposes the command line.</li><li>pytest and FastAPI TestClient support automated tests.</li></ul>
+<h2>Modules</h2>
+<div class="scroll"><table><thead><tr><th>Module</th><th>Responsibility</th></tr></thead><tbody><tr><td><code>cli</code></td><td>Dispatches <code>init</code>, <code>load</code>, <code>fetch</code>, and <code>serve</code> commands.</td></tr><tr><td><code>app_server</code></td><td>Creates the FastAPI application and serves API routes.</td></tr><tr><td><code>persistence</code></td><td>Provides generated database operations from <code>DATABASE.md</code>.</td></tr><tr><td><code>services</code></td><td>Implements loading, rate lookup, conversion, and history behavior using <code>persistence</code>.</td></tr></tbody></table></div>
+<h2>Module Ownership</h2>
+<div class="scroll"><table><thead><tr><th>Boundary</th><th>Owner</th><th>Allowed access</th></tr></thead><tbody><tr><td>Configuration</td><td><code>config</code></td><td>Reads <code>DATABASE_URL</code>, then <code>DATABASE_PATH</code>, then <code>data/app.db</code>.</td></tr><tr><td>Persistence</td><td><code>persistence</code></td><td>Only this generated package accesses the database driver and store.</td></tr><tr><td>File input</td><td><code>services</code></td><td>Reads a caller-supplied CSV or the extracted fetch file; does not read grader assets by application-specific paths.</td></tr><tr><td>External service</td><td><code>services.fetch</code></td><td>Downloads the ECB archive; tests replace the download with a stub.</td></tr><tr><td>HTTP</td><td><code>app_server</code></td><td>Calls service functions and returns JSON/status responses.</td></tr><tr><td>CLI</td><td><code>cli</code></td><td>Calls service functions and maps outcomes to stdout, stderr, and exit codes.</td></tr></tbody></table></div>
+<p>Application modules must not import or open a database driver directly. Rates remain published text; arithmetic uses <code>decimal.Decimal</code>.</p>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC architecture-imports ===<br>Intent: The shared application packages import successfully.</p>
+<p>import app_server.main import cli</p>
+<p>assert callable(app_server.main.create_app) assert callable(cli.main) === END AC architecture-imports ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Database access goes only through the generated persistence package.</li><li>Do not hardcode rates, dates, counts, or computed answers.</li><li>Application code never reads <code>sources/run.sh</code> or supplied data files by grader-specific paths.</li></ul></article>
+</main>
+</body>
+</html>

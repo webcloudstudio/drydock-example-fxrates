@@ -1,0 +1,18 @@
+<requirement name="load-ecb-history-file" stories="data_002">
+Date,USD,JPY,
+2025-02-04,1.0345,160.12,
+2025-02-03,1.0x,159.01,
+</requirement>
+<unattached story="architecture-foundation"/>
+<unattached story="database"/>
+<unattached story="api-foundation"/>
+<unattached story="cli-foundation"/>
+<unattached story="data_001"/>
+<unattached story="api_002"/>
+<unattached story="api_001"/>
+<unattached story="api_006"/>
+<unattached story="api_003"/>
+<unattached story="api_005"/>
+<unattached story="data_003"/>
+<unattached story="test_001"/>
+<unattached story="test_002"/>

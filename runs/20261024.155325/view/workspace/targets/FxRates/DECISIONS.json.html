@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/DECISIONS.json</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/DECISIONS.json</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../workspace/targets/FxRates/DECISIONS.json">Raw file</a></div></header>
+<article class="doc"><pre>[
+  {
+    &quot;id&quot;: &quot;Q-001&quot;,
+    &quot;type&quot;: &quot;choice&quot;,
+    &quot;severity&quot;: &quot;material&quot;,
+    &quot;origin&quot;: &quot;plan&quot;,
+    &quot;blueprint&quot;: &quot;FEATURE-CLI.md&quot;,
+    &quot;story&quot;: &quot;cli-foundation&quot;,
+    &quot;status&quot;: &quot;recommended&quot;,
+    &quot;archived&quot;: false,
+    &quot;title&quot;: &quot;CLI validation and operational error reporting&quot;,
+    &quot;description&quot;: &quot;The imported instructions specify failing-command output and exit statuses but do not distinguish the diagnostic wording for usage errors, rejected files, and operational failures. Use one concise diagnostic line on standard error for failures, while preserving the specified exit codes and empty standard output.&quot;,
+    &quot;options&quot;: [
+      {
+        &quot;value&quot;: &quot;one-line-stderr&quot;,
+        &quot;label&quot;: &quot;One diagnostic line on standard error&quot;
+      },
+      {
+        &quot;value&quot;: &quot;silence&quot;,
+        &quot;label&quot;: &quot;No diagnostic output&quot;
+      }
+    ],
+    &quot;system_choice&quot;: &quot;one-line-stderr&quot;
+  }
+]
+</pre></article>
+</main>
+</body>
+</html>

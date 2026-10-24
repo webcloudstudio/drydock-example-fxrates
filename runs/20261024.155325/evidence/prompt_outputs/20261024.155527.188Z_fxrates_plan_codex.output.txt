@@ -1,0 +1,337 @@
+=== BEGIN ARTIFACT ARCHITECTURE.md ===
+# ARCHITECTURE: FxRates
+
+| Field | Value |
+|-------|-------|
+| Version | 20261024 V1 |
+| Description | Defines the application modules and boundaries for the FxRates service. |
+| Provides | application module boundaries |
+
+## Questions
+
+- None.
+
+## Technology Stack
+
+- Python 3.11 or newer provides the application language and runtime.
+- FastAPI provides the JSON API, served by uvicorn.
+- SQLite stores rates through the generated persistence package.
+- The root `fxrates` executable exposes the command line.
+- pytest and FastAPI TestClient support automated tests.
+
+## Modules
+
+| Module | Responsibility |
+|--------|----------------|
+| `cli` | Dispatches `init`, `load`, `fetch`, and `serve` commands. |
+| `app_server` | Creates the FastAPI application and serves API routes. |
+| `persistence` | Provides generated database operations from `DATABASE.md`. |
+| `services` | Implements loading, rate lookup, conversion, and history behavior using `persistence`. |
+
+## Module Ownership
+
+| Boundary | Owner | Allowed access |
+|----------|-------|----------------|
+| Configuration | `config` | Reads `DATABASE_URL`, then `DATABASE_PATH`, then `data/app.db`. |
+| Persistence | `persistence` | Only this generated package accesses the database driver and store. |
+| File input | `services` | Reads a caller-supplied CSV or the extracted fetch file; does not read grader assets by application-specific paths. |
+| External service | `services.fetch` | Downloads the ECB archive; tests replace the download with a stub. |
+| HTTP | `app_server` | Calls service functions and returns JSON/status responses. |
+| CLI | `cli` | Calls service functions and maps outcomes to stdout, stderr, and exit codes. |
+
+Application modules must not import or open a database driver directly. Rates remain published text; arithmetic uses `decimal.Decimal`.
+
+## Programmatic Acceptance
+
+=== AC architecture-imports ===
+Intent: The shared application packages import successfully.
+
+import app_server.main
+import cli
+import persistence
+
+assert callable(app_server.main.create_app)
+assert callable(cli.main)
+assert callable(persistence.open_database)
+=== END AC architecture-imports ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Database access goes only through the generated persistence package.
+- Do not hardcode rates, dates, counts, or computed answers.
+- Application code never reads `sources/run.sh` or supplied data files by grader-specific paths.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-CLI.md ===
+# FEATURE: CLI Foundation
+
+| Field | Value |
+|-------|-------|
+| Version | 20261024 V1 |
+| Description | Establishes the root fxrates executable and command dispatch. |
+| Depends On | ARCHITECTURE.md, DATABASE.md |
+| Provides | fxrates executable, fxrates init, fxrates load, fxrates fetch, fxrates serve |
+| Consumes | rates repository operations |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Provide the executable `./fxrates` at the application root and dispatch the four supported commands: `init`, `load`, `fetch`, and `serve`.
+
+## Command Contract
+
+- `init` takes no arguments, initializes the rates table, and returns exit code 0 on success.
+- `load` takes one CSV path.
+- `fetch` takes no arguments.
+- `serve` accepts optional `--port <n>` and defaults to port 8000. It serves on `127.0.0.1` until stopped.
+- Success output and command-specific behavior are defined by the implementing feature specifications.
+- Usage errors return 2. A non-integer port is a usage error.
+- A failing command writes no stdout and one diagnostic line to stderr.
+
+## Programmatic Acceptance
+
+=== AC cli-dispatch ===
+Intent: The CLI foundation exposes a callable dispatcher and handles unknown commands with the usage exit status.
+
+from cli import main
+
+assert callable(main)
+assert main(["frobnicate"]) == 2
+=== END AC cli-dispatch ===
+
+=== AC cli-test-helper ===
+Intent: The CLI testing helper returns an exit code and captured output streams.
+
+from cli.testing import cli_runner
+
+result = cli_runner("frobnicate")
+assert isinstance(result, tuple)
+assert len(result) == 3
+assert result[0] == 2
+assert isinstance(result[1], str)
+assert isinstance(result[2], str)
+=== END AC cli-test-helper ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Keep diagnostics on standard error.
+- Do not invent command behavior beyond the source contract.
+- The executable must be runnable as `./fxrates <command>`.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-API-FOUNDATION.md ===
+# FEATURE: API Foundation
+
+| Field | Value |
+|-------|-------|
+| Version | 20261024 V1 |
+| Description | Establishes the FastAPI application factory and in-process test client. |
+| Depends On | ARCHITECTURE.md |
+| Provides | app_server.main:create_app, app_server.testing:web_client |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Expose `app_server.main.create_app()` returning a FastAPI application, a module-level `app` for uvicorn, and `app_server.testing.web_client()` returning a FastAPI `TestClient`.
+
+This foundation provides the application shell. Endpoint behavior belongs to the API feature specifications.
+
+## Programmatic Acceptance
+
+=== AC api-factory ===
+Intent: The application factory returns a FastAPI application.
+
+from fastapi import FastAPI
+from app_server.main import create_app
+
+app = create_app()
+assert isinstance(app, FastAPI)
+=== END AC api-factory ===
+
+=== AC api-test-client ===
+Intent: The published testing helper returns a client that can issue requests.
+
+from fastapi.testclient import TestClient
+from app_server.testing import web_client
+
+client = web_client()
+assert isinstance(client, TestClient)
+=== END AC api-test-client ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Keep endpoint behavior in the API feature specifications.
+- The module-level application must be usable by `uvicorn app_server.main:app`.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-INIT.md ===
+# FEATURE: Initialize Rates Database
+
+| Field | Value |
+|-------|-------|
+| Version | 20261024 V1 |
+| Description | Defines the command behavior for initializing an empty rates table. |
+| Depends On | FEATURE-CLI.md, DATABASE.md |
+| Provides | fxrates init |
+| Consumes | rates repository operations |
+
+## Questions
+
+- None.
+
+## Purpose
+
+`./fxrates init` drops the rates table if present and recreates it empty. On success it exits 0 and writes nothing to standard output.
+
+## Workflow
+
+1. Resolve the configured database using `DATABASE_URL`, then `DATABASE_PATH`, then `data/app.db`.
+2. Drop and recreate the rates table through the persistence boundary.
+3. Return success without stdout.
+
+## Programmatic Acceptance
+
+=== AC init-success ===
+Intent: Initialization succeeds and emits no standard output.
+
+from cli.testing import cli_runner
+
+code, stdout, stderr = cli_runner("init")
+assert code == 0
+assert stdout == ""
+=== END AC init-success ===
+
+=== AC init-repeat ===
+Intent: Initialization can be run again successfully.
+
+from cli.testing import cli_runner
+
+first = cli_runner("init")
+second = cli_runner("init")
+assert first[0] == 0
+assert second[0] == 0
+assert second[1] == ""
+=== END AC init-repeat ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Do not access SQLite outside the generated persistence package.
+- Do not print a success message.
+=== END ARTIFACT===
+=== BEGIN ARTIFACT FEATURE-LOAD.md ===
+# FEATURE: Load ECB History
+
+| Field | Value |
+|-------|-------|
+| Version | 20261024 V1 |
+| Description | Defines validation, atomic loading, and reporting for ECB CSV history files. |
+| Depends On | FEATURE-CLI.md, DATABASE.md |
+| Provides | fxrates load |
+| Consumes | rates.upsert |
+
+## Questions
+
+- None.
+
+## Purpose
+
+`./fxrates load <csv>` validates the complete input before writing, then stores every non-`N/A` rate as the exact published text. A matching `(date, currency)` replaces the stored rate. Successful output is CSV with header `dates,rates` and counts for dates containing at least one stored rate and rates stored from this file.
+
+## Validation and Failure Behavior
+
+- The first header field is `Date`; remaining fields are three-letter uppercase currency codes. Ignore a trailing empty field.
+- Every row has a real `YYYY-MM-DD` date, unique within the file, and the expected number of fields.
+- Values are `N/A` or nonzero strings matching `[0-9]+(\.[0-9]+)?`.
+- Any invalid row rejects the entire file with exit 3 and no database changes.
+- An unreadable file is an operational failure with exit 1.
+- Failures write no stdout and one diagnostic line to stderr.
+
+## Programmatic Acceptance
+
+=== AC load-valid-fixture ===
+Intent: The supplied valid January fixture loads successfully and reports its declared date and rate counts.
+Cite: sources/INSTRUCTIONS.md:8-10
+Cite: sources/run.sh:86-94
+
+import csv
+import io
+import subprocess
+
+result = subprocess.run(
+    ["./fxrates", "load", "sources/eurofxref-hist_2025-01.csv"],
+    capture_output=True,
+    text=True,
+)
+assert result.returncode == 0
+rows = list(csv.reader(io.StringIO(result.stdout)))
+assert rows[0] == ["dates", "rates"]
+assert rows[1] == ["22", "176"]
+=== END AC load-valid-fixture ===
+
+=== AC load-invalid-atomic ===
+Intent: The supplied malformed fixture is rejected with exit 3.
+Cite: sources/INSTRUCTIONS.md:39-42
+Cite: sources/run.sh:95-95
+
+import subprocess
+
+result = subprocess.run(
+    ["./fxrates", "load", "sources/eurofxref-hist_bad.csv"],
+    capture_output=True,
+    text=True,
+)
+assert result.returncode == 3
+assert result.stdout == ""
+=== END AC load-invalid-atomic ===
+
+=== AC load-repeat ===
+Intent: Loading the same valid file twice succeeds and reports the same file counts both times.
+Cite: sources/run.sh:86-94
+
+import csv
+import io
+import subprocess
+
+def load():
+    return subprocess.run(
+        ["./fxrates", "load", "sources/eurofxref-hist_2025-01.csv"],
+        capture_output=True,
+        text=True,
+    )
+
+first = load()
+second = load()
+assert first.returncode == 0
+assert second.returncode == 0
+assert list(csv.reader(io.StringIO(first.stdout))) == list(csv.reader(io.StringIO(second.stdout)))
+=== END AC load-repeat ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Validate the entire file before the first write.
+- Preserve rate text exactly; never convert stored rates to floating point.
+- Do not modify any file under `sources/`.
+=== END ARTIFACT===
