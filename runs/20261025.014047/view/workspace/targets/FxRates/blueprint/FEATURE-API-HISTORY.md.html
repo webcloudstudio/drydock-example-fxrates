@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-API-HISTORY.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-API-HISTORY.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-API-HISTORY.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Currency History</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261025 V1</td></tr><tr><td>Description</td><td>Retrieves bounded currency publication history with exact summary statistics.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md, DATABASE.md</td></tr><tr><td>Provides</td><td>GET /history/{code}</td></tr><tr><td>Consumes</td><td>rates.list</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Return a currency&#x27;s ECB publication history, optionally bounded by inclusive <code>start</code> and <code>end</code> dates. Points are ordered by ascending publication date and retain the rate text stored in the database.</p>
+<p>The response contains <code>currency</code>, <code>base</code>, <code>count</code>, <code>min</code>, <code>max</code>, <code>mean</code>, and <code>points</code>. Calculate minimum and maximum by numeric value while returning their stored rate text. Calculate the mean using <code>Decimal</code>, rounded half to even to six decimal places and formatted with exactly six decimals.</p>
+<p>When the requested currency has stored rates but the selected bounds contain no points, return count zero, null statistics, and an empty points list. Return 404 when the currency has no stored rates at all, including EUR. Malformed date bounds return 422.</p>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC history-bounded-points ===<br>Intent: The history endpoint returns stored points in ascending date order and calculates summary fields from the supplied rates.</p>
+<p>from decimal import Decimal, ROUND_HALF_EVEN from app_server.testing import web_client from persistence.testing import db_session</p>
+<p>currency = &quot;ZZZ&quot; first_date = &quot;2099-12-30&quot; second_date = &quot;2099-12-31&quot; first_rate = &quot;1.2&quot; second_rate = &quot;1.4&quot; mean = ( (Decimal(first_rate) + Decimal(second_rate)) / Decimal(2) ).quantize(Decimal(&quot;0.000001&quot;), rounding=ROUND_HALF_EVEN) expected_mean = format(mean, &quot;.6f&quot;)</p>
+<p>with db_session() as db: db.rates.upsert(date=second_date, currency=currency, rate=second_rate) db.rates.upsert(date=first_date, currency=currency, rate=first_rate)</p>
+<p>response = web_client().get( f&quot;/history/{currency}&quot;, params={&quot;start&quot;: first_date, &quot;end&quot;: second_date}, ) assert response.status_code == 200 body = response.json() assert body[&quot;currency&quot;] == currency assert body[&quot;base&quot;] == &quot;EUR&quot; assert body[&quot;count&quot;] == 2 assert body[&quot;min&quot;] == first_rate assert body[&quot;max&quot;] == second_rate assert body[&quot;mean&quot;] == expected_mean assert body[&quot;points&quot;] == [ {&quot;date&quot;: first_date, &quot;rate&quot;: first_rate}, {&quot;date&quot;: second_date, &quot;rate&quot;: second_rate}, ] === END AC history-bounded-points ===</p>
+<p>=== AC history-empty-and-unknown ===<br>Intent: The history endpoint distinguishes an empty bounded result from a currency with no stored rates and rejects malformed bounds.</p>
+<p>from app_server.testing import web_client from persistence.testing import db_session</p>
+<p>currency = &quot;ZZZ&quot; stored_date = &quot;2099-12-30&quot; stored_rate = &quot;1.2&quot;</p>
+<p>with db_session() as db: db.rates.upsert(date=stored_date, currency=currency, rate=stored_rate)</p>
+<p>client = web_client() empty = client.get( f&quot;/history/{currency}&quot;, params={&quot;start&quot;: &quot;2099-12-31&quot;}, ) assert empty.status_code == 200 assert empty.json()[&quot;count&quot;] == 0 assert empty.json()[&quot;min&quot;] is None assert empty.json()[&quot;max&quot;] is None assert empty.json()[&quot;mean&quot;] is None assert empty.json()[&quot;points&quot;] == []</p>
+<p>assert client.get(&quot;/history/QQQ&quot;).status_code == 404 assert client.get( f&quot;/history/{currency}&quot;, params={&quot;start&quot;: &quot;2099-13-01&quot;}, ).status_code == 422 === END AC history-empty-and-unknown ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Include publication dates within the supplied bounds, inclusive, in ascending order.</li><li>Preserve stored rate text in points and in minimum and maximum fields.</li><li>Use exact decimal arithmetic and half-even rounding for the six-decimal mean.</li><li>Return the specified empty bounded result for a currency with stored history; return 404 when that currency has no stored rates.</li></ul></article>
+</main>
+</body>
+</html>

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-TEST-SUITE.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-TEST-SUITE.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-TEST-SUITE.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Automated Test Suite</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261025 V1</td></tr><tr><td>Description</td><td>Provides a POSIX test runner and pytest coverage for the command-line and HTTP service.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md, FEATURE-CLI-INIT.md, FEATURE-CLI-LOAD.md, FEATURE-CLI-FETCH.md, FEATURE-API-HEALTH-STATS.md, FEATURE-API-CURRENCIES.md, FEATURE-API-RATES.md, FEATURE-API-CONVERT.md, FEATURE-API-HISTORY.md, FEATURE-API-REFERENCE.md</td></tr><tr><td>Provides</td><td>bin/test.sh, pytest suite</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Provide a POSIX-compatible <code>bin/test.sh</code> that runs the project&#x27;s pytest suite from the application root and returns success only when all tests pass. The suite covers each command and load rule, each API endpoint, effective-date resolution, rounding, and error statuses.</p>
+<p>Fetch tests replace the download with a stub. Automated tests must not open network connections.</p>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC test-runner-passes ===<br>Intent: The project test runner completes successfully after the command and API capabilities are implemented.<br>Requires: python-package=pytest; scope=test</p>
+<p>import subprocess</p>
+<p>result = subprocess.run( [&quot;sh&quot;, &quot;bin/test.sh&quot;], capture_output=True, text=True, ) print(result.stdout) print(result.stderr) assert result.returncode == 0 === END AC test-runner-passes ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Keep the runner POSIX-compatible and run tests from the application root.</li><li>Stub ECB downloads in tests; tests must not use the network.</li><li>The runner exits zero only when every automated test passes.</li></ul></article>
+</main>
+</body>
+</html>

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-CLI-INIT.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-CLI-INIT.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-CLI-INIT.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: CLI Init</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261025 V1</td></tr><tr><td>Description</td><td>Defines initialization behavior for the rates database.</td></tr><tr><td>Depends On</td><td>DATABASE.md, ARCHITECTURE.md</td></tr><tr><td>Provides</td><td><code>fxrates init</code></td></tr><tr><td>Consumes</td><td><code>persistence.open_database</code>, <code>db.rates.delete</code></td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p><code>fxrates init</code> drops the existing rates table contents and leaves the rates store empty. It succeeds with exit code <code>0</code> and writes nothing to standard output.</p>
+<h2>Trigger and Sequence</h2>
+<ol><li>The user invokes <code>./fxrates init</code>.</li><li>The command opens the configured database through the persistence library.</li><li>It deletes all stored rate rows through the declared repository operation.</li><li>It returns success without standard output.</li></ol>
+<p>Initialization does not issue schema DDL; the generated database foundation provisions the table.</p>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC cli-init-empty ===<br>Intent: The init command succeeds and emits no standard output.</p>
+<p>from cli.testing import cli_runner</p>
+<p>code, stdout, stderr = cli_runner(&quot;init&quot;) assert code == 0 assert stdout == &quot;&quot; === END AC cli-init-empty ===</p>
+<p>=== AC cli-init-clears-rates ===<br>Intent: The init command removes stored rates from the configured store.</p>
+<p>from persistence.testing import db_session from cli.testing import cli_runner</p>
+<p>date = &quot;2099-12-30&quot; currency = &quot;ZZZ&quot; rate = &quot;1.234&quot;</p>
+<p>with db_session() as db: db.rates.upsert(date=date, currency=currency, rate=rate)</p>
+<p>code, stdout, stderr = cli_runner(&quot;init&quot;) assert code == 0</p>
+<p>with db_session() as db: assert db.rates.get(date=date, currency=currency) is None === END AC cli-init-clears-rates ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>All database access goes through the shipped persistence library.</li><li>Initialization leaves the rates table empty and prints nothing on success.</li></ul></article>
+</main>
+</body>
+</html>

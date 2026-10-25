@@ -1,0 +1,69 @@
+--- llm 1/14 · plan · codex gpt-6-luna · 20261025.014142.578Z-4dfef872 ---
+2026-10-24 21:41:42 EDT  Calling CODEX/gpt-6-luna (plan · topology)...
+  Completed CODEX/gpt-6-luna (plan · topology)  rc=0
+    elapsed=21.1s   cached=11,520 (20% hit)   uncached=46,322   out=2,417   tps=114.6
+
+--- llm 2/14 · plan · codex gpt-6-luna · 20261025.014203.762Z-36a94aab ---
+2026-10-24 21:42:03 EDT  Calling CODEX/gpt-6-luna (plan · declaration repair)...
+  Completed CODEX/gpt-6-luna (plan · declaration repair)  rc=0
+    elapsed=16.4s   cached=11,520 (70% hit)   uncached=4,912   out=1,759   tps=107.2
+
+--- llm 3/14 · plan · codex gpt-6-luna · 20261025.014220.319Z-5f0db95f ---
+2026-10-24 21:42:20 EDT  Calling CODEX/gpt-6-luna (plan · declaration repair)...
+  Completed CODEX/gpt-6-luna (plan · declaration repair)  rc=0
+    elapsed=13.3s   cached=11,520 (70% hit)   uncached=4,922   out=1,755   tps=131.7
+
+--- llm 4/14 · plan · codex gpt-6-luna · 20261025.014233.760Z-17fada32 ---
+2026-10-24 21:42:33 EDT  Calling CODEX/gpt-6-luna (plan · declaration repair)...
+  Completed CODEX/gpt-6-luna (plan · declaration repair)  rc=0
+    elapsed=12.3s   cached=14,080 (86% hit)   uncached=2,352   out=1,766   tps=143.4
+
+--- llm 5/14 · plan · codex gpt-6-luna · 20261025.014246.171Z-632b1bb3 ---
+2026-10-24 21:42:46 EDT  Calling CODEX/gpt-6-luna (plan · blueprint batch 1)...
+  Completed CODEX/gpt-6-luna (plan · blueprint batch 1)  rc=0
+    elapsed=18.2s   cached=11,520 (18% hit)   uncached=52,072   out=2,228   tps=122.4
+
+--- llm 6/14 · plan · codex gpt-6-luna · 20261025.014304.549Z-b1ed6ce2 ---
+2026-10-24 21:43:04 EDT  Calling CODEX/gpt-6-luna (plan · blueprint batch 2)...
+  Completed CODEX/gpt-6-luna (plan · blueprint batch 2)  rc=0
+    elapsed=15.3s   cached=11,520 (18% hit)   uncached=52,200   out=1,853   tps=121.1
+
+--- llm 7/14 · plan · codex gpt-6-luna · 20261025.014319.914Z-a4d8527d ---
+2026-10-24 21:43:19 EDT  Calling CODEX/gpt-6-luna (plan · blueprint batch 3)...
+  Completed CODEX/gpt-6-luna (plan · blueprint batch 3)  rc=0
+    elapsed=20.8s   cached=11,520 (18% hit)   uncached=53,283   out=2,715   tps=130.6
+
+--- llm 8/14 · plan · codex gpt-6-luna · 20261025.014340.797Z-d59e0db2 ---
+2026-10-24 21:43:40 EDT  Calling CODEX/gpt-6-luna (plan · blueprint batch 4)...
+  Completed CODEX/gpt-6-luna (plan · blueprint batch 4)  rc=0
+    elapsed=29.5s   cached=11,520 (18% hit)   uncached=53,216   out=3,455   tps=117.1
+
+--- llm 9/14 · plan · codex gpt-6-luna · 20261025.014419.723Z-bc976014 ---
+2026-10-24 21:44:19 EDT  Calling CODEX/gpt-6-luna (plan · topology repair)...
+  Completed CODEX/gpt-6-luna (plan · topology repair)  rc=0
+    elapsed=19.5s   cached=11,520 (74% hit)   uncached=3,966   out=2,614   tps=134.0
+
+--- llm 10/14 · lineage_attribute · codex gpt-6-luna · 20261025.014442.310Z-4fac0ae6 ---
+2026-10-24 21:44:42 EDT  Calling CODEX/gpt-6-luna (lineage_attribute)...
+  Completed CODEX/gpt-6-luna (lineage_attribute)  rc=0
+    elapsed=17.6s   cached=11,520 (70% hit)   uncached=5,046   out=2,279   tps=129.2
+
+--- llm 11/14 · lineage_attribute · codex gpt-6-luna · 20261025.014500.042Z-60f29e9e ---
+2026-10-24 21:45:00 EDT  Calling CODEX/gpt-6-luna (lineage_attribute)...
+  Completed CODEX/gpt-6-luna (lineage_attribute)  rc=0
+    elapsed=3.7s   cached=11,520 (70% hit)   uncached=4,900   out=108   tps=29.3
+
+--- llm 12/14 · lineage_attribute · codex gpt-6-luna · 20261025.014503.770Z-b661cf7d ---
+2026-10-24 21:45:03 EDT  Calling CODEX/gpt-6-luna (lineage_attribute)...
+  Completed CODEX/gpt-6-luna (lineage_attribute)  rc=0
+    elapsed=4.2s   cached=11,520 (79% hit)   uncached=2,993   out=108   tps=25.8
+
+--- llm 13/14 · lineage_attribute · codex gpt-6-luna · 20261025.014508.027Z-968ee5b8 ---
+2026-10-24 21:45:08 EDT  Calling CODEX/gpt-6-luna (lineage_attribute)...
+  Completed CODEX/gpt-6-luna (lineage_attribute)  rc=0
+    elapsed=4.4s   cached=11,520 (80% hit)   uncached=2,915   out=108   tps=24.7
+
+--- llm 14/14 · lineage_attribute · codex gpt-6-luna · 20261025.014512.456Z-f758fdd7 ---
+2026-10-24 21:45:12 EDT  Calling CODEX/gpt-6-luna (lineage_attribute)...
+  Completed CODEX/gpt-6-luna (lineage_attribute)  rc=0
+    elapsed=10.6s   cached=11,520 (65% hit)   uncached=6,106   out=1,296   tps=121.7

@@ -1,0 +1,213 @@
+=== BEGIN ARTIFACT ARCHITECTURE.md ===
+# ARCHITECTURE: FxRates
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261025 V1 |
+| Description | Defines the application modules, runtime wiring, and persistence boundaries. |
+| Depends On  | DATABASE.md |
+| Provides    | FastAPI application factory, `fxrates` command entry point |
+| Consumes    | `persistence.open_database`, `persistence.db_session` |
+
+## Questions
+
+- None.
+
+## Purpose
+
+The application loads ECB euro reference rates into SQLite and serves them through a local JSON API. The `fxrates` executable provides database initialization, CSV loading, archive fetching, and API serving.
+
+## Technology Stack
+
+- Python 3.11 or newer implements the application.
+- FastAPI defines the JSON API and uvicorn serves it on `127.0.0.1`.
+- SQLite stores rates through the generated persistence library.
+- The CLI exposes `init`, `load`, `fetch`, and `serve`.
+- pytest runs the automated test suite.
+
+## Modules and Boundaries
+
+| Module | Responsibility |
+|--------|----------------|
+| `cli` | Parse commands and arguments, return conventional exit codes, and write diagnostics to stderr. |
+| `persistence` | Resolve the configured database and expose generated rate operations. It is the only application boundary that accesses the database driver. |
+| `app_server` | Build the FastAPI application and implement JSON routes using application services. |
+| `services` | Parse and validate complete ECB files, load rates, resolve effective dates, and calculate exact decimal values. |
+| `fxrates` | Executable launcher for the CLI entry point. |
+
+## Module Ownership
+
+| Boundary | Owner | Allowed access |
+|----------|-------|----------------|
+| Persistence | `persistence` | The generated package opens the database and provides declared `db.rates` operations. Application modules call those operations only. |
+| Configuration | `config` | Resolves `DATABASE_URL`, then `DATABASE_PATH`, then `data/app.db`. Other modules obtain the configured DSN through this boundary. |
+| File store | None | ECB CSV inputs are read by `load` or `fetch`; no persistent file store is used. |
+| External service | `services.ecb_fetch` | Downloads the ECB archive for `fetch`; tests replace the download operation with a stub. |
+
+## Runtime Wiring
+
+`fxrates` calls `cli.main(argv)`. The CLI dispatches to the relevant service or starts uvicorn with the FastAPI application. The application factory creates routes that query the generated persistence package. Loads performed while the server is running are visible to later requests through the configured database.
+
+The database path resolves from `DATABASE_URL`, then `DATABASE_PATH`, then `data/app.db`. Rates are stored exactly as published text; calculations use Python `decimal`.
+
+## Interfaces
+
+- Persistence calls use `persistence.open_database(dsn)` and the declared operations `db.rates.get`, `db.rates.list`, `db.rates.upsert`, and `db.rates.delete`.
+- The web foundation exposes `app_server.main.create_app() -> FastAPI` and `app_server.main.app`.
+- The CLI foundation exposes `cli.main(argv: list[str] | None = None) -> int`.
+- `fxrates serve [--port <n>]` binds to `127.0.0.1`, defaults to port `8000`, and exits cleanly on SIGTERM.
+
+## Programmatic Acceptance
+
+=== AC foundation-imports ===
+Intent: The published application, CLI, and persistence entry points can be imported and the application factory creates a FastAPI app.
+
+from fastapi import FastAPI
+from app_server.main import create_app
+from cli import main
+from persistence import open_database
+
+assert isinstance(create_app(), FastAPI)
+assert callable(main)
+assert callable(open_database)
+=== END AC foundation-imports ===
+
+=== AC foundation-routes-registered ===
+Intent: The application registers the health and statistics routes supplied by its feature.
+
+from app_server.main import create_app
+
+routes = {route.path for route in create_app().routes}
+assert "/health" in routes
+assert "/stats" in routes
+=== END AC foundation-routes-registered ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Application code must access SQLite only through the shipped persistence library.
+- Resolve the database location from `DATABASE_URL`, then `DATABASE_PATH`, then `data/app.db`.
+- Preserve ECB rate text and use `decimal` for arithmetic.
+- Do not read `sources/run.sh` or supplied data files from application code.
+- Fetch tests must stub downloads and never open a network connection.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-CLI-INIT.md ===
+# FEATURE: CLI Init
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261025 V1 |
+| Description | Defines initialization behavior for the rates database. |
+| Depends On  | DATABASE.md, ARCHITECTURE.md |
+| Provides    | `fxrates init` |
+| Consumes    | `persistence.open_database`, `db.rates.delete` |
+
+## Questions
+
+- None.
+
+## Purpose
+
+`fxrates init` drops the existing rates table contents and leaves the rates store empty. It succeeds with exit code `0` and writes nothing to standard output.
+
+## Trigger and Sequence
+
+1. The user invokes `./fxrates init`.
+2. The command opens the configured database through the persistence library.
+3. It deletes all stored rate rows through the declared repository operation.
+4. It returns success without standard output.
+
+Initialization does not issue schema DDL; the generated database foundation provisions the table.
+
+## Programmatic Acceptance
+
+=== AC cli-init-empty ===
+Intent: The init command succeeds and emits no standard output.
+
+from cli.testing import cli_runner
+
+code, stdout, stderr = cli_runner("init")
+assert code == 0
+assert stdout == ""
+=== END AC cli-init-empty ===
+
+=== AC cli-init-clears-rates ===
+Intent: The init command removes stored rates from the configured store.
+
+from persistence.testing import db_session
+from cli.testing import cli_runner
+
+date = "2099-12-30"
+currency = "ZZZ"
+rate = "1.234"
+
+with db_session() as db:
+    db.rates.upsert(date=date, currency=currency, rate=rate)
+
+code, stdout, stderr = cli_runner("init")
+assert code == 0
+
+with db_session() as db:
+    assert db.rates.get(date=date, currency=currency) is None
+=== END AC cli-init-clears-rates ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- All database access goes through the shipped persistence library.
+- Initialization leaves the rates table empty and prints nothing on success.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-CLI-LOAD.md ===
+# FEATURE: CLI Load
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261025 V1 |
+| Description | Defines validation and atomic loading of ECB history CSV files. |
+| Depends On  | DATABASE.md, ARCHITECTURE.md |
+| Provides    | `fxrates load` |
+| Consumes    | `db.rates.upsert`, `db.rates.list` |
+
+## Questions
+
+- None.
+
+## Purpose
+
+`fxrates load <csv>` validates the entire ECB CSV before writing any rates, then stores each non-`N/A` rate as published text. Repeated date/currency entries are replaced. On success it prints CSV output with the number of dates containing stored rates and the number of rates stored from the file.
+
+## File Rules
+
+- The header begins with `Date`, followed by three-letter uppercase currency codes. An empty trailing field is ignored.
+- Every row has a real `YYYY-MM-DD` date unique within the file and one value per currency.
+- `N/A` creates no rate. Other values match `[0-9]+(\.[0-9]+)?` and are nonzero.
+- Wrong field counts, invalid or repeated dates, and invalid values reject the whole file before its first write.
+- A missing or unreadable file is an operational failure.
+
+## Programmatic Acceptance
+
+=== AC cli-load-published-text ===
+Intent: Loading the January fixture succeeds and stores its published rate text through the database interface.
+
+from cli.testing import cli_runner
+from persistence.testing import db_session
+from pathlib import Path
+
+fixture = Path("sources/eurofxref-hist_2025-01.csv")
+assert fixture.is_file()
+code, stdout, stderr = cli_runner("load", str(fixture))
+assert code == 0
+
+date = "2025-01-29"
+currency = "CHF"
+with db_session() as db:
+    row = db.rates.get(date=date, currency=currency)
+assert row is not None
+assert row.rate == "0.943"
+=== END AC ARTIFACT

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-API-HEALTH-STATS.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-API-HEALTH-STATS.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-API-HEALTH-STATS.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: API Health and Stats</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261025 V1</td></tr><tr><td>Description</td><td>Provides health and database statistics endpoints.</td></tr><tr><td>Depends On</td><td>DATABASE.md, ARCHITECTURE.md</td></tr><tr><td>Provides</td><td>GET /health, GET /stats</td></tr><tr><td>Consumes</td><td>rates.list</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Expose service health and counts and date bounds from stored rates. For an empty store, report zero counts and null date bounds.</p>
+<h2>Routes</h2>
+<ul><li><code>GET /health</code> returns JSON with the service status.</li><li><code>GET /stats</code> returns the number of publication dates with stored rates, total stored rate rows, and the earliest and latest publication dates. The date bounds are null when there are no rows.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC health-route-responds ===<br>Intent: The health endpoint responds successfully with its declared status.<br>Suite: scoped</p>
+<p>from app_server.testing import web_client</p>
+<p>response = web_client().get(&quot;/health&quot;) assert response.status_code == 200 assert response.json() == {&quot;status&quot;: &quot;ok&quot;} === END AC health-route-responds ===</p>
+<p>=== AC stats-route-responds ===<br>Intent: The statistics endpoint responds successfully and exposes its declared fields.<br>Suite: scoped</p>
+<p>from app_server.testing import web_client</p>
+<p>response = web_client().get(&quot;/stats&quot;) assert response.status_code == 200 body = response.json() assert set(body) == {&quot;dates&quot;, &quot;rates&quot;, &quot;first&quot;, &quot;last&quot;} assert isinstance(body[&quot;dates&quot;], int) assert isinstance(body[&quot;rates&quot;], int) === END AC stats-route-responds ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Derive statistics from database queries; do not hardcode counts or dates.</li><li>All responses are JSON.</li><li>Access persistent data only through the shipped persistence library.</li></ul></article>
+</main>
+</body>
+</html>

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-CLI-FETCH.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-CLI-FETCH.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-CLI-FETCH.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: CLI Fetch</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261025 V1</td></tr><tr><td>Description</td><td>Downloads and loads the ECB euro reference history archive.</td></tr><tr><td>Depends On</td><td>FEATURE-CLI-LOAD.md, ARCHITECTURE.md</td></tr><tr><td>Provides</td><td><code>fxrates fetch</code></td></tr><tr><td>Consumes</td><td><code>fxrates load</code></td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Download the ECB history ZIP archive, extract <code>eurofxref-hist.csv</code>, and load it using the same validation, storage, and summary behavior as <code>fxrates load</code>.</p>
+<h2>Workflow</h2>
+<ol><li>Download <code>https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist.zip</code>.</li><li>Extract the <code>eurofxref-hist.csv</code> member.</li><li>Pass the extracted CSV through the shared loader.</li><li>Return exit status <code>0</code> on success or <code>1</code> if the download fails. A rejected extracted CSV follows the loader&#x27;s rejected-file behavior.</li></ol>
+<p>Automated tests replace the download with a stub and must not open a network connection.</p>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC fetch-loads-stubbed-archive ===<br>Intent: The fetch command loads the CSV supplied by a stubbed download.<br>Suite: scoped</p>
+<p>from io import BytesIO from zipfile import ZipFile from unittest.mock import patch from cli.testing import cli_runner from persistence.testing import db_session</p>
+<p>date = &quot;2099-12-30&quot; currency = &quot;ZZZ&quot; rate = &quot;1.234&quot; archive_buffer = BytesIO() with ZipFile(archive_buffer, &quot;w&quot;) as archive: archive.writestr(&quot;eurofxref-hist.csv&quot;, f&quot;Date,{currency},\n{date},{rate},\n&quot;) archive_bytes = archive_buffer.getvalue()</p>
+<p>with patch(&quot;cli.fetch.urlopen&quot;) as urlopen: urlopen.return_value.<strong>enter</strong>.return_value.read.return_value = archive_bytes code, stdout, stderr = cli_runner(&quot;fetch&quot;) assert code == 0</p>
+<p>with db_session() as db: row = db.rates.get(date=date, currency=currency) assert row is not None assert row.rate == rate === END AC fetch-loads-stubbed-archive ===</p>
+<p>=== AC fetch-download-failure ===<br>Intent: A failed download returns the operational failure status.<br>Suite: scoped</p>
+<p>from unittest.mock import patch from cli.testing import cli_runner</p>
+<p>with patch(&quot;cli.fetch.urlopen&quot;, side_effect=OSError): code, stdout, stderr = cli_runner(&quot;fetch&quot;) assert code == 1 === END AC fetch-download-failure ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Route archive contents through the same complete-file validation and load path as <code>fxrates load</code>.</li><li>Fetch tests must stub the download and must not open a network connection.</li></ul></article>
+</main>
+</body>
+</html>

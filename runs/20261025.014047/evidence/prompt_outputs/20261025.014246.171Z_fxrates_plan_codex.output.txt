@@ -1,0 +1,269 @@
+=== BEGIN ARTIFACT DATABASE.md ===
+# DATABASE: FxRates
+
+| Field | Value |
+|-------|-------|
+| Version | 20261025 V1 |
+| Description | Persistence schema and typed repository operations for ECB reference rates. |
+| Depends On | ARCHITECTURE.md |
+| Provides | rates.get, rates.list, rates.upsert, rates.delete |
+| Build Order | |
+
+## Questions
+
+- None.
+
+## Persistence Boundary
+
+| Boundary | Rule |
+|----------|------|
+| Raw storage access | Only the generated `persistence/` package reaches the store. |
+| Caller dependency | Features depend on declared access patterns and their DTOs, not on schemas. |
+| Implementation | Generated from this file at the DATABASE build step; application code does not write repository or driver code. |
+
+## Access Patterns
+
+### FEATURE-RATES-001 — Retrieve a rate
+
+| Field | Value |
+|-------|-------|
+| Owner | DATABASE.md |
+| Access | read |
+| Repository operation | `rates.get` |
+| Compatibility | unchanged |
+| Match | `date`, `currency` |
+
+Input: RateLookup
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+
+Output: Rate
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+| rate | str |
+
+### FEATURE-RATES-002 — List rates by optional date and currency filters
+
+| Field | Value |
+|-------|-------|
+| Owner | DATABASE.md |
+| Access | read |
+| Repository operation | `rates.list` |
+| Kind | list |
+| Match | `date >= start_date`, `date <= end_date`, `currency` |
+| Order | `date` asc, `currency` asc |
+| Compatibility | unchanged |
+
+Input: RateFilters
+
+| Field | Type |
+|-------|------|
+| start_date | str |
+| end_date | str |
+| currency | str |
+
+Output: Rate
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+| rate | str |
+
+### FEATURE-RATES-003 — Store or replace a rate
+
+| Field | Value |
+|-------|-------|
+| Owner | DATABASE.md |
+| Access | write |
+| Repository operation | `rates.upsert` |
+| Kind | upsert |
+| Match | `date`, `currency` |
+| Compatibility | unchanged |
+
+Input: RateWrite
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+| rate | str |
+
+Output: Rate
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+| rate | str |
+
+### FEATURE-RATES-004 — Delete a rate
+
+| Field | Value |
+|-------|-------|
+| Owner | DATABASE.md |
+| Access | write |
+| Repository operation | `rates.delete` |
+| Match | `date`, `currency` |
+| Compatibility | unchanged |
+
+Input: RateLookup
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+
+Output: Rate
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+
+## Schemas
+
+## `rates`
+
+| Field | Type | Notes |
+|-------|------|-------|
+| id | INTEGER PK | Surrogate primary key. |
+| date | TEXT NOT NULL | ECB publication date in `YYYY-MM-DD` form. |
+| currency | TEXT NOT NULL | Three-letter uppercase currency code. |
+| rate | TEXT NOT NULL | ECB-published rate text, stored without numeric conversion. |
+
+- UNIQUE (date, currency)
+
+## Migrations
+
+The generated schema is provisioned by the DATABASE build step. No migration records are required for this initial schema.
+
+| Access Pattern | Revision | State |
+|----------------|----------|-------|
+
+## Config (.env)
+
+| Key | Type | Required | Notes |
+|-----|------|----------|-------|
+| DATABASE_URL | str | No | Preferred database location; accepts a SQLite file path or `sqlite://` DSN. |
+| DATABASE_PATH | str | No | Used when `DATABASE_URL` is unset. |
+| Default database path | str | No | `data/app.db`, used when both environment variables are unset. |
+
+## File Stores
+
+| Store | Root dir | Notes |
+|-------|----------|-------|
+| — | — | No file store; ECB input files are read by CLI workflows. |
+
+## External Services
+
+| Service | Wrapper | Notes |
+|---------|---------|-------|
+| ECB archive download | CLI fetch integration | Fetch downloads the ECB history archive; tests stub the download and do not use the network. |
+
+## External Libraries
+
+| Library | Ownership | Distribution | Consumer Contract |
+|---------|-----------|--------------|-------------------|
+| Shipped persistence library | Database engine and generated relational layer | Supplied by Drydock | Application code calls `open_database` and declared `db.rates` operations; it does not open a database driver directly. |
+
+## Programmatic Acceptance
+
+=== AC rates-get-round-trip ===
+Intent: A rate can be retrieved by its publication date and currency after it is stored.
+
+from persistence.testing import db_session
+
+date = "2099-12-30"
+currency = "ZZZ"
+rate = "1.234500"
+
+with db_session() as db:
+    saved = db.rates.upsert(date=date, currency=currency, rate=rate)
+    assert saved.date == date
+    found = db.rates.get(date=date, currency=currency)
+    assert found is not None
+    assert found.date == date
+    assert found.currency == currency
+    assert found.rate == rate
+=== END AC rates-get-round-trip ===
+
+=== AC rates-list-filters ===
+Intent: The rates list returns stored rows in publication-date and currency order and supports its declared filters.
+
+from persistence.testing import db_session
+
+start_date = "2099-12-30"
+end_date = "2099-12-31"
+currency = "ZZZ"
+first_rate = "1.2"
+second_rate = "1.3"
+
+with db_session() as db:
+    db.rates.upsert(date=start_date, currency=currency, rate=first_rate)
+    db.rates.upsert(date=end_date, currency=currency, rate=second_rate)
+    rows = db.rates.list(start_date=start_date, end_date=end_date, currency=currency)
+    assert [(row.date, row.currency, row.rate) for row in rows] == [
+        (start_date, currency, first_rate),
+        (end_date, currency, second_rate),
+    ]
+    assert db.rates.list(start_date=end_date, end_date=end_date, currency=currency)[0].date == end_date
+=== END AC rates-list-filters ===
+
+=== AC rates-upsert-replaces ===
+Intent: Upserting a publication-date and currency pair replaces its stored rate text.
+
+from persistence.testing import db_session
+
+date = "2099-12-30"
+currency = "ZZZ"
+original_rate = "1.234"
+replacement_rate = "1.2350"
+
+with db_session() as db:
+    first = db.rates.upsert(date=date, currency=currency, rate=original_rate)
+    assert first.rate == original_rate
+    replaced = db.rates.upsert(date=date, currency=currency, rate=replacement_rate)
+    assert replaced.rate == replacement_rate
+    found = db.rates.get(date=date, currency=currency)
+    assert found is not None
+    assert found.rate == replacement_rate
+=== END AC rates-upsert-replaces ===
+
+=== AC rates-delete-round-trip ===
+Intent: A stored rate can be deleted and is then absent from the repository.
+
+from persistence.testing import db_session
+
+date = "2099-12-30"
+currency = "ZZZ"
+rate = "1.234"
+
+with db_session() as db:
+    db.rates.upsert(date=date, currency=currency, rate=rate)
+    removed = db.rates.delete(date=date, currency=currency)
+    assert removed is not None
+    assert removed.date == date
+    assert removed.currency == currency
+    assert db.rates.get(date=date, currency=currency) is None
+=== END AC rates-delete-round-trip ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Store each ECB rate exactly as published text; do not convert it to floating point.
+- Validate an entire input file before its first write. A rejected file must leave stored rates unchanged.
+- Replacing a stored `(date, currency)` rate is atomic and idempotent.
+- Application database access goes only through the shipped persistence library.
+- Resolve the store from `DATABASE_URL`, then `DATABASE_PATH`, then `data/app.db`.
+- Do not read `sources/run.sh` or supplied data files from application code.
+=== END ARTIFACT ===

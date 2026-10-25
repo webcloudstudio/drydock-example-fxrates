@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-API-CONVERT.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-API-CONVERT.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-API-CONVERT.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: API Currency Conversion</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261025 V1</td></tr><tr><td>Description</td><td>Converts amounts between currencies using effective ECB rates and exact decimal arithmetic.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md, DATABASE.md</td></tr><tr><td>Provides</td><td>GET /convert</td></tr><tr><td>Consumes</td><td>rates.get, rates.list</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Allow callers to convert an amount from one currency to another, using the latest publication date on or before the requested date. If no date is supplied, use the latest publication date.</p>
+<h2>Trigger and workflow</h2>
+<p><code>GET /convert</code> requires <code>from</code>, <code>to</code>, and <code>amount</code> query parameters; <code>date</code> is optional. EUR has an implicit rate of one. For other currencies, resolve rates from the selected publication date. Return 404 if either requested non-EUR currency has no rate on that date.</p>
+<p>Validate dates and amounts according to the API contract. Amounts must match <code>[0-9]+(\.[0-9]+)?</code>. Calculate with <code>decimal.Decimal</code>, using half-even rounding: return the conversion rate with six decimal places and the result with two decimal places. Calculate the result from the unrounded rate.</p>
+<p>The JSON response contains <code>date</code>, <code>from</code>, <code>to</code>, <code>amount</code>, <code>rate</code>, and <code>result</code>. Echo the amount as supplied.</p>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC convert-request-contract ===<br>Intent: The conversion endpoint accepts a valid request and echoes its supplied date, currencies, and amount.</p>
+<p>from app_server.testing import web_client from persistence.testing import db_session</p>
+<p>date = &quot;2099-12-30&quot; source_currency = &quot;ZZZ&quot; target_currency = &quot;YYY&quot; source_rate = &quot;2&quot; target_rate = &quot;5&quot; amount = &quot;12.50&quot;</p>
+<p>with db_session() as db: db.rates.upsert(date=date, currency=source_currency, rate=source_rate) db.rates.upsert(date=date, currency=target_currency, rate=target_rate)</p>
+<p>client = web_client() response = client.get( &quot;/convert&quot;, params={ &quot;from&quot;: source_currency, &quot;to&quot;: target_currency, &quot;amount&quot;: amount, &quot;date&quot;: date, }, ) assert response.status_code == 200 body = response.json() assert body[&quot;date&quot;] == date assert body[&quot;from&quot;] == source_currency assert body[&quot;to&quot;] == target_currency assert body[&quot;amount&quot;] == amount assert isinstance(body[&quot;rate&quot;], str) assert isinstance(body[&quot;result&quot;], str) === END AC convert-request-contract ===</p>
+<p>=== AC convert-rejects-invalid-requests ===<br>Intent: The conversion endpoint rejects missing or malformed required inputs and unknown currencies with the specified statuses.</p>
+<p>from app_server.testing import web_client</p>
+<p>client = web_client() assert client.get(&quot;/convert&quot;, params={&quot;from&quot;: &quot;EUR&quot;, &quot;to&quot;: &quot;EUR&quot;}).status_code == 422 assert client.get( &quot;/convert&quot;, params={&quot;from&quot;: &quot;EUR&quot;, &quot;to&quot;: &quot;EUR&quot;, &quot;amount&quot;: &quot;bad&quot;}, ).status_code == 422 assert client.get( &quot;/convert&quot;, params={&quot;from&quot;: &quot;EUR&quot;, &quot;to&quot;: &quot;ZZZ&quot;, &quot;amount&quot;: &quot;1&quot;}, ).status_code == 404 === END AC convert-rejects-invalid-requests ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Use <code>Decimal</code> for all rate and amount arithmetic; never use floating point.</li><li>Round half to even, formatting the rate to six decimal places and the result to two.</li><li>Compute the result from the exact rates, not from the rounded response rate.</li><li>Return 422 for malformed dates or amounts and missing required parameters; return 404 for unavailable currencies or dates.</li></ul></article>
+</main>
+</body>
+</html>

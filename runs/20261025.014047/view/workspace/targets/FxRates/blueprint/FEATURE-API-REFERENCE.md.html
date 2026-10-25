@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-API-REFERENCE.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-API-REFERENCE.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-API-REFERENCE.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: API Reference</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261025 V1</td></tr><tr><td>Description</td><td>Exposes the generated API schema for programmatic discovery.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md</td></tr><tr><td>Provides</td><td>GET /openapi.json</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Expose FastAPI&#x27;s OpenAPI document at <code>GET /openapi.json</code> as the discovery entry point for the programmatic API. Keep the schema generated from the application&#x27;s declared routes.</p>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC api-reference-discovery ===<br>Intent: The API discovery endpoint returns a schema that describes the provided API routes.</p>
+<p>from app_server.testing import web_client</p>
+<p>response = web_client().get(&quot;/openapi.json&quot;) assert response.status_code == 200 schema = response.json() assert isinstance(schema, dict) paths = schema[&quot;paths&quot;] assert &quot;/health&quot; in paths assert &quot;/stats&quot; in paths assert &quot;/currencies&quot; in paths assert &quot;/rates/{date}&quot; in paths assert &quot;/rates/latest&quot; in paths assert &quot;/convert&quot; in paths assert &quot;/history/{code}&quot; in paths === END AC api-reference-discovery ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Keep the discovery document generated from the API application so it reflects the routes the service actually exposes.</li></ul></article>
+</main>
+</body>
+</html>

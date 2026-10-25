@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/VERIFICATION.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/VERIFICATION.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/VERIFICATION.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Release Verification</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261025 V1</td></tr><tr><td>Description</td><td>Runs the supplied end-to-end grader as the terminal release verification.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md, DATABASE.md, FEATURE-CLI-INIT.md, FEATURE-CLI-LOAD.md, FEATURE-CLI-FETCH.md, FEATURE-API-HEALTH-STATS.md, FEATURE-API-CURRENCIES.md, FEATURE-API-RATES.md, FEATURE-API-CONVERT.md, FEATURE-API-HISTORY.md, FEATURE-API-REFERENCE.md, FEATURE-TEST-SUITE.md</td></tr></tbody></table></div>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC supplied-grader ===<br>Intent: The supplied end-to-end grader passes against the completed application.<br>Suite: full</p>
+<p>import subprocess</p>
+<p>result = subprocess.run( [&quot;sh&quot;, &quot;sources/run.sh&quot;], capture_output=True, text=True, ) print(result.stdout) print(result.stderr) assert result.returncode == 0 === END AC supplied-grader ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Treat <code>sources/run.sh</code> as a read-only authoritative grader; do not modify or substitute it.</li><li>Do not reproduce its known answers in hand-authored assertions.</li></ul></article>
+</main>
+</body>
+</html>
