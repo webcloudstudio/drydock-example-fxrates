@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/logs/20261025.203415.422Z_fxrates_build_codex.stderr.log</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/logs/20261025.203415.422Z_fxrates_build_codex.stderr.log</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../workspace/logs/20261025.203415.422Z_fxrates_build_codex.stderr.log">Raw file</a></div></header>
+<article class="doc"><pre>2026-10-25T20:34:59.733845Z ERROR codex_core::tools::router: error=exec_command failed: CreateProcess { message: &quot;Rejected(\&quot;`/bin/bash -lc &#x27;tmp=$(mktemp -d); DATABASE_URL=\\\&quot;$tmp/rates.db\\\&quot; python - &lt;&lt;&#x27;\\\&quot;&#x27;PY&#x27;\\nimport os\\nfrom persistence import open_database\\nfrom app_server.testing import web_client\\nwith open_database(os.environ[&#x27;DATABASE_URL&#x27;]) as db:\\n    db.rates.upsert(date=&#x27;2099-01-02&#x27;, currency=&#x27;XTS&#x27;, rate=&#x27;2&#x27;)\\n    db.rates.upsert(date=&#x27;2099-01-02&#x27;, currency=&#x27;XTU&#x27;, rate=&#x27;5&#x27;)\\nbody = web_client().get(&#x27;/convert&#x27;, params={&#x27;from&#x27;:&#x27;XTS&#x27;,&#x27;to&#x27;:&#x27;XTU&#x27;,&#x27;amount&#x27;:&#x27;2.00&#x27;,&#x27;date&#x27;:&#x27;2099-01-02&#x27;}).json()\\nprint(body)\\nassert body[&#x27;result&#x27;] == &#x27;5.00&#x27;\\nPY\\nrm -rf \\\\\\\&quot;\\\&quot;&#x27;$tmp\\\&quot;&#x27;` rejected: rm -f style commands are not permitted. Use a safer approach\&quot;)&quot; }
+</pre></article>
+</main>
+</body>
+</html>

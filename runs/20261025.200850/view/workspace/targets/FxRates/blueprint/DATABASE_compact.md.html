@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/DATABASE_compact.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/DATABASE_compact.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/DATABASE_compact.md">Raw file</a></div></header>
+<article class="doc"><p>&lt;!-- Compacted from DATABASE.md sha256=24a0053d7865e21871afcd03af9f4bf6f463aecd1ba0442128113a363ddbe2ed on 2026-10-25 by drydock build agent --&gt;</p>
+<h1>FxRates Persistence Contract</h1>
+<ul><li>Use the generated <code>persistence</code> package as the only database access boundary. Resolve the store from <code>DATABASE_URL</code>, then <code>DATABASE_PATH</code>, then <code>data/app.db</code>.</li><li><code>rates</code> stores <code>date</code>, <code>currency</code>, and published <code>rate</code> as text, with a surrogate integer <code>id</code> and a unique <code>(date, currency)</code> key.</li><li>Repository operations: <code>rates.upsert(date, currency, rate)</code>, <code>rates.get(date, currency)</code>, <code>rates.list(currency?, start_date?, end_date?)</code> ordered by date then currency ascending, and <code>rates.delete(date, currency)</code>.</li><li>Preserve rate text exactly. Do not access the database driver outside <code>persistence/</code> or create schema at application startup.</li></ul></article>
+</main>
+</body>
+</html>

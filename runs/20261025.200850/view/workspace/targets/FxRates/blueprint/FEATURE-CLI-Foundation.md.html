@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-CLI-Foundation.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-CLI-Foundation.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-CLI-Foundation.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: CLI Foundation</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261025 V1</td></tr><tr><td>Description</td><td>Establishes the root fxrates executable and its command-line dispatch package.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md</td></tr><tr><td>Provides</td><td>./fxrates entry point, CLI main(argv)</td></tr><tr><td>Consumes</td><td>—</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Provide the root <code>./fxrates</code> executable and the <code>cli</code> package entry point. <code>cli.main(argv: list[str] | None = None) -&gt; int</code> dispatches the planned <code>init</code>, <code>load</code>, <code>fetch</code>, and <code>serve</code> commands. It returns the command exit status. Usage errors return 2; operational errors return 1; rejected input files return 3. Diagnostics are written to standard error.</p>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC cli-entrypoint ===<br>Intent: The published CLI entry point is callable and returns a usage error for an unknown command.</p>
+<p>from cli import main</p>
+<p>assert callable(main) assert main([&quot;frobnicate&quot;]) == 2 === END AC cli-entrypoint ===</p>
+<p>=== AC cli-runner ===<br>Intent: The published CLI runner returns an exit code and captured output streams for a usage error.</p>
+<p>from cli.testing import cli_runner</p>
+<p>result = cli_runner(&quot;load&quot;) assert isinstance(result, tuple) assert len(result) == 3 assert result[0] == 2 === END AC cli-runner ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Provide an executable named <code>fxrates</code> at the application root.</li><li>Keep diagnostics on standard error.</li><li>Use the published <code>cli.main(argv)</code> and <code>cli.testing.cli_runner</code> interfaces.</li></ul></article>
+</main>
+</body>
+</html>

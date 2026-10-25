@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>build/FxRates/docs/architecture.md</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>build/FxRates/docs/architecture.md</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../build/FxRates/docs/architecture.md">Raw file</a></div></header>
+<article class="doc"><h1>FxRates application boundaries</h1>
+<p>FxRates is a Python 3.11+ command-line and HTTP service. The root <code>fxrates</code> executable delegates command handling to <code>cli</code>; the <code>app_server</code> package owns the FastAPI application and uvicorn entry point.</p>
+<h2>Module ownership</h2>
+<ul><li><strong>Configuration:</strong> one application configuration module resolves</li></ul>
+<p><code>DATABASE_URL</code>, then <code>DATABASE_PATH</code>, then <code>data/app.db</code>.</p>
+<ul><li><strong>Persistence:</strong> the generated <code>persistence</code> package is the only code allowed</li></ul>
+<p>to open a database driver. It provides the rates repository operations.</p>
+<ul><li><strong>CLI:</strong> <code>cli</code> parses commands and arguments, returns exit codes, and writes</li></ul>
+<p>command output. The root <code>fxrates</code> file is only the executable launcher.</p>
+<ul><li><strong>HTTP service:</strong> <code>app_server</code> creates the FastAPI application and exposes</li></ul>
+<p>JSON routes through uvicorn.</p>
+<ul><li><strong>ECB integration:</strong> the CLI fetch workflow downloads and extracts the ECB</li></ul>
+<p>archive. Tests can replace its downloader with a stub.</p>
+<p>CLI workflows and HTTP routes call application behavior and its declared repository operations; neither accesses database connections directly.</p></article>
+</main>
+</body>
+</html>

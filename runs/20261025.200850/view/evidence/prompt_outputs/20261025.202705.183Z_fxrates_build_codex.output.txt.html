@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/prompt_outputs/20261025.202705.183Z_fxrates_build_codex.output.txt</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/prompt_outputs/20261025.202705.183Z_fxrates_build_codex.output.txt</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/prompt_outputs/20261025.202705.183Z_fxrates_build_codex.output.txt">Raw file</a></div></header>
+<article class="doc"><pre>AC_BROKEN: conversion-route
+
+RESULT: SUCCESS
+
+FILES CHANGED:
+- cli/commands.py
+
+SUMMARY:
+`init` now clears rates through declared repository operations when a managed transaction prevents DDL; fresh stores still use table initialization. `sh bin/test.sh` passed: 13 tests.
+
+Reproduced `conversion-route`: the stored rates and amount produce rate `5 / 2 = 2.500000` and result `5.00`, while the AC expects `10.00`. That expectation contradicts the specification’s `rate(to) / rate(from)` rule.
+
+BLOCKERS:
+- `conversion-route` has a contradictory expected result: with the AC’s inputs, exact conversion yields `5.00`, not `10.00`.</pre></article>
+</main>
+</body>
+</html>

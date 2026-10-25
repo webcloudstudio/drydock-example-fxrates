@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>build/FxRates/cli/fetch.py</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>build/FxRates/cli/fetch.py</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../build/FxRates/cli/fetch.py">Raw file</a></div></header>
+<article class="doc"><pre>&quot;&quot;&quot;ECB archive downloader, replaceable in tests.&quot;&quot;&quot;
+from urllib.request import urlopen
+
+URL = &quot;https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist.zip&quot;
+
+def download_archive() -&gt; bytes:
+    with urlopen(URL, timeout=30) as response:
+        return response.read()
+</pre></article>
+</main>
+</body>
+</html>

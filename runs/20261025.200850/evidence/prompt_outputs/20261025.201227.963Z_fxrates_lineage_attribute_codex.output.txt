@@ -1,0 +1,13 @@
+<unattached story="architecture-foundation"/>
+<unattached story="database-foundation"/>
+<unattached story="api-foundation"/>
+<unattached story="cli-foundation"/>
+<unattached story="ecb-001"/>
+<unattached story="ecb-002"/>
+<unattached story="api-001"/>
+<unattached story="api-002"/>
+<unattached story="api-003"/>
+<unattached story="api-004"/>
+<unattached story="ecb-003"/>
+<unattached story="del-001"/>
+<unattached story="del-002"/>

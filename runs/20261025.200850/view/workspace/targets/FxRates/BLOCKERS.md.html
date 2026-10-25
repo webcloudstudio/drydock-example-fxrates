@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/BLOCKERS.md</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/BLOCKERS.md</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../workspace/targets/FxRates/BLOCKERS.md">Raw file</a></div></header>
+<article class="doc"><h1>Blockers: Uat Stage</h1>
+<ul><li>target: FxRates</li><li>source: drydock uat FxRates</li><li>declared: 2026-10-25T16:36:57-04:00</li></ul>
+<p>&lt;!-- drydock-state: {&quot;owner&quot;: &quot;uat FxRates&quot;, &quot;execution&quot;: &quot;&quot;, &quot;attempts&quot;: 1} --&gt;</p>
+<h2>blocker-001: initial-build-1</h2>
+<ul><li>kind: environmental</li><li>class: uat stage</li><li>auto-continue: no</li></ul>
+<h3>Error</h3>
+<p>drydock build FxRates exited 1.</p>
+<p>stderr: error: build failed for FxRates: 9 step(s) ecb-001 — closed/failed: programmatic acceptance failed: conversion-route</p>
+<p>Evidence: stderr: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261025.200850/evidence/commands/10-initial-build-1.stderr.log stdout: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261025.200850/evidence/commands/10-initial-build-1.stdout.log</p>
+<h3>Why blocked</h3>
+<p>The build did not complete. UAT stopped before acceptance tests and scoring because the application is unfinished. Resolve the build error above before rerunning UAT.</p></article>
+</main>
+</body>
+</html>

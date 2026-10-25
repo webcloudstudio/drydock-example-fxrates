@@ -1,0 +1,29 @@
+drydock build refused: FxRates is blocked.
+
+╭─ BLOCKED: FxRates  ·  2026-10-25T16:36:57-04:00 ─────────────────────────────────────────────────────────────────────────╮
+│ Uat Stage                                                                                                                │
+│                                                                                                                          │
+│ initial-build-1                                                                                                          │
+│                                                                                                                          │
+│ Error                                                                                                                    │
+│   drydock build FxRates exited 1.                                                                                        │
+│                                                                                                                          │
+│   stderr:                                                                                                                │
+│   error: build failed for FxRates: 9 step(s)                                                                             │
+│     ecb-001 — closed/failed: programmatic acceptance failed: conversion-route                                            │
+│                                                                                                                          │
+│   Evidence:                                                                                                              │
+│     stderr:                                                                                                              │
+│     /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261025.200850/evidence/commands/10-initial-build-1.stderr.log │
+│     stdout:                                                                                                              │
+│     /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261025.200850/evidence/commands/10-initial-build-1.stdout.log │
+│                                                                                                                          │
+│ Why blocked                                                                                                              │
+│   The build did not complete. UAT stopped before acceptance tests and scoring because the application is unfinished.     │
+│   Resolve the build error above before rerunning UAT.                                                                    │
+│                                                                                                                          │
+│ Rerun after resolving the error: drydock uat FxRates                                                                     │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+Blocker details: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261025.200850/workspace/targets/FxRates/BLOCKERS.md
+Resolve the reported error, then rerun the command shown above.

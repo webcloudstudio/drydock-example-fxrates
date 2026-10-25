@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/evidence/block-2.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/evidence/block-2.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/evidence/block-2.md">Raw file</a></div></header>
+<article class="doc"><h1>Evidence: Block 2 · Foundational (block-2)</h1>
+<ul><li>block type: block</li><li>date: 2026-10-25</li><li>resulting state: closed/verified</li><li>story points (combined assembled cost): 12965</li><li>execution id: 20261025.201524.594Z-8d911462</li></ul>
+<h2>Stories built</h2>
+<ul><li>Declare the rates store and its repository operations. (database-foundation) [story]</li><li>Establish the FastAPI application and local server entry point. (api-foundation) [story]</li><li>Establish the fxrates command-line entry point. (cli-foundation) [story]</li></ul>
+<h2>Reusable compacts</h2>
+<ul><li>DATABASE_compact.md</li><li>ARCHITECTURE_compact.md</li></ul>
+<h2>Missing context</h2>
+<ul><li>context: INSTRUCTIONS.md</li></ul>
+<h2>Stacked context</h2>
+<ul><li>stack: python_compact.md (SP 601)</li><li>compass: COMPASS.md (SP 752)</li><li>implements: DATABASE.md (SP 1455)</li><li>stack: persistence.md (SP 4001)</li><li>stack: sqlite.md (SP 2195)</li><li>implements: FEATURE-API-Foundation.md (SP 484)</li><li>context: ARCHITECTURE.md (SP 732)</li><li>context: DATABASE.md (SP 1455)</li><li>stack: fastapi.md (SP 497)</li><li>implements: FEATURE-CLI-Foundation.md (SP 367)</li><li>stack: cli.md (SP 1755)</li></ul>
+<h2>Build directory changes</h2>
+<ul><li>app_server/main.py</li><li>app_server/testing.py</li><li>bin/run.ps1</li><li>bin/run.sh</li><li>cli/<strong>main</strong>.py</li><li>cli/commands.py</li><li>cli/main.py</li><li>cli/parser.py</li><li>cli/testing.py</li><li>pyproject.toml</li><li>tests/test_foundations.py</li><li>uv.lock</li></ul>
+<h2>Pre-build acceptance observation</h2>
+<ul><li>RED: rate-upsert-round-trip (DATABASE.md)</li></ul>
+<p>intent: An upsert stores the supplied published rate text and a separate get reads it back. error: foundation not built: <code>persistence</code> is the package the database foundation (postgres.md, sqlite.md) builds, and the build directory has no <code>persistence/</code>. The criterion exercises the built application, so it was not run.</p>
+<ul><li>RED: rate-list-filters-and-order (DATABASE.md)</li></ul>
+<p>intent: The list operation returns supplied rows in ascending date and currency order and applies its declared filters. error: foundation not built: <code>persistence</code> is the package the database foundation (postgres.md, sqlite.md) builds, and the build directory has no <code>persistence/</code>. The criterion exercises the built application, so it was not run.</p>
+<ul><li>RED: rate-delete-round-trip (DATABASE.md)</li></ul>
+<p>intent: Deleting a rate removes the supplied date and currency record. error: foundation not built: <code>persistence</code> is the package the database foundation (postgres.md, sqlite.md) builds, and the build directory has no <code>persistence/</code>. The criterion exercises the built application, so it was not run.</p>
+<ul><li>RED: api-factory (FEATURE-API-Foundation.md)</li></ul>
+<p>intent: The application factory returns a FastAPI application and the module exposes its application instance. return code: 1 stderr: Traceback (most recent call last): File &quot;api-factory.py&quot;, line 2, in &lt;module&gt; from app_server.main import app, create_app<br>ModuleNotFoundError: No module named &#x27;app_server.main&#x27;</p>
+<ul><li>RED: api-test-client (FEATURE-API-Foundation.md)</li></ul>
+<p>intent: The published web client constructs a client for the application factory. return code: 1 stderr: /mnt/c/Users/barlo/projects/drydock/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using <code>httpx</code> with <code>starlette.testclient</code> is deprecated; install <code>httpx2</code> instead. from starlette.testclient import TestClient as TestClient  # noqa Traceback (most recent call last): File &quot;api-test-client.py&quot;, line 2, in &lt;module&gt; from app_server.testing import web_client<br>ModuleNotFoundError: No module named &#x27;app_server.testing&#x27;</p>
+<ul><li>RED: cli-entrypoint (FEATURE-CLI-Foundation.md)</li></ul>
+<p>intent: The published CLI entry point is callable and returns a usage error for an unknown command. return code: 1 stderr: Traceback (most recent call last): File &quot;cli-entrypoint.py&quot;, line 4, in &lt;module&gt; assert main([&quot;frobnicate&quot;]) == 2 ^^^^^^^^^^^^^^^^^^^^^^^^^ AssertionError</p>
+<ul><li>RED: cli-runner (FEATURE-CLI-Foundation.md)</li></ul>
+<p>intent: The published CLI runner returns an exit code and captured output streams for a usage error. return code: 1 stderr: Traceback (most recent call last): File &quot;cli-runner.py&quot;, line 1, in &lt;module&gt; from cli.testing import cli_runner<br>ModuleNotFoundError: No module named &#x27;cli.testing&#x27;</p>
+<h2>Post-build programmatic acceptance</h2>
+<ul><li>PASS: rate-upsert-round-trip (DATABASE.md)</li></ul>
+<p>intent: An upsert stores the supplied published rate text and a separate get reads it back. target interpreter: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261025.200850/build/FxRates/.venv/bin/python provisioning: not required return code: 0</p>
+<ul><li>PASS: rate-list-filters-and-order (DATABASE.md)</li></ul>
+<p>intent: The list operation returns supplied rows in ascending date and currency order and applies its declared filters. target interpreter: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261025.200850/build/FxRates/.venv/bin/python provisioning: not required return code: 0</p>
+<ul><li>PASS: rate-delete-round-trip (DATABASE.md)</li></ul>
+<p>intent: Deleting a rate removes the supplied date and currency record. target interpreter: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261025.200850/build/FxRates/.venv/bin/python provisioning: not required return code: 0</p>
+<ul><li>PASS: api-factory (FEATURE-API-Foundation.md)</li></ul>
+<p>intent: The application factory returns a FastAPI application and the module exposes its application instance. target interpreter: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261025.200850/build/FxRates/.venv/bin/python provisioning: not required return code: 0</p>
+<ul><li>PASS: api-test-client (FEATURE-API-Foundation.md)</li></ul>
+<p>intent: The published web client constructs a client for the application factory. target interpreter: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261025.200850/build/FxRates/.venv/bin/python provisioning: not required return code: 0 stderr: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261025.200850/build/FxRates/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using <code>httpx</code> with <code>starlette.testclient</code> is deprecated; install <code>httpx2</code> instead. from starlette.testclient import TestClient as TestClient  # noqa</p>
+<ul><li>PASS: cli-entrypoint (FEATURE-CLI-Foundation.md)</li></ul>
+<p>intent: The published CLI entry point is callable and returns a usage error for an unknown command. target interpreter: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261025.200850/build/FxRates/.venv/bin/python provisioning: not required return code: 0 stderr: usage: fxrates [-h] {init,load,fetch,serve} ... fxrates: error: argument command: invalid choice: &#x27;frobnicate&#x27; (choose from init, load, fetch, serve)</p>
+<ul><li>PASS: cli-runner (FEATURE-CLI-Foundation.md)</li></ul>
+<p>intent: The published CLI runner returns an exit code and captured output streams for a usage error. target interpreter: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261025.200850/build/FxRates/.venv/bin/python provisioning: not required return code: 0</p>
+<h2>Build summary</h2>
+<p>&lt;reusable-compact filename=&quot;DATABASE.md&quot;&gt;</p>
+<h1>FxRates Persistence Contract</h1>
+<ul><li>Use the generated <code>persistence</code> package as the only database access boundary. Resolve the store from <code>DATABASE_URL</code>, then <code>DATABASE_PATH</code>, then <code>data/app.db</code>.</li><li><code>rates</code> stores <code>date</code>, <code>currency</code>, and published <code>rate</code> as text, with a surrogate integer <code>id</code> and a unique <code>(date, currency)</code> key.</li><li>Repository operations: <code>rates.upsert(date, currency, rate)</code>, <code>rates.get(date, currency)</code>, <code>rates.list(currency?, start_date?, end_date?)</code> ordered by date then currency ascending, and <code>rates.delete(date, currency)</code>.</li><li>Preserve rate text exactly. Do not access the database driver outside <code>persistence/</code> or create schema at application startup.</li></ul>
+<p>&lt;/reusable-compact&gt;</p>
+<p>&lt;reusable-compact filename=&quot;ARCHITECTURE.md&quot;&gt;</p>
+<h1>FxRates Architecture Contract</h1>
+<ul><li>Python 3.11+ application with a root <code>./fxrates</code> executable, <code>cli</code> package, and <code>app_server</code> FastAPI package.</li><li><code>app_server.main</code> provides <code>create_app() -&gt; FastAPI</code> and module-level <code>app</code>; serve locally on <code>127.0.0.1</code> with uvicorn and support clean SIGTERM shutdown.</li><li>Application code uses the generated <code>persistence</code> boundary and configured database location. Preserve rates as published text and use decimal arithmetic for calculations.</li><li>Do not read <code>sources/run.sh</code> or supplied data files from application code. Validate a complete input file before its first write.</li></ul>
+<p>&lt;/reusable-compact&gt;</p>
+<p>RESULT: SUCCESS</p>
+<p>FILES CHANGED:</p>
+<ul><li>app_server/main.py</li><li>app_server/testing.py</li><li>bin/run.ps1</li><li>bin/run.sh</li><li>cli/<strong>main</strong>.py</li><li>cli/commands.py</li><li>cli/main.py</li><li>cli/parser.py</li><li>cli/testing.py</li><li>pyproject.toml</li><li>tests/test_foundations.py</li><li>uv.lock</li></ul>
+<p>SUMMARY: Implemented the FastAPI factory and test client, CLI dispatch and in-process runner, root command launch support, and declared FastAPI/uvicorn/httpx dependencies. The existing generated persistence outputs were already present and left unchanged. <code>sh bin/test.sh</code> passed (10 tests); the declared foundation acceptance assertions passed.</p>
+<p>BLOCKERS:</p>
+<ul><li>None</li></ul></article>
+</main>
+</body>
+</html>

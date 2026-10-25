@@ -1,0 +1,384 @@
+=== BEGIN ARTIFACT ARCHITECTURE.md ===
+# ARCHITECTURE: FxRates
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261025 V1 |
+| Description | Defines the Python application structure and module ownership for FxRates. |
+
+## Questions
+
+- None.
+
+## System Structure
+
+The application is a Python 3.11 or newer command-line and HTTP service. The root `fxrates` executable dispatches commands through the `cli` package. The `app_server` package owns the FastAPI application and uvicorn entry point. Application code uses the generated `persistence` package for all database access.
+
+## Module Ownership
+
+| Boundary | Owner | Responsibility |
+|----------|-------|----------------|
+| Configuration | Application configuration module | Resolve `DATABASE_URL`, then `DATABASE_PATH`, then `data/app.db`. |
+| Persistence | Generated `persistence` package | Open the configured SQLite database and expose declared rates repository operations. |
+| CLI | `cli` package and root `fxrates` executable | Parse commands and arguments, return the specified exit codes, and write command output. |
+| HTTP service | `app_server` package | Create the FastAPI app and expose JSON API routes through uvicorn. |
+| ECB integration | CLI fetch workflow | Download and extract the ECB archive; tests replace the downloader with a stub. |
+
+Only the generated persistence package may access a database driver. CLI workflows and HTTP routes call application behavior that uses its declared repository operations; they do not open database connections directly.
+
+## Technology Stack
+
+| Technology | Application |
+|------------|-------------|
+| Python 3.11 or newer | Application code and pytest suite. |
+| FastAPI | JSON HTTP API and application factory. |
+| SQLite | Rates store, accessed through the generated persistence package. |
+| CLI | Root `fxrates` executable and its command package. |
+| pytest | Automated project test suite. |
+| ECB reference rates | Published history CSV contained in the ECB archive. |
+| POSIX shell | `bin/test.sh` and the supplied grader. |
+
+## Programmatic Acceptance
+
+=== AC python-structure ===
+Intent: The application exposes its CLI and HTTP foundation packages.
+
+import importlib.util
+
+assert importlib.util.find_spec("cli") is not None
+assert importlib.util.find_spec("app_server") is not None
+=== END AC python-structure ===
+
+=== AC root-entrypoint ===
+Intent: The application root contains the declared executable entry point.
+
+from pathlib import Path
+
+entrypoint = Path("fxrates")
+assert entrypoint.is_file()
+=== END AC root-entrypoint ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Keep database access inside the generated persistence package.
+- Resolve the database location from `DATABASE_URL`, then `DATABASE_PATH`, then `data/app.db`.
+- Store ECB rates as published text and use decimal arithmetic for calculations.
+- Do not read `sources/run.sh` or supplied data files from application code.
+- Validate a complete input file before its first write.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-CLI-Foundation.md ===
+# FEATURE: CLI Foundation
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261025 V1 |
+| Description | Establishes the root fxrates executable and its command-line dispatch package. |
+| Depends On  | ARCHITECTURE.md |
+| Provides    | ./fxrates entry point, CLI main(argv) |
+| Consumes    | — |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Provide the root `./fxrates` executable and the `cli` package entry point. `cli.main(argv: list[str] | None = None) -> int` dispatches the planned `init`, `load`, `fetch`, and `serve` commands. It returns the command exit status. Usage errors return 2; operational errors return 1; rejected input files return 3. Diagnostics are written to standard error.
+
+## Programmatic Acceptance
+
+=== AC cli-entrypoint ===
+Intent: The published CLI entry point is callable and returns a usage error for an unknown command.
+
+from cli import main
+
+assert callable(main)
+assert main(["frobnicate"]) == 2
+=== END AC cli-entrypoint ===
+
+=== AC cli-runner ===
+Intent: The published CLI runner returns an exit code and captured output streams for a usage error.
+
+from cli.testing import cli_runner
+
+result = cli_runner("load")
+assert isinstance(result, tuple)
+assert len(result) == 3
+assert result[0] == 2
+=== END AC cli-runner ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Provide an executable named `fxrates` at the application root.
+- Keep diagnostics on standard error.
+- Use the published `cli.main(argv)` and `cli.testing.cli_runner` interfaces.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-API-Foundation.md ===
+# FEATURE: API Foundation
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261025 V1 |
+| Description | Establishes the FastAPI application factory and local uvicorn entry point. |
+| Depends On  | ARCHITECTURE.md, DATABASE.md |
+| Provides    | FastAPI application factory, uvicorn server entry point |
+| Consumes    | rates repository operations |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Create `app_server.main.create_app() -> FastAPI` and expose the module-level `app` for `uvicorn app_server.main:app`. The service binds to `127.0.0.1`; the CLI `serve` command starts uvicorn in the foreground and supports clean termination by SIGTERM. Application code uses the generated persistence package and the configured database location.
+
+## Configuration
+
+Resolve the database location from `DATABASE_URL`, then `DATABASE_PATH`, then `data/app.db`. Do not open a database driver outside the generated persistence package.
+
+## Programmatic Acceptance
+
+Requires: python-package=httpx; scope=test
+
+=== AC api-factory ===
+Intent: The application factory returns a FastAPI application and the module exposes its application instance.
+
+from fastapi import FastAPI
+from app_server.main import app, create_app
+
+created = create_app()
+assert isinstance(created, FastAPI)
+assert isinstance(app, FastAPI)
+=== END AC api-factory ===
+
+Requires: python-package=httpx; scope=test
+
+=== AC api-test-client ===
+Intent: The published web client constructs a client for the application factory.
+
+from fastapi.testclient import TestClient
+from app_server.testing import web_client
+
+client = web_client()
+assert isinstance(client, TestClient)
+response = client.get("/health")
+assert response.status_code in (200, 404)
+=== END AC api-test-client ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Bind the HTTP service to `127.0.0.1`.
+- Use FastAPI served by uvicorn.
+- Keep database access inside the generated persistence package.
+- Support clean shutdown on SIGTERM.
+=== END ARTIFACT===
+=== BEGIN ARTIFACT FEATURE-Store-Initialization.md ===
+# FEATURE: Store Initialization
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261025 V1 |
+| Description | Defines initialization of an empty rates store through the fxrates command. |
+| Depends On  | DATABASE.md, FEATURE-CLI-Foundation.md |
+| Provides    | fxrates init |
+| Consumes    | rates repository operations |
+
+## Questions
+
+- None.
+
+## Purpose
+
+`fxrates init` drops the `rates` table if present and creates it empty. It uses the configured database location and exits with status 0 on success. The command writes nothing to standard output on success.
+
+## Workflow
+
+1. Resolve the database location from `DATABASE_URL`, then `DATABASE_PATH`, then `data/app.db`.
+2. Drop and recreate the rates table.
+3. Return success.
+
+## Programmatic Acceptance
+
+=== AC init-clears-rates ===
+Intent: Initialization succeeds and a separate repository read finds no rates afterward.
+
+from cli.testing import cli_runner
+from persistence.testing import db_session
+
+code, stdout, stderr = cli_runner("init")
+assert code == 0
+
+with db_session() as db:
+    rows = db.rates.list()
+assert rows == []
+=== END AC init-clears-rates ===
+
+=== AC init-repeat ===
+Intent: Repeating initialization succeeds and leaves the rates repository empty.
+
+from cli.testing import cli_runner
+from persistence.testing import db_session
+
+first = cli_runner("init")
+second = cli_runner("init")
+assert first[0] == 0
+assert second[0] == 0
+
+with db_session() as db:
+    rows = db.rates.list()
+assert rows == []
+=== END AC init-repeat ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Initialization drops and recreates the rates table.
+- Use the configured database location.
+- Route database access through the generated persistence package.
+=== END ARTIFACT===
+=== BEGIN ARTIFACT FEATURE-ECB-Loading.md ===
+# FEATURE: ECB Loading
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261025 V1 |
+| Description | Validates and atomically loads ECB history CSV files into the rates store. |
+| Depends On  | DATABASE.md, FEATURE-CLI-Foundation.md, FEATURE-Store-Initialization.md |
+| Provides    | fxrates load |
+| Consumes    | rates repository operations |
+
+## Questions
+
+- None.
+
+## Purpose
+
+`fxrates load <csv>` reads an ECB history CSV, validates the complete file before writing, then stores each non-`N/A` published rate as text. A rate for an existing `(date, currency)` replaces the stored rate. Loading the same file again leaves the stored rates unchanged.
+
+The header begins with `Date`, followed by three-letter uppercase currency codes. ECB files may have a trailing empty field on each line; ignore that field. Each data row has a real `YYYY-MM-DD` date, unique within the file, and one value per currency. Values are `N/A` or nonzero numbers matching `[0-9]+(\.[0-9]+)?`.
+
+On success, stdout contains CSV with a `dates,rates` header and counts for dates with at least one stored rate and rates stored from the file. A rejected file returns 3 and changes nothing. A file read failure returns 1. Failed commands write no stdout and emit one diagnostic line to stderr.
+
+## Programmatic Acceptance
+
+=== AC load-published-text ===
+Intent: Loading the staged January history stores every non-N/A rate with its published text and reports counts derived from that fixture.
+
+import csv
+import io
+from cli.testing import cli_runner
+from persistence.testing import db_session
+
+fixture = "sources/eurofxref-hist_2025-01.csv"
+expected = []
+with open(fixture, newline="") as source_file:
+    reader = csv.reader(source_file)
+    header = next(reader)
+    currencies = [value for value in header[1:] if value]
+    for row in reader:
+        fields = row[:-1] if row and row[-1] == "" else row
+        day = fields[0]
+        for currency, published_rate in zip(currencies, fields[1:]):
+            if published_rate != "N/A":
+                expected.append((day, currency, published_rate))
+
+code, stdout, stderr = cli_runner("load", fixture)
+assert code == 0
+output_rows = list(csv.reader(io.StringIO(stdout)))
+assert output_rows[0] == ["dates", "rates"]
+assert output_rows[1] == [str(len({row[0] for row in expected})), str(len(expected))]
+
+with db_session() as db:
+    actual_rows = db.rates.list()
+actual = [(row.date, row.currency, row.rate) for row in actual_rows]
+assert actual == sorted(expected)
+
+=== END AC load-published-text ===
+
+=== AC load-rejects-atomically ===
+Intent: A rejected file preserves existing rows and does not partially store its valid first row.
+
+from cli.testing import cli_runner
+from persistence.testing import db_session
+
+sentinel = "7.6500"
+first_date = "2025-02-04"
+second_date = "2025-02-03"
+
+with db_session() as db:
+    db.rates.upsert(date=first_date, currency="USD", rate=sentinel)
+    before_second = db.rates.get(date=second_date, currency="USD")
+
+code, stdout, stderr = cli_runner("load", "sources/eurofxref-hist_bad.csv")
+assert code == 3
+
+with db_session() as db:
+    first_after = db.rates.get(date=first_date, currency="USD")
+    second_after = db.rates.get(date=second_date, currency="USD")
+
+assert first_after is not None
+assert first_after.rate == sentinel
+assert second_after == before_second
+=== END AC load-rejects-atomically ===
+
+=== AC load-replacement-is-idempotent ===
+Intent: Loading the same valid fixture twice replaces matching rates without changing the stored values.
+
+import csv
+from cli.testing import cli_runner
+from persistence.testing import db_session
+
+fixture = "sources/eurofxref-hist_2025-02-03_04.csv"
+expected = []
+with open(fixture, newline="") as source_file:
+    reader = csv.reader(source_file)
+    header = next(reader)
+    currencies = [value for value in header[1:] if value]
+    for row in reader:
+        fields = row[:-1] if row and row[-1] == "" else row
+        for currency, published_rate in zip(currencies, fields[1:]):
+            if published_rate != "N/A":
+                expected.append((fields[0], currency, published_rate))
+
+first_code, _, _ = cli_runner("load", fixture)
+with db_session() as db:
+    after_first = db.rates.list()
+second_code, _, _ = cli_runner("load", fixture)
+with db_session() as db:
+    after_second = db.rates.list()
+
+assert first_code == 0
+assert second_code == 0
+first_values = [(row.date, row.currency, row.rate) for row in after_first if row.date in {item[0] for item in expected}]
+second_values = [(row.date, row.currency, row.rate) for row in after_second if row.date in {item[0] for item in expected}]
+assert first_values == sorted(expected)
+assert second_values == first_values
+=== END AC load-replacement-is-idempotent ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Validate the entire file before the first database write.
+- Store every non-`N/A` rate exactly as published text; never convert it to floating point.
+- Replace an existing rate for the same date and currency.
+- Do not modify any file under `sources/`.
+- Keep database access inside the generated persistence package.
+=== END ARTIFACT

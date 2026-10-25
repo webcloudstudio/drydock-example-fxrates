@@ -1,0 +1,1 @@
+{"command": "drydock init FxRates", "time": "2026-10-25 20:14", "target": "FxRates", "return_code": 0, "argv": ["init", "FxRates"], "stamp": "20261025.201435.698Z", "transcript": "logs/20261025.201435.698Z_fxrates_init.log", "elapsed_ms": 2374}

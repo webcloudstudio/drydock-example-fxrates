@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-Effective-Rates.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-Effective-Rates.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-Effective-Rates.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Effective Rates</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261025 V1</td></tr><tr><td>Description</td><td>Retrieves published rates for a requested date or the latest available publication.</td></tr><tr><td>Depends On</td><td>FEATURE-API-Foundation.md, DATABASE.md</td></tr><tr><td>Provides</td><td>GET /rates/{date}, GET /rates/latest</td></tr><tr><td>Consumes</td><td>rates repository operations</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Return the rates for the latest publication date on or before a requested calendar date, or the latest publication for the dedicated latest route.</p>
+<h2>Routes</h2>
+<ul><li><code>GET /rates/{date}</code> accepts a real <code>YYYY-MM-DD</code> date. It returns the effective publication date, echoes the requested date, base <code>EUR</code>, and all rates on that publication date.</li><li><code>GET /rates/latest</code> returns the latest publication with <code>&quot;requested&quot;: &quot;latest&quot;</code>.</li><li>A date before the first publication returns 404. A malformed date returns 422.</li></ul>
+<h2>Database Interface</h2>
+<ul><li><code>FEATURE-RATE-003</code> — read: list stored rates - supplies: <code>currency</code>, <code>start_date</code>, <code>end_date</code> - returns: <code>date</code>, <code>currency</code>, <code>rate</code></li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC effective-date-rates ===<br>Intent: Both rate routes resolve an effective date and preserve the supplied published rate text.</p>
+<p>from app_server.testing import web_client from persistence.testing import db_session</p>
+<p>earlier_day = &quot;2099-01-02&quot; later_day = &quot;2099-01-05&quot; requested_day = &quot;2099-01-06&quot; currency = &quot;XTS&quot; earlier_rate = &quot;1.2300&quot; later_rate = &quot;1.240&quot; with db_session() as db: db.rates.upsert(date=earlier_day, currency=currency, rate=earlier_rate) db.rates.upsert(date=later_day, currency=currency, rate=later_rate)</p>
+<p>client = web_client() response = client.get(&quot;/rates/&quot; + requested_day) latest = client.get(&quot;/rates/latest&quot;) assert response.status_code == 200 assert response.json() == { &quot;date&quot;: later_day, &quot;requested&quot;: requested_day, &quot;base&quot;: &quot;EUR&quot;, &quot;rates&quot;: {currency: later_rate}, } assert latest.status_code == 200 assert latest.json()[&quot;date&quot;] == later_day assert latest.json()[&quot;requested&quot;] == &quot;latest&quot; assert latest.json()[&quot;rates&quot;][currency] == later_rate === END AC effective-date-rates ===</p>
+<p>=== AC effective-date-errors ===<br>Intent: Requests before available history return 404 and malformed calendar dates return 422.</p>
+<p>from app_server.testing import web_client from persistence.testing import db_session</p>
+<p>day = &quot;2099-01-02&quot; with db_session() as db: db.rates.upsert(date=day, currency=&quot;XTS&quot;, rate=&quot;1.2&quot;)</p>
+<p>client = web_client() assert client.get(&quot;/rates/2098-01-01&quot;).status_code == 404 assert client.get(&quot;/rates/2099-13-01&quot;).status_code == 422 === END AC effective-date-errors ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Effective-date selection is inclusive: use the latest publication on or before the request.</li><li>Return all currencies available on the effective publication date.</li><li>Preserve published rate text in JSON strings; do not convert rates to floating point.</li></ul></article>
+</main>
+</body>
+</html>

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-Store-Initialization.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-Store-Initialization.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-Store-Initialization.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Store Initialization</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261025 V1</td></tr><tr><td>Description</td><td>Defines initialization of an empty rates store through the fxrates command.</td></tr><tr><td>Depends On</td><td>DATABASE.md, FEATURE-CLI-Foundation.md</td></tr><tr><td>Provides</td><td>fxrates init</td></tr><tr><td>Consumes</td><td>rates repository operations</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p><code>fxrates init</code> drops the <code>rates</code> table if present and creates it empty. It uses the configured database location and exits with status 0 on success. The command writes nothing to standard output on success.</p>
+<h2>Workflow</h2>
+<ol><li>Resolve the database location from <code>DATABASE_URL</code>, then <code>DATABASE_PATH</code>, then <code>data/app.db</code>.</li><li>Drop and recreate the rates table.</li><li>Return success.</li></ol>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC init-clears-rates ===<br>Intent: Initialization succeeds and a separate repository read finds no rates afterward.</p>
+<p>from cli.testing import cli_runner from persistence.testing import db_session</p>
+<p>code, stdout, stderr = cli_runner(&quot;init&quot;) assert code == 0</p>
+<p>with db_session() as db: rows = db.rates.list() assert rows == [] === END AC init-clears-rates ===</p>
+<p>=== AC init-repeat ===<br>Intent: Repeating initialization succeeds and leaves the rates repository empty.</p>
+<p>from cli.testing import cli_runner from persistence.testing import db_session</p>
+<p>first = cli_runner(&quot;init&quot;) second = cli_runner(&quot;init&quot;) assert first[0] == 0 assert second[0] == 0</p>
+<p>with db_session() as db: rows = db.rates.list() assert rows == [] === END AC init-repeat ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Initialization drops and recreates the rates table.</li><li>Use the configured database location.</li><li>Route database access through the generated persistence package.</li></ul></article>
+</main>
+</body>
+</html>

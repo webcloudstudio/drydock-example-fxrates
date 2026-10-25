@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-API-Foundation.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-API-Foundation.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-API-Foundation.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: API Foundation</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261025 V1</td></tr><tr><td>Description</td><td>Establishes the FastAPI application factory and local uvicorn entry point.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md, DATABASE.md</td></tr><tr><td>Provides</td><td>FastAPI application factory, uvicorn server entry point</td></tr><tr><td>Consumes</td><td>rates repository operations</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Create <code>app_server.main.create_app() -&gt; FastAPI</code> and expose the module-level <code>app</code> for <code>uvicorn app_server.main:app</code>. The service binds to <code>127.0.0.1</code>; the CLI <code>serve</code> command starts uvicorn in the foreground and supports clean termination by SIGTERM. Application code uses the generated persistence package and the configured database location.</p>
+<h2>Configuration</h2>
+<p>Resolve the database location from <code>DATABASE_URL</code>, then <code>DATABASE_PATH</code>, then <code>data/app.db</code>. Do not open a database driver outside the generated persistence package.</p>
+<h2>Programmatic Acceptance</h2>
+<p>Requires: python-package=httpx; scope=test</p>
+<p>=== AC api-factory ===<br>Intent: The application factory returns a FastAPI application and the module exposes its application instance.</p>
+<p>from fastapi import FastAPI from app_server.main import app, create_app</p>
+<p>created = create_app() assert isinstance(created, FastAPI) assert isinstance(app, FastAPI) === END AC api-factory ===</p>
+<p>Requires: python-package=httpx; scope=test</p>
+<p>=== AC api-test-client ===<br>Intent: The published web client constructs a client for the application factory.</p>
+<p>from fastapi.testclient import TestClient from app_server.testing import web_client</p>
+<p>client = web_client() assert isinstance(client, TestClient) response = client.get(&quot;/health&quot;) assert response.status_code in (200, 404) === END AC api-test-client ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Bind the HTTP service to <code>127.0.0.1</code>.</li><li>Use FastAPI served by uvicorn.</li><li>Keep database access inside the generated persistence package.</li><li>Support clean shutdown on SIGTERM.</li></ul></article>
+</main>
+</body>
+</html>

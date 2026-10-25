@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-Dataset-Summary.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-Dataset-Summary.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-Dataset-Summary.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Dataset Summary</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261025 V1</td></tr><tr><td>Description</td><td>Serves health, dataset counts and bounds, and the sorted currencies present in stored rates.</td></tr><tr><td>Depends On</td><td>FEATURE-API-Foundation.md, DATABASE.md</td></tr><tr><td>Provides</td><td>GET /health, GET /stats, GET /currencies</td></tr><tr><td>Consumes</td><td>rates repository operations</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Expose health and database-derived summaries through the JSON API.</p>
+<h2>Routes</h2>
+<ul><li><code>GET /health</code> returns status 200 and <code>{&quot;status&quot;:&quot;ok&quot;}</code>.</li><li><code>GET /stats</code> returns the count of distinct publication dates, total stored rates, and earliest and latest dates. Empty date bounds are <code>null</code>.</li><li><code>GET /currencies</code> returns base <code>EUR</code> and every currency with at least one stored rate, sorted ascending.</li></ul>
+<h2>Database Interface</h2>
+<ul><li><code>FEATURE-RATE-003</code> — read: list stored rates - supplies: <code>currency</code>, <code>start_date</code>, <code>end_date</code> - returns: <code>date</code>, <code>currency</code>, <code>rate</code></li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC summary-routes ===<br>Intent: The health, statistics, and currency routes are reachable and report values derived from stored rows.</p>
+<p>from app_server.testing import web_client from persistence.testing import db_session</p>
+<p>day_one = &quot;2099-01-02&quot; day_two = &quot;2099-01-03&quot; currency_one = &quot;XTS&quot; currency_two = &quot;XTU&quot; rate_one = &quot;1.2300&quot; rate_two = &quot;2.5&quot; with db_session() as db: db.rates.upsert(date=day_one, currency=currency_one, rate=rate_one) db.rates.upsert(date=day_two, currency=currency_two, rate=rate_two)</p>
+<p>client = web_client() health = client.get(&quot;/health&quot;) stats = client.get(&quot;/stats&quot;) currencies = client.get(&quot;/currencies&quot;) assert health.status_code == 200 assert health.json()[&quot;status&quot;] == &quot;ok&quot; assert stats.status_code == 200 assert stats.json() == { &quot;dates&quot;: 2, &quot;rates&quot;: 2, &quot;first&quot;: day_one, &quot;last&quot;: day_two, } assert currencies.status_code == 200 assert currencies.json() == { &quot;base&quot;: &quot;EUR&quot;, &quot;currencies&quot;: sorted([currency_one, currency_two]), } === END AC summary-routes ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Derive counts, bounds, and currencies from database queries; do not hardcode data values.</li><li>Rates are stored and returned as published text.</li><li>Database access goes through the shipped persistence library.</li></ul></article>
+</main>
+</body>
+</html>

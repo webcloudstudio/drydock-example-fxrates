@@ -1,0 +1,2 @@
+{"label": "INITIALIZED", "result": "pass", "at": "2026-10-25T20:14:36.707+00:00", "detail": "", "command": "drydock init FxRates", "attempts": 1}
+{"state": "INITIALIZED", "result": "pass", "at": "2026-10-25T20:14:36.707+00:00", "attempts": 1}

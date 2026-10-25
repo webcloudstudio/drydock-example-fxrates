@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/commands/10-initial-build-1.stdout.log</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/commands/10-initial-build-1.stdout.log</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/commands/10-initial-build-1.stdout.log">Raw file</a></div></header>
+<article class="doc"><pre>Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
+Build: FxRates
+scope: entire project
+frontier: architecture-foundation
+git: baseline FxRates dba5fda0777e
+git: baseline FxRates 22e77c1b6153
+
+BLOCK block-1  name=&quot;Block 1 · Foundational&quot;  calls_max=7
+  story=architecture-foundation  &quot;Establish the Python application structure and module boundaries.&quot;
+
+  [call 1/7]  kind=initial  llm=codex/gpt-6-luna
+    result=ok  rc=0  execution=20261025.201419.952Z-67f61b7b
+    status  2/2
+git: block-1 | python.md, ARCHITECTURE.md | call=1 | app=262f257c45ca target=2a1f48af0b43
+
+  DONE  story=architecture-foundation  state=closed/implemented  execution=20261025.201419.952Z-67f61b7b  elapsed=53.2s
+git: block-1 | python.md, ARCHITECTURE.md | step_completed | app=unchanged target=810ffbff1d5e
+
+BLOCK block-2  name=&quot;Block 2 · Foundational&quot;  calls_max=7
+  story=database-foundation  &quot;Declare the rates store and its repository operations.&quot;
+  story=api-foundation  &quot;Establish the FastAPI application and local server entry point.&quot;
+  story=cli-foundation  &quot;Establish the fxrates command-line entry point.&quot;
+
+  [call 1/7]  kind=initial  llm=codex/gpt-6-luna
+    result=ok  rc=0  execution=20261025.201524.594Z-8d911462
+    status  7/7
+git: block-2 | DATABASE.md, FEATURE-API-Foundation.md, FEATURE-CLI-Foundation.md | call=1 | app=dfa231d8dc36 target=47af61724ded
+
+  DONE  story=database-foundation  state=closed/implemented  execution=20261025.201524.594Z-8d911462  elapsed=2m38s
+git: block-2 | DATABASE.md, FEATURE-API-Foundation.md, FEATURE-CLI-Foundation.md | step_completed | app=unchanged target=539e609c7159
+
+BLOCK block-3  name=&quot;Block 3 · Service&quot;  calls_max=7
+  story=ecb-001  &quot;Initialize the rates store from the command line.&quot;
+  story=ecb-002  &quot;Validate and load ECB history files atomically.&quot;
+  story=api-001  &quot;Serve health, dataset statistics, and available currencies.&quot;
+  story=api-002  &quot;Retrieve rates for an effective publication date.&quot;
+  story=api-003  &quot;Convert amounts between currencies using exact decimal arithmetic.&quot;
+  story=api-004  &quot;Retrieve currency history and exact summary statistics.&quot;
+  story=ecb-003  &quot;Fetch and load the ECB history archive.&quot;
+  story=del-001  &quot;Provide the automated pytest suite and POSIX test runner.&quot;
+  story=del-002  &quot;Verify the completed application against the supplied grader.&quot;
+
+  [call 1/7]  kind=initial  llm=codex/gpt-6-luna
+    result=ok  rc=0  execution=20261025.201908.525Z-55ec7b03
+    status  13/16  init-clears-rates,init-repeat,conversion-route
+git: block-3 | FEATURE-Store-Initialization.md, FEATURE-ECB-Loading.md, FEATURE-Dataset-Summary.md, FEATURE-Effective-Rates.md, FEATURE-Currency-Conversion.md, FEATURE-Currency-History.md, FEATURE-ECB-Fetch.md, FEATURE-Test-Runner.md, FEATURE-Grader-Conformance.md | call=1 | app=1244f5a73ede target=2078b3d4aa36
+
+  [call 2/7]  kind=repair(1/6)  llm=codex/gpt-6-luna
+    result=ok  rc=0  execution=20261025.202705.183Z-c232d1c7
+    status  15/16  conversion-route
+git: block-3 | FEATURE-Store-Initialization.md, FEATURE-ECB-Loading.md, FEATURE-Dataset-Summary.md, FEATURE-Effective-Rates.md, FEATURE-Currency-Conversion.md, FEATURE-Currency-History.md, FEATURE-ECB-Fetch.md, FEATURE-Test-Runner.md, FEATURE-Grader-Conformance.md | call=2 | app=88bac23f6d32 target=fbad0ba4e812
+
+  [call 3/7]  kind=repair(2/6)  llm=codex/gpt-6-luna
+    result=ok  rc=0  execution=20261025.203029.101Z-c458a8ca
+    status  15/16  conversion-route
+git: block-3 | FEATURE-Store-Initialization.md, FEATURE-ECB-Loading.md, FEATURE-Dataset-Summary.md, FEATURE-Effective-Rates.md, FEATURE-Currency-Conversion.md, FEATURE-Currency-History.md, FEATURE-ECB-Fetch.md, FEATURE-Test-Runner.md, FEATURE-Grader-Conformance.md | call=3 | app=unchanged target=5bb89562f3bd
+
+  [call 4/7]  kind=repair(3/6)  llm=codex/gpt-6-luna
+    result=ok  rc=0  execution=20261025.203415.422Z-f3607ee6
+    status  15/16  conversion-route
+  STOP  reason=stall  flat_calls=2
+git: block-3 | FEATURE-Store-Initialization.md, FEATURE-ECB-Loading.md, FEATURE-Dataset-Summary.md, FEATURE-Effective-Rates.md, FEATURE-Currency-Conversion.md, FEATURE-Currency-History.md, FEATURE-ECB-Fetch.md, FEATURE-Test-Runner.md, FEATURE-Grader-Conformance.md | call=4 | app=unchanged target=9008f0cb58f1
+
+  FAILED  story=ecb-001  state=closed/failed  execution=20261025.203415.422Z-f3607ee6  elapsed=18m58s
+git: block-3 | FEATURE-Store-Initialization.md, FEATURE-ECB-Loading.md, FEATURE-Dataset-Summary.md, FEATURE-Effective-Rates.md, FEATURE-Currency-Conversion.md, FEATURE-Currency-History.md, FEATURE-ECB-Fetch.md, FEATURE-Test-Runner.md, FEATURE-Grader-Conformance.md | step_completed | app=unchanged target=8a5b107d9d9f
+
+result: 4 built, 9 failed, 0 unchanged
+elapsed: 23 minutes 2 seconds
+
+========================================================================
+BUILD FAILED: FxRates  (1 step)
+========================================================================
+
+  Failure
+    Provenance
+      Target: FxRates
+      Block: Block 3 · Service [block-3]
+      Story: Initialize the rates store from the command line. [ecb-001]
+    Cause: programmatic acceptance failed: conversion-route
+    agent summary:
+      `sh bin/test.sh` passed (13 tests). The conversion
+      criterion’s expected result conflicts with the specified
+      formula: `2.00 × (5 / 2) = 5.00`, while it expects `10.00`.
+      The API uses the specified exact decimal calculation and
+      half-even rounding.
+    stopped early: 4 of 7 calls · deterministic acceptance score did not improve on 2 consecutive calls
+    acceptance: 15/16 passing · baseline 1/16 · improved
+    supplied-grader-full: 35 passed, 0 failed
+    Acceptance checks:
+      AC FAILED  conversion-route  assert body[&quot;result&quot;] == &quot;10.00&quot;
+        Intent: Conversion returns a reachable response with the supplied amount and currencies using the effective stored rates.
+        Source: FEATURE-Currency-Conversion.md
+    Recovery
+      The agent disputes failing acceptance criteria; the claim is unverified.
+      Run: drydock plan verify FxRates
+        Inspect the criteria and evidence before rebuilding.
+      Run: drydock plan repair FxRates
+        Repair confirmed mechanical defects, then verify before rebuilding.
+    agent blockers:
+      - The `conversion-route` acceptance assertion cannot pass as
+      written without violating the conversion specification.
+    execution: 20261025.203415.422Z-f3607ee6
+    evidence: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261025.200850/workspace/targets/FxRates/evidence/block-3.md
+
+  Next
+    The agent disputes failing acceptance criteria; the claim is unverified.
+    Run: drydock plan verify FxRates
+      Inspect the criteria and evidence before rebuilding.
+    Run: drydock plan repair FxRates
+      Repair confirmed mechanical defects, then verify before rebuilding.
+========================================================================
+
+========================================================================
+POST-LLM FAILURE  ·  build  ·  programmatic acceptance failed: conversion-route
+========================================================================
+
+  Block &quot;Block 3 · Service&quot; [block-3] failed its acceptance criteria.
+    Story &quot;Convert amounts between currencies using exact decimal arithmetic.&quot; [api-003] does not meet its own acceptance criteria:
+      - AC conversion-route — Conversion returns a reachable response with the supplied amount and currencies using the effective stored rates.
+          assertion: assert body[&quot;result&quot;] == &quot;10.00&quot; → AssertionError
+          raised at: conversion-route.py:25
+          process exit code: 1
+          values at failure:
+            body = {&#x27;date&#x27;: &#x27;2099-01-02&#x27;, &#x27;from&#x27;: &#x27;XTS&#x27;, &#x27;to&#x27;: &#x27;XTU&#x27;, &#x27;amount&#x27;: &#x27;2.00&#x27;, &#x27;rate&#x27;: &#x27;2.500000&#x27;, &#x27;result&#x27;: &#x27;5.00&#x27;}
+          check stderr:
+  … (7 more lines truncated)
+
+  Recovery
+    The agent disputes failing acceptance criteria; the claim is
+    unverified.
+    Run: drydock plan verify FxRates
+      Inspect the criteria and evidence before rebuilding.
+    Run: drydock plan repair FxRates
+      Repair confirmed mechanical defects, then verify before rebuilding.
+
+========================================================================
+Target - committed project workspace git store
+</pre></article>
+</main>
+</body>
+</html>

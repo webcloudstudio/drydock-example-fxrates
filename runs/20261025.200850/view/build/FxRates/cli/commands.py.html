@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>build/FxRates/cli/commands.py</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>build/FxRates/cli/commands.py</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../build/FxRates/cli/commands.py">Raw file</a></div></header>
+<article class="doc"><pre>&quot;&quot;&quot;Command dispatch for FxRates.&quot;&quot;&quot;
+
+from __future__ import annotations
+
+import sys
+import os
+import csv
+import re
+from datetime import date
+from persistence import open_database, PersistenceError
+
+def _dsn() -&gt; str:
+    return os.environ.get(&quot;DATABASE_URL&quot;) or os.environ.get(&quot;DATABASE_PATH&quot;) or &quot;data/app.db&quot;
+
+def _load_file(path: str) -&gt; tuple[int, int]:
+    try:
+        with open(path, newline=&quot;&quot;, encoding=&quot;utf-8&quot;) as stream:
+            rows = list(csv.reader(stream))
+    except OSError as exc:
+        raise FileNotFoundError(str(exc)) from exc
+    try:
+        if not rows or len(rows[0]) &lt; 2:
+            raise ValueError(&quot;invalid header&quot;)
+        header = rows[0]
+        if header[-1] == &quot;&quot;: header = header[:-1]
+        codes = header[1:]
+        if header[0] != &quot;Date&quot; or any(not re.fullmatch(r&quot;[A-Z]{3}&quot;, x) for x in codes) or len(set(codes)) != len(codes):
+            raise ValueError(&quot;invalid header&quot;)
+        parsed=[]; days=set()
+        for raw in rows[1:]:
+            fields = raw[:-1] if raw and raw[-1] == &quot;&quot; else raw
+            if len(fields) != len(codes)+1: raise ValueError(&quot;invalid row&quot;)
+            day=fields[0]
+            if not re.fullmatch(r&quot;\d{4}-\d{2}-\d{2}&quot;, day): raise ValueError(&quot;invalid date&quot;)
+            date.fromisoformat(day)
+            if day in days: raise ValueError(&quot;duplicate date&quot;)
+            days.add(day)
+            for code, value in zip(codes, fields[1:]):
+                if value == &quot;N/A&quot;: continue
+                if not re.fullmatch(r&quot;[0-9]+(?:\.[0-9]+)?&quot;, value) or not any(c != &quot;0&quot; for c in value if c.isdigit()): raise ValueError(&quot;invalid rate&quot;)
+                parsed.append((day,code,value))
+    except (ValueError, IndexError) as exc:
+        raise InvalidCSV(str(exc)) from exc
+    with open_database(_dsn()) as db:
+        for day, code, value in parsed:
+            db.rates.upsert(date=day, currency=code, rate=value)
+    return len(days), len(parsed)
+
+class InvalidCSV(Exception): pass
+
+
+def dispatch(args: object) -&gt; int:
+    command = getattr(args, &quot;command&quot;, None)
+    if command == &quot;serve&quot;:
+        import uvicorn
+
+        uvicorn.run(&quot;app_server.main:app&quot;, host=&quot;127.0.0.1&quot;, port=args.port)
+        return 0
+
+    if command == &quot;init&quot;:
+        with open_database(_dsn()) as db:
+            try:
+                db.reset_rates()
+            except PersistenceError:
+                # Acceptance and project rollback sessions own a transaction that cannot
+                # be replaced with DDL. Clear the declared repository rows in that session.
+                for row in db.rates.list():
+                    db.rates.delete(date=row.date, currency=row.currency)
+        return 0
+    if command == &quot;load&quot;:
+        try: dates, rates = _load_file(args.file)
+        except FileNotFoundError as exc:
+            print(f&quot;error: {exc}&quot;, file=sys.stderr); return 1
+        except InvalidCSV as exc:
+            print(f&quot;error: {exc}&quot;, file=sys.stderr); return 3
+        print(&quot;dates,rates&quot;)
+        print(f&quot;{dates},{rates}&quot;)
+        return 0
+    if command == &quot;fetch&quot;:
+        from . import fetch
+        try: archive = fetch.download_archive()
+        except Exception as exc:
+            print(f&quot;error: {exc}&quot;, file=sys.stderr); return 1
+        import io, zipfile, tempfile
+        try:
+            with zipfile.ZipFile(io.BytesIO(archive)) as zipped: payload=zipped.read(&quot;eurofxref-hist.csv&quot;)
+            with tempfile.NamedTemporaryFile() as tmp:
+                tmp.write(payload); tmp.flush()
+                dates, rates = _load_file(tmp.name)
+        except Exception as exc:
+            print(f&quot;error: {exc}&quot;, file=sys.stderr); return 3
+        print(&quot;dates,rates&quot;); print(f&quot;{dates},{rates}&quot;); return 0
+
+    print(&quot;error: unknown command&quot;, file=sys.stderr)
+    return 2
+</pre></article>
+</main>
+</body>
+</html>

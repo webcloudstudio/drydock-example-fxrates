@@ -1,0 +1,96 @@
+{
+  "sqlite": [
+    {
+      "name": "foreign-key-enforcement",
+      "sql": "SELECT foreign_keys FROM pragma_foreign_keys",
+      "expected": 1
+    },
+    {
+      "name": "rates:table",
+      "sql": "SELECT count(*) FROM sqlite_master WHERE name='rates' AND type='table'",
+      "expected": 1
+    },
+    {
+      "name": "rates:rows",
+      "sql": "SELECT count(*) FROM \"rates\"",
+      "expected": -1
+    },
+    {
+      "name": "rates.date:column",
+      "sql": "SELECT count(*) FROM pragma_table_info('rates') WHERE name='date' AND upper(type)='TEXT' AND \"notnull\"=1 AND pk=0 AND dflt_value IS NULL",
+      "expected": 1
+    },
+    {
+      "name": "rates.currency:column",
+      "sql": "SELECT count(*) FROM pragma_table_info('rates') WHERE name='currency' AND upper(type)='TEXT' AND \"notnull\"=1 AND pk=0 AND dflt_value IS NULL",
+      "expected": 1
+    },
+    {
+      "name": "rates.rate:column",
+      "sql": "SELECT count(*) FROM pragma_table_info('rates') WHERE name='rate' AND upper(type)='TEXT' AND \"notnull\"=1 AND pk=0 AND dflt_value IS NULL",
+      "expected": 1
+    },
+    {
+      "name": "rates.id:column",
+      "sql": "SELECT count(*) FROM pragma_table_info('rates') WHERE name='id' AND upper(type)='INTEGER' AND \"notnull\"=0 AND pk=1 AND dflt_value IS NULL",
+      "expected": 1
+    },
+    {
+      "name": "rates:rates_currency_date_idx",
+      "sql": "SELECT count(*) FROM pragma_index_list('rates') AS i WHERE i.\"unique\"=0 AND (SELECT group_concat(name, ',') FROM (SELECT name FROM pragma_index_info(i.name) ORDER BY seqno))='currency,date' AND i.name='rates_currency_date_idx'",
+      "expected": 1
+    },
+    {
+      "name": "rates:sqlite_autoindex_rates_1",
+      "sql": "SELECT count(*) FROM pragma_index_list('rates') AS i WHERE i.\"unique\"=1 AND (SELECT group_concat(name, ',') FROM (SELECT name FROM pragma_index_info(i.name) ORDER BY seqno))='date,currency'",
+      "expected": 1
+    }
+  ],
+  "postgres": [
+    {
+      "name": "rates:table",
+      "sql": "SELECT count(*) FROM pg_class WHERE oid='rates'::regclass AND relkind IN ('r','p')",
+      "expected": 1
+    },
+    {
+      "name": "rates:rows",
+      "sql": "SELECT count(*) FROM \"rates\"",
+      "expected": -1
+    },
+    {
+      "name": "rates.date:column",
+      "sql": "SELECT count(*) FROM information_schema.columns WHERE table_schema=current_schema() AND table_name='rates' AND column_name='date' AND data_type='text' AND is_nullable='NO' AND column_default IS NULL",
+      "expected": 1
+    },
+    {
+      "name": "rates.currency:column",
+      "sql": "SELECT count(*) FROM information_schema.columns WHERE table_schema=current_schema() AND table_name='rates' AND column_name='currency' AND data_type='text' AND is_nullable='NO' AND column_default IS NULL",
+      "expected": 1
+    },
+    {
+      "name": "rates.rate:column",
+      "sql": "SELECT count(*) FROM information_schema.columns WHERE table_schema=current_schema() AND table_name='rates' AND column_name='rate' AND data_type='text' AND is_nullable='NO' AND column_default IS NULL",
+      "expected": 1
+    },
+    {
+      "name": "rates.id:column",
+      "sql": "SELECT count(*) FROM information_schema.columns WHERE table_schema=current_schema() AND table_name='rates' AND column_name='id' AND data_type='integer' AND is_nullable='NO' AND is_identity='YES'",
+      "expected": 1
+    },
+    {
+      "name": "rates.id:primary-key",
+      "sql": "SELECT count(*) FROM pg_constraint c WHERE c.conrelid='rates'::regclass AND c.contype='p' AND c.convalidated AND (SELECT string_agg(a.attname, ',' ORDER BY k.n) FROM unnest(c.conkey) WITH ORDINALITY k(attnum,n) JOIN pg_attribute a ON a.attrelid=c.conrelid AND a.attnum=k.attnum)='id'",
+      "expected": 1
+    },
+    {
+      "name": "rates:rates_currency_date_idx",
+      "sql": "SELECT count(*) FROM pg_index i JOIN pg_class c ON c.oid=i.indexrelid WHERE i.indrelid='rates'::regclass AND c.relname='rates_currency_date_idx' AND i.indisvalid AND (SELECT string_agg(a.attname, ',' ORDER BY k.n) FROM unnest(i.indkey) WITH ORDINALITY k(attnum,n) JOIN pg_attribute a ON a.attrelid=i.indrelid AND a.attnum=k.attnum)='currency,date'",
+      "expected": 1
+    },
+    {
+      "name": "rates:sqlite_autoindex_rates_1",
+      "sql": "SELECT count(*) FROM pg_constraint c WHERE c.conrelid='rates'::regclass AND c.contype='u' AND c.convalidated AND (SELECT string_agg(a.attname, ',' ORDER BY k.n) FROM unnest(c.conkey) WITH ORDINALITY k(attnum,n) JOIN pg_attribute a ON a.attrelid=c.conrelid AND a.attnum=k.attnum)='date,currency'",
+      "expected": 1
+    }
+  ]
+}

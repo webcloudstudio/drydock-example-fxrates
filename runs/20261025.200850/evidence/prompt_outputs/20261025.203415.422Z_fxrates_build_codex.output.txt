@@ -1,0 +1,11 @@
+RESULT: SUCCESS  
+AC_BROKEN: conversion-route
+
+FILES CHANGED:
+- None
+
+SUMMARY:
+`sh bin/test.sh` passed (13 tests). The conversion criterion’s expected result conflicts with the specified formula: `2.00 × (5 / 2) = 5.00`, while it expects `10.00`. The API uses the specified exact decimal calculation and half-even rounding.
+
+BLOCKERS:
+- The `conversion-route` acceptance assertion cannot pass as written without violating the conversion specification.

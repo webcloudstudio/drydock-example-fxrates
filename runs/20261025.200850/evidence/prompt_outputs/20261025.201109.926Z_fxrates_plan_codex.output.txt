@@ -1,0 +1,452 @@
+=== BEGIN ARTIFACT FEATURE-ECB-Fetch.md ===
+# FEATURE: ECB Fetch
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261025 V1 |
+| Description | Downloads the ECB history archive and loads its CSV through the existing load workflow. |
+| Depends On  | FEATURE-ECB-Loading.md |
+| Provides    | fxrates fetch |
+| Consumes    | fxrates load |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Fetch the ECB history archive, extract `eurofxref-hist.csv`, and delegate its contents to the established load workflow.
+
+## Trigger and Sequence
+
+`fxrates fetch` downloads `https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist.zip`, extracts `eurofxref-hist.csv`, and loads it using the same validation, replacement, reporting, and exit-code behavior as `fxrates load`.
+
+A download failure is an operational failure: exit `1`, no standard output, and one diagnostic line on standard error. Tests replace the downloader with a stub; they do not use the network.
+
+## Programmatic Acceptance
+
+=== AC fetch-command ===
+Intent: The fetch command is available and reports operational failure when the stubbed downloader fails.
+
+from cli.testing import cli_runner
+import cli.fetch as fetch_module
+
+def fail_download():
+    raise OSError("stubbed download failure")
+
+fetch_module.download_archive = fail_download
+code, stdout, stderr = cli_runner("fetch")
+assert code == 1
+assert stdout == ""
+assert stderr.count("\n") == 1
+=== END AC fetch-command ===
+
+=== AC fetch-stubbed-archive-load ===
+Intent: A stubbed archive is extracted and passed to the load workflow without network access.
+
+from cli.testing import cli_runner
+import cli.fetch as fetch_module
+import io
+import zipfile
+from persistence.testing import db_session
+
+csv_data = "Date,USD,\n2099-01-02,1.2300,\n"
+archive = io.BytesIO()
+with zipfile.ZipFile(archive, "w") as zipped:
+    zipped.writestr("eurofxref-hist.csv", csv_data)
+archive_bytes = archive.getvalue()
+fetch_module.download_archive = lambda: archive_bytes
+
+with db_session() as db:
+    before = len(db.rates.list())
+code, stdout, stderr = cli_runner("fetch")
+assert code == 0
+assert stderr == ""
+with db_session() as db:
+    rows = db.rates.list(currency="USD")
+stored = next(row for row in rows if row.date == "2099-01-02")
+assert stored.rate == "1.2300"
+=== END AC fetch-stubbed-archive-load ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Tests stub the downloader and never open a network connection.
+- Use the existing load workflow so validation, atomicity, replacement, and summary behavior remain consistent.
+- Do not modify files under `sources/`.
+
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-Dataset-Summary.md ===
+# FEATURE: Dataset Summary
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261025 V1 |
+| Description | Serves health, dataset counts and bounds, and the sorted currencies present in stored rates. |
+| Depends On  | FEATURE-API-Foundation.md, DATABASE.md |
+| Provides    | GET /health, GET /stats, GET /currencies |
+| Consumes    | rates repository operations |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Expose health and database-derived summaries through the JSON API.
+
+## Routes
+
+- `GET /health` returns status 200 and `{"status":"ok"}`.
+- `GET /stats` returns the count of distinct publication dates, total stored rates, and earliest and latest dates. Empty date bounds are `null`.
+- `GET /currencies` returns base `EUR` and every currency with at least one stored rate, sorted ascending.
+
+## Database Interface
+
+- `FEATURE-RATE-003` — read: list stored rates - supplies: `currency`, `start_date`, `end_date` - returns: `date`, `currency`, `rate`
+
+## Programmatic Acceptance
+
+=== AC summary-routes ===
+Intent: The health, statistics, and currency routes are reachable and report values derived from stored rows.
+
+from app_server.testing import web_client
+from persistence.testing import db_session
+
+day_one = "2099-01-02"
+day_two = "2099-01-03"
+currency_one = "XTS"
+currency_two = "XTU"
+rate_one = "1.2300"
+rate_two = "2.5"
+with db_session() as db:
+    db.rates.upsert(date=day_one, currency=currency_one, rate=rate_one)
+    db.rates.upsert(date=day_two, currency=currency_two, rate=rate_two)
+
+client = web_client()
+health = client.get("/health")
+stats = client.get("/stats")
+currencies = client.get("/currencies")
+assert health.status_code == 200
+assert health.json()["status"] == "ok"
+assert stats.status_code == 200
+assert stats.json() == {
+    "dates": 2,
+    "rates": 2,
+    "first": day_one,
+    "last": day_two,
+}
+assert currencies.status_code == 200
+assert currencies.json() == {
+    "base": "EUR",
+    "currencies": sorted([currency_one, currency_two]),
+}
+=== END AC summary-routes ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Derive counts, bounds, and currencies from database queries; do not hardcode data values.
+- Rates are stored and returned as published text.
+- Database access goes through the shipped persistence library.
+
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-Effective-Rates.md ===
+# FEATURE: Effective Rates
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261025 V1 |
+| Description | Retrieves published rates for a requested date or the latest available publication. |
+| Depends On  | FEATURE-API-Foundation.md, DATABASE.md |
+| Provides    | GET /rates/{date}, GET /rates/latest |
+| Consumes    | rates repository operations |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Return the rates for the latest publication date on or before a requested calendar date, or the latest publication for the dedicated latest route.
+
+## Routes
+
+- `GET /rates/{date}` accepts a real `YYYY-MM-DD` date. It returns the effective publication date, echoes the requested date, base `EUR`, and all rates on that publication date.
+- `GET /rates/latest` returns the latest publication with `"requested": "latest"`.
+- A date before the first publication returns 404. A malformed date returns 422.
+
+## Database Interface
+
+- `FEATURE-RATE-003` — read: list stored rates - supplies: `currency`, `start_date`, `end_date` - returns: `date`, `currency`, `rate`
+
+## Programmatic Acceptance
+
+=== AC effective-date-rates ===
+Intent: Both rate routes resolve an effective date and preserve the supplied published rate text.
+
+from app_server.testing import web_client
+from persistence.testing import db_session
+
+earlier_day = "2099-01-02"
+later_day = "2099-01-05"
+requested_day = "2099-01-06"
+currency = "XTS"
+earlier_rate = "1.2300"
+later_rate = "1.240"
+with db_session() as db:
+    db.rates.upsert(date=earlier_day, currency=currency, rate=earlier_rate)
+    db.rates.upsert(date=later_day, currency=currency, rate=later_rate)
+
+client = web_client()
+response = client.get("/rates/" + requested_day)
+latest = client.get("/rates/latest")
+assert response.status_code == 200
+assert response.json() == {
+    "date": later_day,
+    "requested": requested_day,
+    "base": "EUR",
+    "rates": {currency: later_rate},
+}
+assert latest.status_code == 200
+assert latest.json()["date"] == later_day
+assert latest.json()["requested"] == "latest"
+assert latest.json()["rates"][currency] == later_rate
+=== END AC effective-date-rates ===
+
+=== AC effective-date-errors ===
+Intent: Requests before available history return 404 and malformed calendar dates return 422.
+
+from app_server.testing import web_client
+from persistence.testing import db_session
+
+day = "2099-01-02"
+with db_session() as db:
+    db.rates.upsert(date=day, currency="XTS", rate="1.2")
+
+client = web_client()
+assert client.get("/rates/2098-01-01").status_code == 404
+assert client.get("/rates/2099-13-01").status_code == 422
+=== END AC effective-date-errors ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Effective-date selection is inclusive: use the latest publication on or before the request.
+- Return all currencies available on the effective publication date.
+- Preserve published rate text in JSON strings; do not convert rates to floating point.
+
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-Currency-Conversion.md ===
+# FEATURE: Currency Conversion
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261025 V1 |
+| Description | Converts an amount between currencies using effective ECB rates and exact decimal arithmetic. |
+| Depends On  | FEATURE-API-Foundation.md, DATABASE.md |
+| Provides    | GET /convert |
+| Consumes    | rates repository operations |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Convert an amount from one currency to another using EUR as the base. If `date` is omitted, use the latest publication.
+
+## Request and Response
+
+`GET /convert` requires `from`, `to`, and `amount`, with optional `date`. Amounts must match `[0-9]+(\.[0-9]+)?` and are echoed as supplied. The response includes effective date, source and target currencies, amount, conversion rate, and result as strings.
+
+Compute the conversion rate as `rate(to) / rate(from)` using exact decimal arithmetic, rounded half to even to six decimal places. Compute the result from the unrounded rates, rounded half to even to two decimal places. Return 404 when no effective publication exists or a non-EUR currency has no rate on that date. Malformed dates, amounts, or missing required parameters return 422.
+
+## Database Interface
+
+- `FEATURE-RATE-003` — read: list stored rates - supplies: `currency`, `start_date`, `end_date` - returns: `date`, `currency`, `rate`
+
+## Programmatic Acceptance
+
+=== AC conversion-route ===
+Intent: Conversion returns a reachable response with the supplied amount and currencies using the effective stored rates.
+
+from app_server.testing import web_client
+from persistence.testing import db_session
+
+day = "2099-01-02"
+source = "XTS"
+target = "XTU"
+amount = "2.00"
+source_rate = "2"
+target_rate = "5"
+with db_session() as db:
+    db.rates.upsert(date=day, currency=source, rate=source_rate)
+    db.rates.upsert(date=day, currency=target, rate=target_rate)
+
+response = web_client().get(
+    "/convert",
+    params={"from": source, "to": target, "amount": amount, "date": day},
+)
+assert response.status_code == 200
+body = response.json()
+assert body["date"] == day
+assert body["from"] == source
+assert body["to"] == target
+assert body["amount"] == amount
+assert body["rate"] == "2.500000"
+assert body["result"] == "10.00"
+=== END AC conversion-route ===
+
+=== AC conversion-validation-errors ===
+Intent: Missing or malformed inputs return 422, while an unknown currency returns 404.
+
+from app_server.testing import web_client
+from persistence.testing import db_session
+
+day = "2099-01-02"
+with db_session() as db:
+    db.rates.upsert(date=day, currency="XTS", rate="1.2")
+
+client = web_client()
+assert client.get("/convert").status_code == 422
+assert client.get("/convert", params={"from": "XTS", "to": "XXX", "amount": "1"}).status_code == 404
+assert client.get("/convert", params={"from": "XTS", "to": "XTS", "amount": "abc"}).status_code == 422
+assert client.get(
+    "/convert",
+    params={"from": "XTS", "to": "XTS", "amount": "1", "date": "2099-13-01"},
+).status_code == 422
+=== END AC conversion-validation-errors ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Use `decimal`; never use floating-point arithmetic.
+- Compute the result from unrounded stored rates, not the displayed rounded conversion rate.
+- Apply half-even rounding and the specified fixed decimal-place formatting.
+
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-Currency-History.md ===
+# FEATURE: Currency History
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261025 V1 |
+| Description | Retrieves a currency's ordered rate points and exact summary statistics over optional date bounds. |
+| Depends On  | FEATURE-API-Foundation.md, DATABASE.md |
+| Provides    | GET /history/{code} |
+| Consumes    | rates repository operations |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Return a currency's stored publication points in ascending date order, optionally restricted by inclusive `start` and `end` dates.
+
+## Request and Response
+
+For a currency with rates, return currency code, base `EUR`, point count, published-text minimum and maximum by numeric value, six-place half-even mean text, and ordered points. If filters select no points, return count zero with null min, max, and mean and an empty point list. A currency with no stored rate at all, including EUR, returns 404. Malformed date bounds return 422.
+
+## Database Interface
+
+- `FEATURE-RATE-003` — read: list stored rates - supplies: `currency`, `start_date`, `end_date` - returns: `date`, `currency`, `rate`
+
+## Programmatic Acceptance
+
+=== AC currency-history-bounds ===
+Intent: History returns the selected points in ascending order with published text and exact summary values.
+
+from app_server.testing import web_client
+from persistence.testing import db_session
+
+currency = "XTS"
+first_day = "2099-01-02"
+second_day = "2099-01-03"
+third_day = "2099-01-04"
+first_rate = "1.0"
+second_rate = "2.00"
+third_rate = "3"
+with db_session() as db:
+    db.rates.upsert(date=second_day, currency=currency, rate=second_rate)
+    db.rates.upsert(date=first_day, currency=currency, rate=first_rate)
+    db.rates.upsert(date=third_day, currency=currency, rate=third_rate)
+
+response = web_client().get(
+    "/history/" + currency,
+    params={"start": first_day, "end": second_day},
+)
+assert response.status_code == 200
+assert response.json() == {
+    "currency": currency,
+    "base": "EUR",
+    "count": 2,
+    "min": first_rate,
+    "max": second_rate,
+    "mean": "1.500000",
+    "points": [
+        {"date": first_day, "rate": first_rate},
+        {"date": second_day, "rate": second_rate},
+    ],
+}
+=== END AC currency-history-bounds ===
+
+=== AC currency-history-empty-and-errors ===
+Intent: Empty bounded history returns the declared empty result, and unknown currencies and malformed bounds return the declared statuses.
+
+from app_server.testing import web_client
+from persistence.testing import db_session
+
+currency = "XTS"
+day = "2099-01-02"
+rate = "1.25"
+with db_session() as db:
+    db.rates.upsert(date=day, currency=currency, rate=rate)
+
+client = web_client()
+empty = client.get(
+    "/history/" + currency,
+    params={"start": "2100-01-01"},
+)
+assert empty.status_code == 200
+assert empty.json() == {
+    "currency": currency,
+    "base": "EUR",
+    "count": 0,
+    "min": None,
+    "max": None,
+    "mean": None,
+    "points": [],
+}
+assert client.get("/history/XXX").status_code == 404
+assert client.get(
+    "/history/" + currency,
+    params={"start": "2099-13-01"},
+).status_code == 422
+=== END AC currency-history-empty-and-errors ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Return points in ascending publication date order with inclusive bounds.
+- Preserve stored text for points, minimum, and maximum; compare rate values numerically.
+- Compute the mean exactly with decimal arithmetic and round half to even to six decimal places.
+- Database access goes through the shipped persistence library.
+
+=== END ARTIFACT
