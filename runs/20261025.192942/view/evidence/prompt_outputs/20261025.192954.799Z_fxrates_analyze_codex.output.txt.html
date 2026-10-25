@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/prompt_outputs/20261025.192954.799Z_fxrates_analyze_codex.output.txt</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/prompt_outputs/20261025.192954.799Z_fxrates_analyze_codex.output.txt</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/prompt_outputs/20261025.192954.799Z_fxrates_analyze_codex.output.txt">Raw file</a></div></header>
+<article class="doc"><pre>=== BEGIN ARTIFACT ANALYSIS.md ===
+# Blueprint Analysis: FxRates
+
+## Commander Expectations
+
+- assert the product loads ECB euro reference rate history and serves date-based rates, conversions, and currency history through a JSON API.
+
+## Crew
+
+| Crew | Charge |
+|---|---|
+| Commander | Defines intent and decides what done means. |
+| Team Lead | Confirms epic completeness and stakeholder expectations. |
+| Planning Crew | Authors atomic specifications and the ordered Manifest. |
+| Shipyard Crew | Builds the tickets without synchronous Commander access. |
+
+## Story List
+
+### Feature: ECB Data Loading
+
+| ID | Story | High-level AC |
+|---|---|---|
+| DATA-001 | Initialize the rates database | `fxrates init` creates an empty rates store. |
+| DATA-002 | Load ECB history CSV files | Valid rows are stored with their published rate text; repeated loads replace matching rates and report stored date and rate counts. |
+| DATA-003 | Reject invalid history files atomically | Invalid files are rejected with exit code 3 and leave stored data unchanged. |
+| DATA-004 | Fetch and load ECB history | `fxrates fetch` downloads and extracts the ECB history archive, then reports load counts; download failure exits 1. |
+
+### Feature: Rates API
+
+| ID | Story | High-level AC |
+|---|---|---|
+| API-001 | Report service health | `GET /health` returns status 200 and `{&quot;status&quot;:&quot;ok&quot;}`. |
+| API-002 | Report stored rate statistics | `GET /stats` reports distinct publication dates, rate count, and first and last dates, with null bounds when empty. |
+| API-003 | List currencies with stored rates | `GET /currencies` returns EUR as base and stored currencies in ascending order. |
+| API-004 | Get rates for an effective date | `GET /rates/{date}` returns all available rate text for the latest publication on or before the valid requested date, or 404 when none exists. |
+| API-005 | Get latest rates | `GET /rates/latest` returns the latest publication&#x27;s rates and identifies the request as `latest`. |
+| API-006 | Convert between currencies | `GET /convert` returns the effective date, echoed amount, six-place half-even rate, and two-place half-even result using exact decimal arithmetic. |
+| API-007 | Retrieve currency history | `GET /history/{code}` returns ascending points and exact min, max, and six-place half-even mean, including the defined empty-period response. |
+
+### Feature: Service Operation
+
+| ID | Story | High-level AC |
+|---|---|---|
+| OPS-001 | Run the API server | `fxrates serve` serves the JSON API on the configured loopback port, defaulting to 8000. |
+| OPS-002 | Enforce command and request validation | Invalid command usage exits 2; malformed dates or amounts and missing required parameters return 422; unknown or unavailable currencies return 404. |
+
+## Surfaced Acceptance Criteria
+
+None.
+
+## Relationship Model
+
+| Source or group | Relationship type | Related source or group | Evidence | Delivery implication |
+|---|---|---|---|---|
+| `sources/INSTRUCTIONS.md` | instruction-to-test | `sources/run.sh` | Instructions identify the supplied harness as the acceptance entry point; it invokes init/load/serve and checks command output and API responses. | Stage the source instructions and harness; implement the command and routes to satisfy the stated contract. |
+| `sources/run.sh` | dependency | `sources/eurofxref-hist_2025-01.csv`, `sources/eurofxref-hist_2025-02-03_04.csv`, `sources/eurofxref-hist_bad.csv` | The harness loads the two valid files and checks rejection of the invalid file. | Stage each fixture at its expected `sources/` path with the harness. |
+| `sources/INSTRUCTIONS.md` | dependency | `sources/run.sh` | Specifies the application entry point, database configuration, endpoints, validation, and expected behavior verified by the harness. | Build the executable, persistence boundary, and API before terminal conformance verification. |
+
+## Source Roles
+
+| Path | Role | Plan disposition | Build disposition |
+|---|---|---|---|
+| `sources/INSTRUCTIONS.md` | normative specification and conformance test suite | prompt-only | prompt-only |
+| `sources/run.sh` | conformance harness | context | stage |
+| `sources/eurofxref-hist_2025-01.csv` | asset | context | stage |
+| `sources/eurofxref-hist_2025-02-03_04.csv` | asset | context | stage |
+| `sources/eurofxref-hist_bad.csv` | asset | context | stage |
+
+## Planning Instructions
+
+### Delivery Shape
+
+A Python command-line application maintains ECB exchange-rate history in SQLite and serves a FastAPI JSON API through uvicorn. The main flow initializes the store, loads a supplied ECB CSV or fetches and loads the ECB archive, starts the server, and answers health, statistics, currency-list, effective-date rates, conversion, and history requests. Rates remain published text in storage and are calculated with decimal arithmetic.
+
+### Story Realization Map
+
+| Story ID | Durable Blueprint scope | Evidence | Related files | Delivery implication |
+|---|---|---|---|---|
+| DATA-001 | Database initialization command | `sources/INSTRUCTIONS.md` | `fxrates` | Create the empty rates store on init. |
+| DATA-002 | ECB CSV parsing and loading command | `sources/INSTRUCTIONS.md` | `fxrates`, valid CSV fixtures | Validate and store publication data, preserving source rate strings and reporting counts. |
+| DATA-003 | Atomic invalid-file rejection | `sources/INSTRUCTIONS.md` | `fxrates`, invalid CSV fixture | Validate the complete input before writes and reject invalid data without partial changes. |
+| DATA-004 | ECB archive fetch command | `sources/INSTRUCTIONS.md` | `fxrates` | Download, extract, and load the archive; isolate download for stubbed tests. |
+| API-001 | Health route | `sources/INSTRUCTIONS.md` | FastAPI application | Provide the health response. |
+| API-002 | Statistics route | `sources/INSTRUCTIONS.md` | persistence contract | Calculate stored date and rate statistics. |
+| API-003 | Currency listing route | `sources/INSTRUCTIONS.md` | persistence contract | List currencies represented in stored rates. |
+| API-004 | Date rates route | `sources/INSTRUCTIONS.md` | persistence contract | Resolve the latest publication at or before the requested date. |
+| API-005 | Latest rates route | `sources/INSTRUCTIONS.md` | persistence contract | Return rates for the most recent publication date. |
+| API-006 | Conversion route | `sources/INSTRUCTIONS.md` | persistence contract | Validate inputs and compute exact ratio and result with specified rounding. |
+| API-007 | Currency history route | `sources/INSTRUCTIONS.md` | persistence contract | Filter by inclusive bounds and report ordered points and summary statistics. |
+| OPS-001 | Server command | `sources/INSTRUCTIONS.md` | `fxrates` | Bind uvicorn to loopback at selected or default port. |
+| OPS-002 | CLI and API validation behavior | `sources/INSTRUCTIONS.md` | `fxrates`, FastAPI routes | Return specified command exit codes and request error statuses. |
+
+### Test and Acceptance Strategy
+
+Keep story verification bounded to the capability each story implements. Stub the archive download in automated tests so tests never use the network. Run the staged `sources/run.sh` once as the terminal verification of the complete supplied conformance harness; it covers command output, server health, API status and bodies, and visibility of data loaded while the server is running.
+
+### Sequencing and Dependencies
+
+Implement the rates persistence boundary and CSV validation before loading and data-backed routes. Build command dispatch and initialization before load/fetch flows; fetch depends on the shared load path and archive extraction. Data-backed API routes depend on the repository read capabilities. Implement server operation and validation alongside route delivery. The full supplied harness is terminal and depends on all implementation stories.
+
+### Source Conflicts and Gaps
+
+The API has no human-facing screens. The project type is `api` because the primary product capability is a set of programmatic HTTP endpoints, with a supporting CLI. No conflicting product definitions or unresolved human-owned decisions were found. Authentication is not specified and the routes are described as local service endpoints; no protected resource is established by the source.
+
+## Analysis Notes
+
+generated: 2026-10-25
+blueprint: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261025.192942/workspace/targets/FxRates/blueprint
+
+Quality: Ready
+  blockers: 0
+  questions: 0
+  features: 3
+  stories: 13
+  stack: Python 3.11+, FastAPI, uvicorn, SQLite, pytest
+  display_name: not proposed
+  short_description: not proposed
+
+None.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT SEA_TRIALS.md ===
+# Sea Trials: FxRates
+
+## st-001: The supplied grader passes
+
+Type: technical
+Required: yes
+Criterion: The supplied FxRates grader shall pass every check.
+Verification: proof
+Command: [&quot;sh&quot;, &quot;sources/run.sh&quot;]
+Pattern: ubiquitous
+
+## st-002: Test suite passes
+
+Type: technical
+Required: yes
+Criterion: The application shall provide a POSIX-compatible `bin/test.sh` that exits zero when every automated test passes.
+Testability: deterministic
+Consequence: blocks
+Verification: proof
+Pattern: ubiquitous
+
+## st-003: ECB history files load exactly and atomically
+
+Type: behavioral
+Required: yes
+Criterion: When an ECB history file is loaded, the application shall store every non-N/A rate as published text, replace rates already stored for the same date and currency, and, if any row is invalid, exit 3 and store nothing.
+Testability: deterministic
+Consequence: blocks
+Verification: proof
+Pattern: event
+
+## st-004: The service starts and reports health
+
+Type: technical
+Required: yes
+Criterion: When `fxrates serve --port` is run, the application shall answer GET /health on 127.0.0.1 at that port with status 200 and `{&quot;status&quot;: &quot;ok&quot;}`.
+Testability: deterministic
+Consequence: blocks
+Verification: proof
+Pattern: event
+
+## st-005: Rates resolve to the effective publication date
+
+Type: behavioral
+Required: yes
+Criterion: When rates or a conversion are requested for a date, the application shall use the latest publication date on or before it, and respond 404 when there is none.
+Testability: deterministic
+Consequence: blocks
+Verification: proof
+Pattern: event
+
+## st-006: Conversions and history match the known answers
+
+Type: behavioral
+Required: yes
+Criterion: The application shall compute /convert rates and results and /history statistics with exact decimal arithmetic rounded half to even, matching the known answers in sources/run.sh.
+Testability: deterministic
+Consequence: blocks
+Verification: proof
+Pattern: ubiquitous
+
+## st-007: Invalid requests are refused with the right status
+
+Type: behavioral
+Required: yes
+Criterion: If a request has a malformed date or amount or lacks a required parameter, then the application shall respond 422; if it names an unknown currency, then it shall respond 404.
+Testability: deterministic
+Consequence: blocks
+Verification: proof
+Pattern: unwanted
+
+## st-008: Persistence goes through the shipped library
+
+Type: technical
+Required: yes
+Criterion: The application shall reach the database only through the shipped persistence library, selected by DATABASE_URL, with rates stored as text and never as floating point.
+Testability: judgeable
+Consequence: scores
+Verification: llm
+Pattern: ubiquitous
+
+## st-009: Tests never use the network
+
+Type: technical
+Required: yes
+Criterion: The application&#x27;s automated tests shall exercise fetch through a stubbed download and shall not open a network connection.
+Testability: judgeable
+Consequence: scores
+Verification: llm
+Pattern: ubiquitous
+
+## Questions
+
+- None.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT TECHNOLOGY_STACK.md ===
+# Technology Stack
+
+| Technology | Rigging | Notes |
+|---|---|---|
+| Python 3.11+ | python.md | Required runtime and language. |
+| FastAPI | fastapi.md | HTTP API framework specified by the source. |
+| uvicorn | — | ASGI server specified by the source. |
+| SQLite | sqlite.md | Database engine specified by the source. |
+| Pytest | — | Test runner specified by the source. |
+| SQLAlchemy | sqlalchemy.md | Required relational persistence component for Python Targets. |
+| Alembic | alembic.md | Required relational persistence component for Python Targets. |
+| POSIX shell | common.md | The supplied harness and test runner use shell scripts. |
+=== END ARTIFACT ===</pre></article>
+</main>
+</body>
+</html>
