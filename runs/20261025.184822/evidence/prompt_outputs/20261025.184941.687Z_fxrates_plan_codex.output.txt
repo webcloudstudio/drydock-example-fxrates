@@ -1,0 +1,361 @@
+=== BEGIN ARTIFACT DATABASE.md ===
+# DATABASE: FxRates
+
+| Field | Value |
+|-------|-------|
+| Version | 20261025 V1 |
+| Description | Persistence stores and typed interfaces for ECB currency rates. |
+| Depends On | ARCHITECTURE.md |
+| Provides | rates repository operations |
+
+## Questions
+
+- None.
+
+## Persistence Boundary
+
+| Boundary | Rule |
+|----------|------|
+| Raw storage access | Only the generated `persistence/` package reaches the store. |
+| Caller dependency | Features depend on declared access patterns and their DTOs, not on schemas. |
+| Implementation | Generated from this file at the DATABASE build step; application stories write callers only. |
+
+## Access Patterns
+
+### FEATURE-RATE-001 — List publication dates and rate counts
+
+| Field | Value |
+|-------|-------|
+| Owner | DATABASE.md |
+| Access | read |
+| Repository operation | `rates.publication_stats` |
+| Kind | list |
+| Compatibility | data |
+
+Input: PublicationStatsInput
+
+| Field | Type |
+|-------|------|
+| None | |
+
+Output: PublicationStatsOutput
+
+| Field | Type |
+|-------|------|
+| date | str |
+
+### FEATURE-RATE-002 — List rates for an effective publication date
+
+| Field | Value |
+|-------|-------|
+| Owner | DATABASE.md |
+| Access | read |
+| Repository operation | `rates.for_date` |
+| Kind | list |
+| Match | date |
+| Order | currency asc |
+| Compatibility | data |
+
+Input: RatesForDateInput
+
+| Field | Type |
+|-------|------|
+| date | str |
+
+Output: RateForDateOutput
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+| rate | str |
+
+### FEATURE-RATE-003 — List currencies with stored rates
+
+| Field | Value |
+|-------|-------|
+| Owner | DATABASE.md |
+| Access | read |
+| Repository operation | `rates.currencies` |
+| Kind | list |
+| Order | currency asc |
+| Compatibility | data |
+
+Input: CurrenciesInput
+
+| Field | Type |
+|-------|------|
+| None | |
+
+Output: CurrencyOutput
+
+| Field | Type |
+|-------|------|
+| currency | str |
+
+### FEATURE-RATE-004 — Retrieve a rate by date and currency
+
+| Field | Value |
+|-------|-------|
+| Owner | DATABASE.md |
+| Access | read |
+| Repository operation | `rates.get` |
+| Match | date, currency |
+| Compatibility | data |
+
+Input: RateGetInput
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+
+Output: RateGetOutput
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+| rate | str |
+
+### FEATURE-RATE-005 — List a currency's rates within date bounds
+
+| Field | Value |
+|-------|-------|
+| Owner | DATABASE.md |
+| Access | read |
+| Repository operation | `rates.history` |
+| Kind | list |
+| Match | currency, date >= start_date, date <= end_date |
+| Order | date asc |
+| Compatibility | data |
+
+Input: RateHistoryInput
+
+| Field | Type |
+|-------|------|
+| currency | str |
+| start_date | str |
+| end_date | str |
+
+Output: RateHistoryOutput
+
+| Field | Type |
+|-------|------|
+| date | str |
+| rate | str |
+
+### FEATURE-RATE-006 — Replace a stored rate
+
+| Field | Value |
+|-------|-------|
+| Owner | DATABASE.md |
+| Access | write |
+| Repository operation | `rates.replace_rate` |
+| Kind | upsert |
+| Match | date, currency |
+| Compatibility | data |
+
+Input: RateReplaceInput
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+| rate | str |
+
+Output: RateReplaceOutput
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+| rate | str |
+
+### FEATURE-RATE-007 — Delete all rates
+
+| Field | Value |
+|-------|-------|
+| Owner | DATABASE.md |
+| Access | write |
+| Repository operation | `rates.clear` |
+| Kind | delete |
+| Compatibility | data |
+
+Input: RateClearInput
+
+| Field | Type |
+|-------|------|
+| None | |
+
+Output: RateClearOutput
+
+| Field | Type |
+|-------|------|
+
+## Schemas
+
+## `rates`
+
+| Field | Type | Notes |
+|-------|------|-------|
+| date | TEXT NOT NULL | ECB effective publication date in YYYY-MM-DD format. |
+| currency | TEXT NOT NULL | Three-letter uppercase currency code. |
+| rate | TEXT NOT NULL | ECB-published rate text, preserved without numeric conversion. |
+| id | INTEGER PK | Generated row identifier. |
+
+- UNIQUE (date, currency)
+
+## Migrations
+
+Each relational change has one staged record in `migrations/MIGRATION-<AccessPatternId>.md`.
+The record carries upgrade/downgrade snippets and progresses from planned to built only when the DATABASE build story completes.
+
+| Access Pattern | Revision | State |
+|----------------|----------|-------|
+
+## Config (.env)
+
+| Key | Type | Required | Notes |
+|-----|------|----------|-------|
+| DATABASE_URL | str | No | Database location; takes precedence when set. |
+| DATABASE_PATH | str | No | Database path used when DATABASE_URL is unset. |
+
+## File Stores
+
+| Store | Root dir | Notes |
+|-------|----------|-------|
+| None | — | No file store is used for persistent application state. |
+
+## External Services
+
+| Service | Wrapper | Notes |
+|---------|---------|-------|
+| ECB archive download | Fetch integration | Download is invoked only by `fxrates fetch`; tests replace it with a stub. |
+
+## External Libraries
+
+| Library | Ownership | Distribution | Consumer Contract |
+|---------|-----------|--------------|-------------------|
+| SQLite | Generated persistence package | Shipped standard-library engine | Application code calls the generated repository operations and does not open a driver directly. |
+
+## Programmatic Acceptance
+
+=== AC publication-dates ===
+Intent: The repository lists stored publication dates and supports statistics derived from those dates.
+
+from persistence.testing import db_session
+
+with db_session() as db:
+    suffix = "db-ac-publication"
+    first = db.rates.replace_rate(
+        date="2098-01-01", currency="USD", rate="1.25"
+    )
+    second = db.rates.replace_rate(
+        date="2098-01-02", currency="GBP", rate="0.75"
+    )
+    dates = db.rates.publication_stats()
+    assert first.date == "2098-01-01"
+    assert second.date == "2098-01-02"
+    assert [row.date for row in dates if row.date.startswith("2098-01-")] == [
+        "2098-01-01", "2098-01-02"
+    ]
+=== END AC ===
+
+=== AC rates-for-date ===
+Intent: A date lookup returns the stored rate rows for that date in currency order.
+
+from persistence.testing import db_session
+
+with db_session() as db:
+    db.rates.replace_rate(date="2098-02-01", currency="USD", rate="1.25")
+    db.rates.replace_rate(date="2098-02-01", currency="GBP", rate="0.75")
+    rows = db.rates.for_date(date="2098-02-01")
+    assert [(row.currency, row.rate) for row in rows] == [
+        ("GBP", "0.75"), ("USD", "1.25")
+    ]
+=== END AC ===
+
+=== AC currencies ===
+Intent: Currency listing returns stored currencies in ascending order.
+
+from persistence.testing import db_session
+
+with db_session() as db:
+    db.rates.replace_rate(date="2098-03-01", currency="USD", rate="1.25")
+    db.rates.replace_rate(date="2098-03-01", currency="GBP", rate="0.75")
+    rows = db.rates.currencies()
+    selected = [row.currency for row in rows if row.currency in {"USD", "GBP"}]
+    assert selected == ["GBP", "USD"]
+=== END AC ===
+
+=== AC rate-get ===
+Intent: A stored rate can be retrieved by its date and currency.
+
+from persistence.testing import db_session
+
+with db_session() as db:
+    db.rates.replace_rate(date="2098-04-01", currency="USD", rate="1.25")
+    row = db.rates.get(date="2098-04-01", currency="USD")
+    assert row is not None
+    assert (row.date, row.currency, row.rate) == ("2098-04-01", "USD", "1.25")
+=== END AC ===
+
+=== AC rate-history ===
+Intent: History returns the selected currency's rows in ascending date order.
+
+from persistence.testing import db_session
+
+with db_session() as db:
+    db.rates.replace_rate(date="2098-05-02", currency="USD", rate="1.25")
+    db.rates.replace_rate(date="2098-05-01", currency="USD", rate="1.20")
+    rows = db.rates.history(
+        currency="USD", start_date="2098-05-01", end_date="2098-05-02"
+    )
+    assert [(row.date, row.rate) for row in rows] == [
+        ("2098-05-01", "1.20"), ("2098-05-02", "1.25")
+    ]
+=== END AC ===
+
+=== AC replace-rate ===
+Intent: Replacing a date and currency stores the supplied rate text exactly and replaces the prior value.
+
+from persistence.testing import db_session
+
+with db_session() as db:
+    db.rates.replace_rate(date="2098-06-01", currency="USD", rate="1.20")
+    db.rates.replace_rate(date="2098-06-01", currency="USD", rate="1.200")
+    row = db.rates.get(date="2098-06-01", currency="USD")
+    assert row is not None
+    expected_rate = "1.200"
+    assert row.rate == expected_rate
+=== END AC ===
+
+=== AC clear-rates ===
+Intent: The clear operation removes only the criterion's selected date and currency rows.
+
+from persistence.testing import db_session
+
+with db_session() as db:
+    db.rates.replace_rate(date="2098-07-01", currency="USD", rate="1.25")
+    db.rates.replace_rate(date="2098-07-01", currency="GBP", rate="0.75")
+    db.rates.replace_rate(date="2098-07-02", currency="USD", rate="1.30")
+    db.rates.delete(date="2098-07-01", currency="USD")
+    removed = db.rates.get(date="2098-07-01", currency="USD")
+    preserved = db.rates.get(date="2098-07-01", currency="GBP")
+    assert removed is None
+    assert preserved is not None
+    assert preserved.rate == "0.75"
+=== END AC ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Store rates as the ECB's published text; do not convert stored rates to floating point.
+- Keep database access behind the generated persistence library.
+- Resolve the database from DATABASE_URL, then DATABASE_PATH, then data/app.db.
+- Do not read the supplied grader or data files from application code.
+=== END ARTIFACT ===

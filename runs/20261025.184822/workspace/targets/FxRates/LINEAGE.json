@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "import": {
+    "root": "/mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261025.184822/sources",
+    "format": "markdown"
+  },
+  "sources": {
+    "INSTRUCTIONS.md": {
+      "state": "current",
+      "versions": [
+        {
+          "commit": "79fe084",
+          "date": "2026-10-25",
+          "hash": "6029ae8e8b0169d9e6c7dad4b420183324f54e17ba9a54e694f5b0ed8df01af7",
+          "release": "",
+          "state": "pending",
+          "via": null,
+          "ticket": null,
+          "requirements": []
+        }
+      ]
+    },
+    "eurofxref-hist_2025-01.csv": {
+      "state": "current",
+      "versions": [
+        {
+          "commit": "79fe084",
+          "date": "2026-10-25",
+          "hash": "a77de17e0b3c0b73f16805c200496298dae39e44c01bf6726f6c413d1634decf",
+          "release": "",
+          "state": "pending",
+          "via": null,
+          "ticket": null,
+          "requirements": []
+        }
+      ]
+    },
+    "eurofxref-hist_2025-02-03_04.csv": {
+      "state": "current",
+      "versions": [
+        {
+          "commit": "79fe084",
+          "date": "2026-10-25",
+          "hash": "91c942eee600dc1dccaffd15bd2917625813d2050487be5de720ead2fc3e0d05",
+          "release": "",
+          "state": "pending",
+          "via": null,
+          "ticket": null,
+          "requirements": []
+        }
+      ]
+    },
+    "eurofxref-hist_bad.csv": {
+      "state": "current",
+      "versions": [
+        {
+          "commit": "79fe084",
+          "date": "2026-10-25",
+          "hash": "91c5c0ffeacc455ee6e2e4f6c33996985d91f8a1bb6a1f35897660f3037d7b5e",
+          "release": "",
+          "state": "pending",
+          "via": null,
+          "ticket": null,
+          "requirements": []
+        }
+      ]
+    },
+    "run.sh": {
+      "state": "current",
+      "versions": [
+        {
+          "commit": "79fe084",
+          "date": "2026-10-25",
+          "hash": "f0d6092c076f758abe72e7f0130422f3a1fbdcaa84e33eed747352af311efae7",
+          "release": "",
+          "state": "pending",
+          "via": null,
+          "ticket": null,
+          "requirements": []
+        }
+      ]
+    }
+  }
+}
