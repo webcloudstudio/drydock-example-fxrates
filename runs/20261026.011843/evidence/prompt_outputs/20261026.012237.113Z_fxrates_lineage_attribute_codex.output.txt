@@ -1,0 +1,5 @@
+<requirement name="validate-history-csv" stories="data-002">
+Date,USD,JPY,
+2025-02-04,1.0345,160.12,
+2025-02-03,1.0x,159.01,
+</requirement>

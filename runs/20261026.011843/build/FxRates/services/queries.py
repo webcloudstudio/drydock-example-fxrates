@@ -1,0 +1,26 @@
+from datetime import date
+from decimal import Decimal, ROUND_HALF_EVEN
+from config import get_settings
+from persistence import open_database
+
+def rows():
+ db=open_database(get_settings().database_location)
+ try: return db.rates.list()
+ finally: db.close()
+def effective(as_of):
+ db=open_database(get_settings().database_location)
+ try:
+  found=db.rates.effective_rates(as_of=as_of)
+  return db.rates.by_date(date=found[0].date) if found else []
+ finally: db.close()
+def currency_history(code,start,end):
+ db=open_database(get_settings().database_location)
+ try:
+  all_rows=db.rates.list()
+  if not any(r.currency==code for r in all_rows): return None
+  return db.rates.history(currency=code,start_date=start or '0001-01-01',end_date=end or '9999-12-31')
+ finally: db.close()
+def valid_date(s):
+ try: return date.fromisoformat(s).isoformat()==s
+ except (ValueError,TypeError): return False
+def decfmt(value,places): return f'{value.quantize(Decimal(places),rounding=ROUND_HALF_EVEN):.{len(places)-2}f}'

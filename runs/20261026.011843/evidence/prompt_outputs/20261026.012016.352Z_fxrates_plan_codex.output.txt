@@ -1,0 +1,304 @@
+=== BEGIN ARTIFACT DATABASE.md ===
+# DATABASE: FxRates
+
+| Field | Value |
+|-------|-------|
+| Version | 20261026 V1 |
+| Description | Persistence contract for ECB currency rates. |
+| Depends On | ARCHITECTURE.md |
+| Provides | rates repository operations |
+
+## Questions
+
+- None.
+
+## Persistence Boundary
+
+| Boundary | Rule |
+|----------|------|
+| Raw storage access | Only the generated `persistence/` package reaches the store. |
+| Caller dependency | Features use the declared rates access patterns and DTOs. |
+| Database location | Resolve `DATABASE_URL`, then `DATABASE_PATH`, then `data/app.db`. |
+| Implementation | Generated from this file at the DATABASE build step; never written by hand. |
+
+## Access Patterns
+
+### FEATURE-RATE-001 — Replace a stored rate
+
+| Field | Value |
+|-------|-------|
+| Owner | DATABASE.md |
+| Access | write |
+| Repository operation | `rates.upsert` |
+| Match | `date`, `currency` |
+| Compatibility | unchanged |
+
+Input: `RatesUpsertInput`
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+| rate | str |
+
+Output: `RatesUpsertOutput`
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+| rate | str |
+
+### FEATURE-RATE-002 — List rates for effective-date lookup
+
+| Field | Value |
+|-------|-------|
+| Owner | DATABASE.md |
+| Access | read |
+| Repository operation | `rates.effective_rates` |
+| Kind | list |
+| Match | `date <= as_of` |
+| Order | `date` desc, `currency` asc |
+| Compatibility | unchanged |
+
+Input: `RatesEffectiveRatesInput`
+
+| Field | Type |
+|-------|------|
+| as_of | str |
+
+Output: `RatesEffectiveRatesOutput`
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+| rate | str |
+
+### FEATURE-RATE-003 — List rates for a date
+
+| Field | Value |
+|-------|-------|
+| Owner | DATABASE.md |
+| Access | read |
+| Repository operation | `rates.by_date` |
+| Kind | list |
+| Match | `date` |
+| Order | `currency` asc |
+| Compatibility | unchanged |
+
+Input: `RatesByDateInput`
+
+| Field | Type |
+|-------|------|
+| date | str |
+
+Output: `RatesByDateOutput`
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+| rate | str |
+
+### FEATURE-RATE-004 — List a currency’s history
+
+| Field | Value |
+|-------|-------|
+| Owner | DATABASE.md |
+| Access | read |
+| Repository operation | `rates.history` |
+| Kind | list |
+| Match | `currency`, `date >= start_date`, `date <= end_date` |
+| Order | `date` asc |
+| Compatibility | unchanged |
+
+Input: `RatesHistoryInput`
+
+| Field | Type |
+|-------|------|
+| currency | str |
+| start_date | str |
+| end_date | str |
+
+Output: `RatesHistoryOutput`
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+| rate | str |
+
+### FEATURE-RATE-005 — List all stored rates
+
+| Field | Value |
+|-------|-------|
+| Owner | DATABASE.md |
+| Access | read |
+| Repository operation | `rates.list` |
+| Kind | list |
+| Order | `date` asc, `currency` asc |
+| Compatibility | unchanged |
+
+Input: `RatesListInput`
+
+| Field | Type |
+|-------|------|
+
+Output: `RatesListOutput`
+
+| Field | Type |
+|-------|------|
+| date | str |
+| currency | str |
+| rate | str |
+
+## Schemas
+
+## `rates`
+
+| Field | Type | Notes |
+|-------|------|-------|
+| id | INTEGER PK | Generated row identifier. |
+| date | TEXT NOT NULL | ECB publication date in `YYYY-MM-DD` form. |
+| currency | TEXT NOT NULL | Three-letter uppercase currency code. |
+| rate | TEXT NOT NULL | Published rate text, preserved without numeric conversion. |
+
+- UNIQUE (date, currency)
+
+## Migrations
+
+Each relational change has one staged record in `migrations/MIGRATION-<AccessPatternId>.md`.
+
+| Access Pattern | Revision | State |
+|----------------|----------|-------|
+
+## Config (.env)
+
+| Key | Type | Required | Notes |
+|-----|------|----------|-------|
+| DATABASE_URL | str | No | Database DSN; takes precedence over `DATABASE_PATH`. |
+| DATABASE_PATH | str | No | Database file path used when `DATABASE_URL` is unset. |
+
+## File Stores
+
+| Store | Root dir | Notes |
+|-------|----------|-------|
+
+## External Services
+
+| Service | Wrapper | Notes |
+|---------|---------|-------|
+
+## External Libraries
+
+| Library | Ownership | Distribution | Consumer Contract |
+|---------|-----------|--------------|-------------------|
+| SQLite | Generated persistence package | Python standard library | Application code accesses storage only through `persistence`. |
+
+## Programmatic Acceptance
+
+=== AC rates-upsert ===
+Intent: The rates upsert operation replaces an existing date and currency rate and returns the stored row.
+
+from persistence.testing import db_session
+
+date = "2099-01-02"
+currency = "ZZZ"
+original_rate = "1.25"
+replacement_rate = "1.2500"
+
+with db_session() as db:
+    db.rates.upsert(date=date, currency=currency, rate=original_rate)
+    stored = db.rates.upsert(date=date, currency=currency, rate=replacement_rate)
+    assert (stored.date, stored.currency, stored.rate) == (date, currency, replacement_rate)
+=== END AC rates-upsert ===
+
+=== AC rates-effective-rates ===
+Intent: Effective-date lookup returns stored rows on or before its bound in descending date order.
+
+from persistence.testing import db_session
+
+first_date = "2099-02-01"
+second_date = "2099-02-03"
+currency = "ZZZ"
+rate = "2.5"
+
+with db_session() as db:
+    db.rates.upsert(date=first_date, currency=currency, rate=rate)
+    db.rates.upsert(date=second_date, currency=currency, rate=rate)
+    rows = db.rates.effective_rates(as_of=second_date)
+    matching = [row.date for row in rows if row.currency == currency and row.date in (first_date, second_date)]
+    assert matching == sorted((first_date, second_date), reverse=True)
+=== END AC rates-effective-rates ===
+
+=== AC rates-by-date ===
+Intent: Date lookup returns the stored rows for the requested date.
+
+from persistence.testing import db_session
+
+date = "2099-03-01"
+currency = "ZZZ"
+rate = "3.75"
+
+with db_session() as db:
+    db.rates.upsert(date=date, currency=currency, rate=rate)
+    rows = db.rates.by_date(date=date)
+    matching = [(row.date, row.currency, row.rate) for row in rows if row.date == date and row.currency == currency]
+    assert matching == [(date, currency, rate)]
+=== END AC rates-by-date ===
+
+=== AC rates-history ===
+Intent: Currency history returns matching rows in ascending date order within its inclusive bounds.
+
+from persistence.testing import db_session
+
+currency = "ZZZ"
+first_date = "2099-04-01"
+second_date = "2099-04-02"
+outside_date = "2099-04-03"
+rate = "4.5"
+
+with db_session() as db:
+    db.rates.upsert(date=first_date, currency=currency, rate=rate)
+    db.rates.upsert(date=second_date, currency=currency, rate=rate)
+    db.rates.upsert(date=outside_date, currency=currency, rate=rate)
+    rows = db.rates.history(currency=currency, start_date=first_date, end_date=second_date)
+    matching = [(row.date, row.currency, row.rate) for row in rows if row.currency == currency]
+    assert matching == [(first_date, currency, rate), (second_date, currency, rate)]
+=== END AC rates-history ===
+
+=== AC rates-list ===
+Intent: The rates list operation reads back all rows created by the criterion in declared date and currency order.
+
+from persistence.testing import db_session
+
+first_date = "2099-05-01"
+second_date = "2099-05-02"
+first_currency = "AAA"
+second_currency = "ZZZ"
+rate = "5.5"
+
+with db_session() as db:
+    db.rates.upsert(date=second_date, currency=first_currency, rate=rate)
+    db.rates.upsert(date=first_date, currency=second_currency, rate=rate)
+    db.rates.upsert(date=first_date, currency=first_currency, rate=rate)
+    rows = db.rates.list()
+    matching = [(row.date, row.currency, row.rate) for row in rows if row.date in (first_date, second_date) and row.currency in (first_currency, second_currency)]
+    assert matching == [
+        (first_date, first_currency, rate),
+        (first_date, second_currency, rate),
+        (second_date, first_currency, rate),
+    ]
+=== END AC rates-list ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Persist rate values exactly as published text; do not convert them to floating point.
+- Route all database access through the generated persistence library.
+- Do not assume the configured database is empty or reset it outside `fxrates init`.
+=== END ARTIFACT ===

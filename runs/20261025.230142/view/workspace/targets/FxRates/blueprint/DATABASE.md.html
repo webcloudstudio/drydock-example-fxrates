@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/DATABASE.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/DATABASE.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/DATABASE.md">Raw file</a></div></header>
+<article class="doc"><h1>DATABASE: FxRates</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261025 V1</td></tr><tr><td>Description</td><td>Persistence stores and typed repository interfaces for ECB currency rates.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md</td></tr><tr><td>Provides</td><td>rates repository operations</td></tr><tr><td>Consumes</td><td></td></tr></tbody></table></div>
+<h2>Persistence Boundary</h2>
+<div class="scroll"><table><thead><tr><th>Boundary</th><th>Rule</th></tr></thead><tbody><tr><td>Raw storage access</td><td>Only the generated <code>persistence/</code> package reaches the store.</td></tr><tr><td>Caller dependency</td><td>Features depend on declared access patterns and their DTOs, not on schemas.</td></tr><tr><td>Implementation</td><td>Generated from this file at the DATABASE build step; never written by hand.</td></tr></tbody></table></div>
+<h2>Access Patterns</h2>
+<h3>FEATURE-RATE-001 — Retrieve a rate by date and currency</h3>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Owner</td><td>FEATURE-LoadHistory.md</td></tr><tr><td>Access</td><td>read</td></tr><tr><td>Repository operation</td><td><code>rates.get</code></td></tr><tr><td>Compatibility</td><td>unchanged</td></tr><tr><td>Match</td><td><code>date</code>, <code>currency</code></td></tr></tbody></table></div>
+<p>Input: RatesGetInput</p>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Type</th></tr></thead><tbody><tr><td>date</td><td>str</td></tr><tr><td>currency</td><td>str</td></tr></tbody></table></div>
+<p>Output: RatesGetOutput</p>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Type</th></tr></thead><tbody><tr><td>date</td><td>str</td></tr><tr><td>currency</td><td>str</td></tr><tr><td>rate</td><td>str</td></tr></tbody></table></div>
+<h3>FEATURE-RATE-002 — List rates with optional date and currency filters</h3>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Owner</td><td>FEATURE-LoadHistory.md</td></tr><tr><td>Access</td><td>read</td></tr><tr><td>Repository operation</td><td><code>rates.list</code></td></tr><tr><td>Compatibility</td><td>unchanged</td></tr><tr><td>Match</td><td><code>currency</code>, <code>date &gt;= start_date</code>, <code>date &lt;= end_date</code></td></tr><tr><td>Order</td><td><code>date</code> asc, <code>currency</code> asc</td></tr></tbody></table></div>
+<p>Input: RatesListInput</p>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Type</th></tr></thead><tbody><tr><td>currency</td><td>str</td></tr><tr><td>start_date</td><td>str</td></tr><tr><td>end_date</td><td>str</td></tr></tbody></table></div>
+<p>Output: RatesListOutput</p>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Type</th></tr></thead><tbody><tr><td>date</td><td>str</td></tr><tr><td>currency</td><td>str</td></tr><tr><td>rate</td><td>str</td></tr></tbody></table></div>
+<h3>FEATURE-RATE-003 — Replace or store a published rate</h3>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Owner</td><td>FEATURE-LoadHistory.md</td></tr><tr><td>Access</td><td>write</td></tr><tr><td>Repository operation</td><td><code>rates.upsert</code></td></tr><tr><td>Compatibility</td><td>unchanged</td></tr><tr><td>Match</td><td><code>date</code>, <code>currency</code></td></tr></tbody></table></div>
+<p>Input: RatesUpsertInput</p>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Type</th></tr></thead><tbody><tr><td>date</td><td>str</td></tr><tr><td>currency</td><td>str</td></tr><tr><td>rate</td><td>str</td></tr></tbody></table></div>
+<p>Output: RatesUpsertOutput</p>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Type</th></tr></thead><tbody><tr><td>date</td><td>str</td></tr><tr><td>currency</td><td>str</td></tr><tr><td>rate</td><td>str</td></tr></tbody></table></div>
+<h3>FEATURE-RATE-004 — Delete a stored rate</h3>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Owner</td><td>FEATURE-InitializeRates.md</td></tr><tr><td>Access</td><td>write</td></tr><tr><td>Repository operation</td><td><code>rates.delete</code></td></tr><tr><td>Compatibility</td><td>unchanged</td></tr><tr><td>Match</td><td><code>date</code>, <code>currency</code></td></tr></tbody></table></div>
+<p>Input: RatesDeleteInput</p>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Type</th></tr></thead><tbody><tr><td>date</td><td>str</td></tr><tr><td>currency</td><td>str</td></tr></tbody></table></div>
+<p>Output: RatesDeleteOutput</p>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Type</th></tr></thead><tbody><tr><td>date</td><td>str</td></tr><tr><td>currency</td><td>str</td></tr></tbody></table></div>
+<h2>Schemas</h2>
+<h2><code>rates</code></h2>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td>id</td><td>INTEGER PK</td><td>Internal row identifier.</td></tr><tr><td>date</td><td>TEXT NOT NULL</td><td>ECB publication date in <code>YYYY-MM-DD</code> form.</td></tr><tr><td>currency</td><td>TEXT NOT NULL</td><td>Three-letter uppercase currency code.</td></tr><tr><td>rate</td><td>TEXT NOT NULL</td><td>ECB-published rate text, unchanged.</td></tr></tbody></table></div>
+<ul><li>UNIQUE (date, currency)</li></ul>
+<h2>Migrations</h2>
+<p>Each relational change has one staged record in <code>migrations/MIGRATION-&lt;AccessPatternId&gt;.md</code>. The record carries Alembic <code>upgrade</code>/<code>downgrade</code> snippets and progresses from <code>planned</code> to <code>built</code> only when its DATABASE build story completes. Alembic records deployment application separately.</p>
+<div class="scroll"><table><thead><tr><th>Access Pattern</th><th>Revision</th><th>State</th></tr></thead><tbody><tr><td>FEATURE-RATE-001</td><td>—</td><td>planned</td></tr><tr><td>FEATURE-RATE-002</td><td>—</td><td>planned</td></tr><tr><td>FEATURE-RATE-003</td><td>—</td><td>planned</td></tr><tr><td>FEATURE-RATE-004</td><td>—</td><td>planned</td></tr></tbody></table></div>
+<h2>Config (.env)</h2>
+<div class="scroll"><table><thead><tr><th>Key</th><th>Type</th><th>Required</th><th>Notes</th></tr></thead><tbody><tr><td><code>DATABASE_URL</code></td><td>str</td><td>No</td><td>Database DSN; takes precedence over <code>DATABASE_PATH</code>.</td></tr><tr><td><code>DATABASE_PATH</code></td><td>str</td><td>No</td><td>Database file path when <code>DATABASE_URL</code> is unset.</td></tr><tr><td>Default</td><td>str</td><td>No</td><td><code>data/app.db</code> when neither environment variable is set.</td></tr></tbody></table></div>
+<h2>File Stores</h2>
+<div class="scroll"><table><thead><tr><th>Store</th><th>Root dir</th><th>Notes</th></tr></thead><tbody><tr><td>—</td><td>—</td><td>No file store.</td></tr></tbody></table></div>
+<h2>External Services</h2>
+<div class="scroll"><table><thead><tr><th>Service</th><th>Wrapper</th><th>Notes</th></tr></thead><tbody><tr><td>—</td><td>—</td><td>No runtime external service.</td></tr></tbody></table></div>
+<h2>External Libraries</h2>
+<div class="scroll"><table><thead><tr><th>Library</th><th>Ownership</th><th>Distribution</th><th>Consumer Contract</th></tr></thead><tbody><tr><td>ECB archive download</td><td>FEATURE-FetchHistory.md</td><td>Python standard library</td><td>Fetch story owns download and ZIP extraction; automated tests replace the download with a stub.</td></tr></tbody></table></div>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC rates_get_round_trip ===<br>Intent: Retrieve a stored rate by its date and currency through the declared repository operation.</p>
+<p>from persistence.testing import db_session</p>
+<p>date = &quot;2099-01-02&quot; currency = &quot;ZZZ&quot; rate = &quot;1.2300&quot;</p>
+<p>with db_session() as db: db.rates.upsert(date=date, currency=currency, rate=rate) row = db.rates.get(date=date, currency=currency)</p>
+<p>assert row.date == date assert row.currency == currency assert row.rate == rate === END AC rates_get_round_trip ===</p>
+<p>=== AC rates_list_filters_and_order ===<br>Intent: List stored rates in date and currency order and filter by currency and inclusive date bounds.</p>
+<p>from persistence.testing import db_session</p>
+<p>currency = &quot;ZZZ&quot; other_currency = &quot;YYY&quot; dates = [&quot;2099-01-03&quot;, &quot;2099-01-01&quot;, &quot;2099-01-02&quot;] rates = [&quot;3.00&quot;, &quot;1.00&quot;, &quot;2.00&quot;]</p>
+<p>with db_session() as db: for date, rate in zip(dates, rates): db.rates.upsert(date=date, currency=currency, rate=rate) db.rates.upsert(date=dates[1], currency=other_currency, rate=&quot;8.00&quot;)</p>
+<p>all_rows = db.rates.list() filtered = db.rates.list( currency=currency, start_date=dates[1], end_date=dates[2], )</p>
+<p>assert [(row.date, row.currency, row.rate) for row in all_rows if row.date in dates] == [ (&quot;2099-01-01&quot;, currency, &quot;1.00&quot;), (&quot;2099-01-01&quot;, other_currency, &quot;8.00&quot;), (&quot;2099-01-02&quot;, currency, &quot;2.00&quot;), (&quot;2099-01-03&quot;, currency, &quot;3.00&quot;), ] assert [(row.date, row.currency, row.rate) for row in filtered] == [ (dates[1], currency, rates[1]), (dates[2], currency, rates[2]), ] === END AC rates_list_filters_and_order ===</p>
+<p>=== AC rates_upsert_replaces ===<br>Intent: Upsert replaces an existing date and currency rate while preserving its published text.</p>
+<p>from persistence.testing import db_session</p>
+<p>date = &quot;2099-02-01&quot; currency = &quot;ZZZ&quot; original = &quot;1.20&quot; replacement = &quot;1.2000&quot;</p>
+<p>with db_session() as db: db.rates.upsert(date=date, currency=currency, rate=original) db.rates.upsert(date=date, currency=currency, rate=replacement) row = db.rates.get(date=date, currency=currency)</p>
+<p>assert row.rate == replacement === END AC rates_upsert_replaces ===</p>
+<p>=== AC rates_delete_round_trip ===<br>Intent: Delete removes the selected date and currency rate from the repository.</p>
+<p>from persistence.testing import db_session</p>
+<p>date = &quot;2099-03-01&quot; currency = &quot;ZZZ&quot; rate = &quot;4.50&quot;</p>
+<p>with db_session() as db: db.rates.upsert(date=date, currency=currency, rate=rate) deleted = db.rates.delete(date=date, currency=currency) row = db.rates.get(date=date, currency=currency)</p>
+<p>assert deleted.date == date assert deleted.currency == currency assert row is None === END AC rates_delete_round_trip ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Store each ECB rate exactly as published, using text and never floating point.</li><li>Reject an invalid input file before the first write; a rejected file changes nothing.</li><li>Replace an existing rate with the same date and currency.</li><li>Resolve the store from <code>DATABASE_URL</code>, then <code>DATABASE_PATH</code>, then <code>data/app.db</code>.</li><li>Application code accesses SQLite only through the generated persistence package.</li><li>Do not modify or read <code>sources/run.sh</code> or supplied data files from application code.</li></ul></article>
+</main>
+</body>
+</html>

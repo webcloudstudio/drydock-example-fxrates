@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>build/FxRates/tests/test_architecture_imports.py</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>build/FxRates/tests/test_architecture_imports.py</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../build/FxRates/tests/test_architecture_imports.py">Raw file</a></div></header>
+<article class="doc"><pre>from app_server.main import create_app
+from cli import main
+
+
+def test_architecture_entry_points_are_importable():
+    assert callable(create_app)
+    assert callable(main)
+</pre></article>
+</main>
+</body>
+</html>

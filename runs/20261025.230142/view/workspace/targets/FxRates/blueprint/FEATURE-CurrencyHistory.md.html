@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-CurrencyHistory.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-CurrencyHistory.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-CurrencyHistory.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Currency History</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261025 V1</td></tr><tr><td>Description</td><td>Retrieve ordered currency history and statistics over optional date bounds.</td></tr><tr><td>Depends On</td><td>FEATURE-ApiFoundation.md, DATABASE.md</td></tr><tr><td>Provides</td><td>GET /history/{code}</td></tr><tr><td>Consumes</td><td>rates repository operations</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Return a currency’s stored publication points in ascending date order, optionally filtered by inclusive <code>start</code> and <code>end</code> bounds. Include count, minimum and maximum by numeric rate value, and the exact arithmetic mean rounded half to even to six decimal places and formatted with six decimals. Preserve rate text for points and extrema. When there are no points, return count zero and null statistics with an empty points list. A currency with no stored rate at all returns 404.</p>
+<h2>Database Interface</h2>
+<ul><li>None — persistence is owned by FEATURE-InitializeRates.md, FEATURE-LoadHistory.md.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC history_points_and_mean ===<br>Intent: History returns stored points in date order and computes count and mean from their exact decimal values.<br>Requires: python-package=httpx; scope=test</p>
+<p>from decimal import Decimal, ROUND_HALF_EVEN from persistence.testing import db_session from app_server.testing import web_client</p>
+<p>currency = &quot;ZZZ&quot; dates = [&quot;2099-01-03&quot;, &quot;2099-01-01&quot;, &quot;2099-01-02&quot;] rates = [&quot;3.00&quot;, &quot;1.00&quot;, &quot;2.00&quot;] with db_session() as db: for date, rate in zip(dates, rates): db.rates.upsert(date=date, currency=currency, rate=rate)</p>
+<p>response = web_client().get(f&quot;/history/{currency}&quot;) assert response.status_code == 200 body = response.json() expected_dates = sorted(dates) expected_mean = (sum(map(Decimal, rates)) / Decimal(len(rates))).quantize( Decimal(&quot;0.000001&quot;), rounding=ROUND_HALF_EVEN ) assert [point[&quot;date&quot;] for point in body[&quot;points&quot;]] == expected_dates assert [point[&quot;rate&quot;] for point in body[&quot;points&quot;]] == [ rates[dates.index(date)] for date in expected_dates ] assert body[&quot;currency&quot;] == currency assert body[&quot;count&quot;] == len(rates) assert body[&quot;mean&quot;] == f&quot;{expected_mean:.6f}&quot; === END AC history_points_and_mean ===</p>
+<p>=== AC history_bounds_and_empty_range ===<br>Intent: Inclusive date bounds select matching history points and an empty range has null statistics.<br>Requires: python-package=httpx; scope=test</p>
+<p>from persistence.testing import db_session from app_server.testing import web_client</p>
+<p>currency = &quot;ZZZ&quot; dates = [&quot;2099-01-01&quot;, &quot;2099-01-02&quot;] rates = [&quot;1.00&quot;, &quot;2.00&quot;] with db_session() as db: for date, rate in zip(dates, rates): db.rates.upsert(date=date, currency=currency, rate=rate)</p>
+<p>client = web_client() bounded = client.get( f&quot;/history/{currency}&quot;, params={&quot;start&quot;: dates[0], &quot;end&quot;: dates[0]}, ) empty = client.get(f&quot;/history/{currency}&quot;, params={&quot;start&quot;: &quot;2099-02-01&quot;}) assert bounded.status_code == 200 assert empty.status_code == 200 assert [point[&quot;date&quot;] for point in bounded.json()[&quot;points&quot;]] == [dates[0]] assert bounded.json()[&quot;count&quot;] == 1 assert empty.json()[&quot;count&quot;] == 0 assert empty.json()[&quot;min&quot;] is None assert empty.json()[&quot;max&quot;] is None assert empty.json()[&quot;mean&quot;] is None assert empty.json()[&quot;points&quot;] == [] === END AC history_bounds_and_empty_range ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Date bounds are optional and inclusive.</li><li>Order points by ascending publication date.</li><li>Use exact Decimal statistics and preserve published rate text.</li><li>A currency with no stored rate at all returns 404.</li></ul></article>
+</main>
+</body>
+</html>

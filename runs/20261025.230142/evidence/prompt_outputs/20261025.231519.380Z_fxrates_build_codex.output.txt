@@ -1,0 +1,15 @@
+AC_BROKEN: rates_list_filters_and_order
+
+RESULT: SUCCESS
+
+FILES CHANGED:
+- None
+
+SUMMARY:
+The declared list order is `date` ascending, then `currency` ascending. The criterion’s expected rows put `ZZZ` before `YYY` for the same date, while the actual result correctly puts `YYY` first. I reran the assertion and confirmed this conflict; changing the implementation to satisfy it would violate the declared order.
+
+BLOCKERS:
+- The acceptance expectation conflicts with the `DATABASE.md` order declaration. Update the criterion’s expected same-date currency order before rerunning.
+
+FAILURE_SUMMARY: Acceptance expectation conflicts with declared ordering
+FAILURE_DETAIL: `rates_list_filters_and_order` expects ZZZ before YYY on 2099-01-01, but its declared order is currency ascending, which yields YYY before ZZZ. The repository returns that declared order. The criterion cannot pass without changing its expectation or violating the specification.

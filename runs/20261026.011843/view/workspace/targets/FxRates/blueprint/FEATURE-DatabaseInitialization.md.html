@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-DatabaseInitialization.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-DatabaseInitialization.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-DatabaseInitialization.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Database Initialization</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261026 V1</td></tr><tr><td>Description</td><td>Initializes the rates table through the <code>fxrates init</code> command.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md, DATABASE.md</td></tr><tr><td>Provides</td><td><code>fxrates init</code></td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Allow operators and the supplied harness to initialize an empty rates table before loading history.</p>
+<h2>Trigger and behavior</h2>
+<p><code>fxrates init</code> drops the existing <code>rates</code> table if present and creates it empty. It writes nothing to standard output on success. A later initialization removes previously stored rates.</p>
+<p>The command line provides usable help text. Unknown commands, incorrect argument counts, and a non-integer <code>serve --port</code> are usage errors with exit code 2.</p>
+<h2>Database Interface</h2>
+<ul><li>None — persistence is owned by DATABASE.md.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC init-empty ===<br>Intent: Initialization clears existing rates and leaves the table empty.</p>
+<p>from cli.testing import cli_runner from persistence.testing import db_session</p>
+<p>date = &quot;2098-06-01&quot; currency = &quot;ZZZ&quot; rate = &quot;1.5&quot;</p>
+<p>with db_session() as db: db.rates.upsert(date=date, currency=currency, rate=rate)</p>
+<p>exit_code, stdout, stderr = cli_runner(&quot;init&quot;) assert exit_code == 0 with db_session() as db: rows = db.rates.by_date(date=date) assert not any(row.currency == currency for row in rows) === END AC init-empty ===</p>
+<p>=== AC init-usage ===<br>Intent: Initialization accepts no extra arguments and unknown commands return the declared usage status.</p>
+<p>from cli.testing import cli_runner</p>
+<p>init_code, _, _ = cli_runner(&quot;init&quot;, &quot;extra&quot;) unknown_code, _, _ = cli_runner(&quot;frobnicate&quot;) assert init_code == 2 assert unknown_code == 2 === END AC init-usage ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Resolve the configured database as <code>DATABASE_URL</code>, then <code>DATABASE_PATH</code>, then <code>data/app.db</code>.</li><li>Do not assume the database is empty before initialization.</li><li>Do not open a database driver outside the shipped persistence library.</li></ul></article>
+</main>
+</body>
+</html>

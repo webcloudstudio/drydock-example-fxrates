@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-CurrencyConversion.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-CurrencyConversion.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-CurrencyConversion.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Currency Conversion</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261026 V1</td></tr><tr><td>Description</td><td>Converts amounts between currencies using effective ECB rates.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md, DATABASE.md, FEATURE-HistoryLoading.md</td></tr><tr><td>Provides</td><td>GET /convert</td></tr><tr><td>Consumes</td><td>rates.effective_rates, rates.by_date</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Convert an amount from one currency to another. EUR is the base currency with implicit rate one.</p>
+<h2>Behavior</h2>
+<ul><li>Require <code>from</code>, <code>to</code>, and <code>amount</code>; optional <code>date</code> defaults to the latest publication date.</li><li>Accept amount strings matching <code>[0-9]+(\.[0-9]+)?</code>; malformed or missing inputs return 422.</li><li>Apply the effective publication date rule. Return 404 if no publication exists or a non-EUR currency has no rate for that date.</li><li>Compute the conversion rate exactly as target rate divided by source rate. Round half to even to six decimal places and return exactly six decimals.</li><li>Compute the result from the exact stored rates, not the rounded display rate. Round half to even to two decimal places and return exactly two decimals.</li><li>Echo the amount as supplied. Return JSON fields <code>date</code>, <code>from</code>, <code>to</code>, <code>amount</code>, <code>rate</code>, and <code>result</code>.</li><li>A missing currency rate is not inferred from another date.</li></ul>
+<h2>Database Interface</h2>
+<ul><li><code>FEATURE-RATE-002</code> — read: find rates on or before a date - supplies: <code>as_of</code> - returns: <code>date</code>, <code>currency</code>, <code>rate</code></li><li><code>FEATURE-RATE-003</code> — read: list rates for one date - supplies: <code>date</code> - returns: <code>date</code>, <code>currency</code>, <code>rate</code></li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC conversion-route ===<br>Intent: The conversion route returns a successful response and echoes the supplied amount and currency codes.</p>
+<p>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx; scope=test</p>
+<p>from app_server.testing import web_client from persistence.testing import db_session</p>
+<p>date = &quot;2099-03-01&quot; amount = &quot;2.00&quot; source_rate = &quot;2&quot; target_rate = &quot;5&quot;</p>
+<p>with db_session() as db: db.rates.upsert(date=date, currency=&quot;AAA&quot;, rate=source_rate) db.rates.upsert(date=date, currency=&quot;ZZZ&quot;, rate=target_rate)</p>
+<p>response = web_client().get( &quot;/convert&quot;, params={&quot;from&quot;: &quot;AAA&quot;, &quot;to&quot;: &quot;ZZZ&quot;, &quot;amount&quot;: amount, &quot;date&quot;: date}, ) assert response.status_code == 200 body = response.json() assert body[&quot;amount&quot;] == amount assert body[&quot;from&quot;] == &quot;AAA&quot; assert body[&quot;to&quot;] == &quot;ZZZ&quot; assert body[&quot;date&quot;] == date === END AC conversion-route ===</p>
+<p>=== AC conversion-rounding ===<br>Intent: The conversion rate and result use exact source rates and half-even rounding at their specified precisions.</p>
+<p>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx; scope=test</p>
+<p>from decimal import Decimal, ROUND_HALF_EVEN from app_server.testing import web_client from persistence.testing import db_session</p>
+<p>date = &quot;2099-03-02&quot; amount = &quot;2.00&quot; source_rate = &quot;2&quot; target_rate = &quot;5&quot; expected_rate = (Decimal(target_rate) / Decimal(source_rate)).quantize( Decimal(&quot;0.000001&quot;), rounding=ROUND_HALF_EVEN ) expected_result = (Decimal(amount) * Decimal(target_rate) / Decimal(source_rate)).quantize( Decimal(&quot;0.01&quot;), rounding=ROUND_HALF_EVEN )</p>
+<p>with db_session() as db: db.rates.upsert(date=date, currency=&quot;AAA&quot;, rate=source_rate) db.rates.upsert(date=date, currency=&quot;ZZZ&quot;, rate=target_rate)</p>
+<p>response = web_client().get( &quot;/convert&quot;, params={&quot;from&quot;: &quot;AAA&quot;, &quot;to&quot;: &quot;ZZZ&quot;, &quot;amount&quot;: amount, &quot;date&quot;: date}, ) assert response.status_code == 200 body = response.json() assert body[&quot;rate&quot;] == f&quot;{expected_rate:.6f}&quot; assert body[&quot;result&quot;] == f&quot;{expected_result:.2f}&quot; === END AC conversion-rounding ===</p>
+<p>=== AC conversion-errors ===<br>Intent: The conversion route rejects a missing or malformed amount and returns not found for an unavailable currency.</p>
+<p>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx; scope=test</p>
+<p>from app_server.testing import web_client from persistence.testing import db_session</p>
+<p>with db_session() as db: db.rates.upsert(date=&quot;2099-03-03&quot;, currency=&quot;AAA&quot;, rate=&quot;2&quot;)</p>
+<p>client = web_client() assert client.get(&quot;/convert&quot;, params={&quot;from&quot;: &quot;AAA&quot;, &quot;to&quot;: &quot;ZZZ&quot;}).status_code == 422 assert client.get( &quot;/convert&quot;, params={&quot;from&quot;: &quot;AAA&quot;, &quot;to&quot;: &quot;ZZZ&quot;, &quot;amount&quot;: &quot;abc&quot;}, ).status_code == 422 assert client.get( &quot;/convert&quot;, params={&quot;from&quot;: &quot;AAA&quot;, &quot;to&quot;: &quot;ZZZ&quot;, &quot;amount&quot;: &quot;1&quot;}, ).status_code == 404 === END AC conversion-errors ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Use decimal arithmetic only; never use floating point.</li><li>Compute the result from exact stored rates before rounding.</li></ul></article>
+</main>
+</body>
+</html>

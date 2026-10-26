@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/prompt_outputs/20261025.230904.114Z_fxrates_build_codex.output.txt</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/prompt_outputs/20261025.230904.114Z_fxrates_build_codex.output.txt</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/prompt_outputs/20261025.230904.114Z_fxrates_build_codex.output.txt">Raw file</a></div></header>
+<article class="doc"><pre>&lt;reusable-compact filename=&quot;ARCHITECTURE.md&quot;&gt;
+- Python 3.11+; FastAPI and uvicorn; SQLite through the `persistence` package; pytest.
+- Module ownership: `config` resolves runtime settings from environment variables; `cli` parses and dispatches commands; `app_server` owns the FastAPI factory and routes; `services` owns feature behavior; `persistence` owns database connections and repository operations.
+- Routes delegate to services. Features call declared persistence operations and do not open a database driver or issue SQL directly.
+- Export `cli.main`, `app_server.main.create_app`, `app_server.main.app`, and `persistence.open_database`.
+- Database location precedence: `DATABASE_URL`, then `DATABASE_PATH`, then `data/app.db`.
+- Store ECB rates as published text and use `Decimal` for arithmetic.
+- Acceptance import check: the four declared entry points must import and be callable or non-null as specified.
+&lt;/reusable-compact&gt;
+
+RESULT: SUCCESS
+
+FILES CHANGED:
+- pyproject.toml
+- uv.lock
+- config.py
+- cli.py
+- app_server/__init__.py
+- app_server/main.py
+- services/__init__.py
+- persistence/__init__.py
+- persistence/db.py
+- tests/test_architecture_modules.py
+
+SUMMARY:
+Created the declared module boundaries, added the application import entry points, and configured database setting precedence. Added FastAPI, uvicorn, and pytest through `uv`. The architecture import check and two configuration checks passed: 3 tests.
+
+BLOCKERS:
+- Full pytest invocation inherits an unsupported `--maxprocesses=8` option from the parent project configuration. The targeted checks passed with that inherited `addopts` setting cleared.</pre></article>
+</main>
+</body>
+</html>

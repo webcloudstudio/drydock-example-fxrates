@@ -81,11 +81,21 @@ Consequence: scores
 Verification: llm
 Pattern: ubiquitous
 
-## st-009: Tests never use the network
+## st-009: Tests run offline
 Type: technical
 Required: yes
-Criterion: The application's automated tests shall exercise fetch through a stubbed download and shall not open a network connection.
+Criterion: The application's bin/test.sh shall exit zero when run with network access denied.
+Testability: deterministic
+Consequence: blocks
+Verification: proof
+Command: ["unshare", "-rn", "sh", "bin/test.sh"]
+Pattern: ubiquitous
+
+## st-010: Fetch is tested through a stubbed download
+Type: technical
+Required: yes
+Criterion: The application's automated tests shall run fetch against a stubbed download, covering a successful load and a failed download that exits 1.
 Testability: judgeable
-Consequence: scores
+Consequence: blocks
 Verification: llm
 Pattern: ubiquitous

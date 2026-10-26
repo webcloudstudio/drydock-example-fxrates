@@ -1,0 +1,10 @@
+Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
+plan verify: FxRates
+  2 criteria cannot run as written
+  ✗  FEATURE-LoadHistory.md [load_published_text_and_counts]: reads undefined global name(s): `Decimal`, `ROUND_HALF_UP`; import or assign each name inside this acceptance criterion
+  ✗  FEATURE-LoadHistory.md [load_replaces_existing_pair]: reads undefined global name(s): `Decimal`, `ROUND_HALF_UP`; import or assign each name inside this acceptance criterion
+  ⚠  FEATURE-Serve.md [serve_default_port]: captures a program's output and prints none of it; print its pass/fail counts before asserting so repair can see progress
+  ⚠  FEATURE-Serve.md [serve_requested_port]: captures a program's output and prints none of it; print its pass/fail counts before asserting so repair can see progress
+  ⚠  FEATURE-Serve.md [serve_bad_port]: captures a program's output and prints none of it; print its pass/fail counts before asserting so repair can see progress
+  Run: drydock plan repair FxRates
+Target - committed project workspace git store

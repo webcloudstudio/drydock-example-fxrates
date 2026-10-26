@@ -1,0 +1,61 @@
+{
+  "criteria": [
+    {
+      "id": "st-001",
+      "verdict": "MET",
+      "rationale": "The supplied governed gate exited zero, reporting 35 passed and 0 failed.",
+      "evidence": ["governed gate: sh sources/run.sh exited 0", "governed gate output: FxRates: 35 passed, 0 failed (of 35)"]
+    },
+    {
+      "id": "st-002",
+      "verdict": "MET",
+      "rationale": "The executable POSIX shell script bin/test.sh ran successfully and its automated tests passed.",
+      "evidence": ["bin/test.sh: executable POSIX shell script", "sh bin/test.sh: exit 0, 1 passed"]
+    },
+    {
+      "id": "st-003",
+      "verdict": "MET",
+      "rationale": "The loader probe observed published rate text preserved, a same-date and currency rate replaced, and an invalid file returning exit 3 without changing stored rows.",
+      "evidence": ["services/loader.py: load_text parses before opening the database and upserts each parsed rate", ".drydock-probe/loader_probe.py: passed text preservation, replacement, and atomic invalid-load checks"]
+    },
+    {
+      "id": "st-004",
+      "verdict": "MET",
+      "rationale": "The governed gate started the service on its selected 127.0.0.1 port and verified GET /health returned status 200 with the expected JSON.",
+      "evidence": ["app_server/main.py: /health returns {\"status\":\"ok\"}", "sources/run.sh: starts fxrates serve and checks /health", "governed gate: PASS H1: GET /health"]
+    },
+    {
+      "id": "st-005",
+      "verdict": "MET",
+      "rationale": "The gate confirmed rates resolve to the preceding publication date and return 404 when no publication exists on or before the requested date.",
+      "evidence": ["app_server/main.py: rates_for uses effective(requested) and raises 404 when no rates are selected", "governed gate: PASS H5 for 2025-01-18 resolving to 2025-01-17; PASS H6 for 2024-12-31 returning 404"]
+    },
+    {
+      "id": "st-006",
+      "verdict": "MET",
+      "rationale": "The governed known-answer checks passed for conversions and history, and the implementation uses Decimal arithmetic with ROUND_HALF_EVEN.",
+      "evidence": ["app_server/main.py: conversion and history calculations use Decimal", "services/queries.py: decfmt quantizes with ROUND_HALF_EVEN", "governed gate: PASS H9-H12 conversions and PASS H17-H18 history statistics"]
+    },
+    {
+      "id": "st-007",
+      "verdict": "MET",
+      "rationale": "The gate verified 422 responses for malformed dates, amounts, and missing parameters, and 404 responses for unknown currencies.",
+      "evidence": ["app_server/main.py: malformed dates and amounts raise HTTP 422; unknown currencies raise HTTP 404", "governed gate: PASS H7, H13-H16, H21"]
+    },
+    {
+      "id": "st-008",
+      "verdict": "MET",
+      "rationale": "Application database access uses the shipped persistence API configured through DATABASE_URL, and the declared rate column and stored rate values are text.",
+      "evidence": ["services/loader.py and services/queries.py: database access goes through persistence.open_database", "config.py: DATABASE_URL is the first database-location setting", "schema.sql: rates.rate is TEXT NOT NULL", "persistence/schema.py: rate fields are typed as str"]
+    },
+    {
+      "id": "st-009",
+      "verdict": "NOT MET",
+      "rationale": "The automated test suite contains only an importability test and does not exercise fetch with a stubbed download.",
+      "evidence": ["tests/test_architecture_imports.py: only test_architecture_entry_points_are_importable is defined", "services/fetch.py: fetch calls download_archive, but no automated test stubs or calls it"]
+    }
+  ],
+  "improvements": [
+    "Add an automated test that stubs services.fetch.download_archive, exercises fetch, and verifies no network connection is opened."
+  ]
+}

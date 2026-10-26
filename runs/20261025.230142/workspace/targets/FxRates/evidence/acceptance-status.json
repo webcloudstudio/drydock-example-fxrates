@@ -1,0 +1,11 @@
+{
+  "criteria": {
+    "architecture_modules_import": {
+      "status": "VALID",
+      "error_code": "product-missing",
+      "code_sha256": "c31c26ff2d167bdf34d90192ae69b90c16a2d657c1cd395423c9100f6c1be046",
+      "updated_at": "2026-10-25T23:09:00+00:00",
+      "detail": ""
+    }
+  }
+}

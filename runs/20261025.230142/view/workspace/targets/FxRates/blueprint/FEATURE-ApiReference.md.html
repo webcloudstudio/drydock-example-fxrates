@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-ApiReference.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-ApiReference.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-ApiReference.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: API Reference Endpoints</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261025 V1</td></tr><tr><td>Description</td><td>Serve health, database statistics, and available currencies.</td></tr><tr><td>Depends On</td><td>FEATURE-ApiFoundation.md, DATABASE.md</td></tr><tr><td>Provides</td><td>GET /health, GET /stats, GET /currencies</td></tr><tr><td>Consumes</td><td>rates repository operations</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Provide JSON health, store statistics, and the sorted currency list from persisted rates.</p>
+<h2>Routes</h2>
+<ul><li><code>GET /health</code> returns status 200 and <code>{&quot;status&quot;:&quot;ok&quot;}</code>.</li><li><code>GET /stats</code> returns publication-date and rate counts, plus first and last dates; both dates are null for an empty store.</li><li><code>GET /currencies</code> returns base EUR and every currency with a stored rate, in ascending order.</li></ul>
+<h2>Database Interface</h2>
+<ul><li>None — persistence is owned by FEATURE-InitializeRates.md, FEATURE-LoadHistory.md.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC reference_routes ===<br>Intent: The reference endpoints respond and derive statistics and currencies from stored rates.<br>Requires: python-package=httpx; scope=test</p>
+<p>from persistence.testing import db_session from app_server.testing import web_client</p>
+<p>date = &quot;2099-01-02&quot; currency = &quot;ZZZ&quot; rate = &quot;1.2300&quot; with db_session() as db: db.rates.upsert(date=date, currency=currency, rate=rate)</p>
+<p>client = web_client() health = client.get(&quot;/health&quot;) stats = client.get(&quot;/stats&quot;) currencies = client.get(&quot;/currencies&quot;)</p>
+<p>assert health.status_code == 200 assert stats.status_code == 200 assert currencies.status_code == 200 assert health.json()[&quot;status&quot;] == &quot;ok&quot; assert stats.json()[&quot;dates&quot;] &gt;= 1 assert stats.json()[&quot;rates&quot;] &gt;= 1 assert stats.json()[&quot;first&quot;] is not None assert stats.json()[&quot;last&quot;] is not None assert currency in currencies.json()[&quot;currencies&quot;] assert currencies.json()[&quot;base&quot;] == &quot;EUR&quot; === END AC reference_routes ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Counts and dates come from database queries, not constants.</li><li>Currency codes are returned in ascending order.</li><li>Every response is JSON.</li></ul></article>
+</main>
+</body>
+</html>

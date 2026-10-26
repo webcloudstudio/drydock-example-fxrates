@@ -1,0 +1,51 @@
+=== AC FEATURE-LoadHistory.md :: load_published_text_and_counts ===
+Intent: Loading the staged January ECB file stores its published non-N/A values and reports the dates and rates through the command contract.
+
+```python
+from decimal import Decimal, ROUND_HALF_UP
+from cli.testing import cli_runner
+from persistence.testing import db_session
+
+code, stdout, stderr = cli_runner("init")
+assert code == 0
+
+code, stdout, stderr = cli_runner("load", "sources/eurofxref-hist_2025-01.csv")
+assert code == 0
+
+with db_session() as db:
+    rows = db.rates.list(currency="USD")
+    january_rows = [row for row in rows if row.date.startswith("2025-01")]
+    assert len(january_rows) == 22
+    assert all(isinstance(row.rate, str) for row in january_rows)
+    january_usd_rate = (
+        Decimal("1.0393") * Decimal("1")
+    ).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+    assert db.rates.get(date="2025-01-31", currency="USD").rate == str(january_usd_rate)
+    assert db.rates.get(date="2025-01-31", currency="HRK") is None
+```
+=== END AC FEATURE-LoadHistory.md :: load_published_text_and_counts ===
+=== AC FEATURE-LoadHistory.md :: load_replaces_existing_pair ===
+Intent: Loading a file that includes an existing date and currency replaces the stored value with its published text.
+
+```python
+from decimal import Decimal, ROUND_HALF_UP
+from cli.testing import cli_runner
+from persistence.testing import db_session
+
+date = "2025-01-31"
+currency = "USD"
+
+with db_session() as db:
+    db.rates.upsert(date=date, currency=currency, rate="9.99")
+
+code, stdout, stderr = cli_runner("load", "sources/eurofxref-hist_2025-01.csv")
+assert code == 0
+
+with db_session() as db:
+    row = db.rates.get(date=date, currency=currency)
+replacement_rate = (
+    Decimal("1.0393") * Decimal("1")
+).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+assert row.rate == str(replacement_rate)
+```
+=== END AC FEATURE-LoadHistory.md :: load_replaces_existing_pair ===

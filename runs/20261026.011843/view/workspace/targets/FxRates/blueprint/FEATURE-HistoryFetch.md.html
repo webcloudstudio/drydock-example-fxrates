@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-HistoryFetch.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-HistoryFetch.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-HistoryFetch.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: ECB History Fetch</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261026 V1</td></tr><tr><td>Description</td><td>Downloads the ECB history archive and loads its CSV through the shared loader.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md, FEATURE-HistoryLoading.md</td></tr><tr><td>Provides</td><td><code>fxrates fetch</code></td></tr><tr><td>Consumes</td><td><code>fxrates load</code></td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Provide an operator command that downloads and loads the ECB euro reference-rate history archive.</p>
+<h2>Trigger and workflow</h2>
+<p><code>fxrates fetch</code> downloads <code>https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist.zip</code>, extracts <code>eurofxref-hist.csv</code>, and applies the same validation, persistence, and reporting behavior as <code>fxrates load</code>. Download failure is operational failure with exit code 1.</p>
+<p>Tests must replace the download operation with a stub and must never use a network connection.</p>
+<h2>Database Interface</h2>
+<ul><li>None — persistence is owned by DATABASE.md.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC fetch-stubbed ===<br>Intent: The fetch command loads a ZIP archive supplied by a stub without accessing the network.</p>
+<p>from cli.testing import cli_runner from unittest.mock import patch from io import BytesIO from zipfile import ZipFile from persistence.testing import db_session</p>
+<p>csv_data = b&quot;Date,ZZZ,\n2097-01-02,1.25,\n&quot; archive = BytesIO() with ZipFile(archive, &quot;w&quot;) as bundle: bundle.writestr(&quot;eurofxref-hist.csv&quot;, csv_data)</p>
+<p>with patch(&quot;services.fetch.download_archive&quot;, return_value=archive.getvalue()): code, stdout, stderr = cli_runner(&quot;fetch&quot;) assert code == 0 with db_session() as db: rows = db.rates.by_date(date=&quot;2097-01-02&quot;) assert any(row.currency == &quot;ZZZ&quot; and row.rate == &quot;1.25&quot; for row in rows) === END AC fetch-stubbed ===</p>
+<p>=== AC fetch-operational-error ===<br>Intent: A failed archive download returns the operational failure exit code.</p>
+<p>from cli.testing import cli_runner from unittest.mock import patch</p>
+<p>with patch(&quot;services.fetch.download_archive&quot;, side_effect=OSError()): code, _, _ = cli_runner(&quot;fetch&quot;) assert code == 1 === END AC fetch-operational-error ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Never connect to the network in automated tests; replace the download with a stub.</li><li>Feed the extracted CSV through the shared history loader so validation and reporting remain consistent.</li><li>Do not open SQLite directly; use the declared persistence library through application services.</li></ul></article>
+</main>
+</body>
+</html>

@@ -1,0 +1,99 @@
+=== BEGIN ARTIFACT FEATURE-LoadHistory.md ===
+# FEATURE: Load ECB History
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261025 V1 |
+| Description | Validates and atomically loads ECB reference rate history files. |
+| Depends On  | FEATURE-CliFoundation.md, FEATURE-InitializeRates.md, DATABASE.md |
+| Provides    | `fxrates load <csv>` |
+| Consumes    | `rates.get`, `rates.list`, `rates.upsert` |
+
+## Questions
+
+- None.
+
+## Trigger and Behavior
+
+`fxrates load <csv>` validates the entire CSV before its first write. The header begins with `Date`, followed by three-letter uppercase currency codes; a trailing empty field is ignored. Each data row has a real, non-repeated `YYYY-MM-DD` date and one value per currency. `N/A` is skipped; each other value must match `[0-9]+(\.[0-9]+)?` and be nonzero. Valid values are stored exactly as published text. Existing date/currency pairs are replaced.
+
+On success, standard output is CSV with header `dates,rates` and one row containing the number of dates with at least one stored rate and the number of rates stored. An unreadable file exits `1`; an invalid file exits `3`. A failing command writes nothing to standard output and one diagnostic line to standard error.
+
+## Programmatic Acceptance
+
+=== AC load_published_text_and_counts ===
+Intent: Loading the staged January ECB file stores its published non-N/A values and reports the dates and rates through the command contract.
+
+from cli.testing import cli_runner
+from persistence.testing import db_session
+
+code, stdout, stderr = cli_runner("init")
+assert code == 0
+
+code, stdout, stderr = cli_runner("load", "sources/eurofxref-hist_2025-01.csv")
+assert code == 0
+
+with db_session() as db:
+    rows = db.rates.list(currency="USD")
+    january_rows = [row for row in rows if row.date.startswith("2025-01")]
+    assert len(january_rows) == 22
+    assert all(isinstance(row.rate, str) for row in january_rows)
+    january_usd_rate = (
+        Decimal("1.0393") * Decimal("1")
+    ).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+    assert db.rates.get(date="2025-01-31", currency="USD").rate == str(january_usd_rate)
+    assert db.rates.get(date="2025-01-31", currency="HRK") is None
+=== END AC load_published_text_and_counts ===
+
+=== AC load_is_atomic_on_invalid_file ===
+Intent: A file with an invalid rate is rejected without storing any of its rows.
+
+from cli.testing import cli_runner
+from persistence.testing import db_session
+
+with db_session() as db:
+    before = len(db.rates.list())
+
+code, stdout, stderr = cli_runner("load", "sources/eurofxref-hist_bad.csv")
+assert code == 3
+
+with db_session() as db:
+    after = len(db.rates.list())
+assert after == before
+=== END AC load_is_atomic_on_invalid_file ===
+
+=== AC load_replaces_existing_pair ===
+Intent: Loading a file that includes an existing date and currency replaces the stored value with its published text.
+
+from cli.testing import cli_runner
+from persistence.testing import db_session
+
+date = "2025-01-31"
+currency = "USD"
+
+with db_session() as db:
+    db.rates.upsert(date=date, currency=currency, rate="9.99")
+
+code, stdout, stderr = cli_runner("load", "sources/eurofxref-hist_2025-01.csv")
+assert code == 0
+
+with db_session() as db:
+    row = db.rates.get(date=date, currency=currency)
+replacement_rate = (
+    Decimal("1.0393") * Decimal("1")
+).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+assert row.rate == str(replacement_rate)
+=== END AC load_replaces_existing_pair ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Validate the whole file before the first write; rejection changes nothing.
+- Preserve published rate text and skip `N/A` values.
+- Replace rates for an existing date and currency pair.
+- Do not read or modify the supplied grader or data files from application code.
+- Database access goes through the generated persistence package.
+=== END ARTIFACT

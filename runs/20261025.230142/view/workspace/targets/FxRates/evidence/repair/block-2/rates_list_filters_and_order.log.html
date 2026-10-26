@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/evidence/repair/block-2/rates_list_filters_and_order.log</title>
+<link rel="stylesheet" href="../../../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/evidence/repair/block-2/rates_list_filters_and_order.log</h1><div class="filenav"><a href="../../../../../../../index.html">&larr; Report</a><a href="../../../../../../../workspace/targets/FxRates/evidence/repair/block-2/rates_list_filters_and_order.log">Raw file</a></div></header>
+<article class="doc"><pre>
+
+--- stderr ---
+--- drydock: values at failure ---
+  all_rows = [RatesListOutput(date=&#x27;2099-01-01&#x27;, currency=&#x27;YYY&#x27;, rate=&#x27;8.00&#x27;), RatesListOutput(date=&#x27;2099-01-01&#x27;, currency=&#x27;ZZZ&#x27;, rate=&#x27;1.00&#x27;), RatesListOutput(date=&#x27;2099-01-02&#x27;, currency=&#x27;ZZZ&#x27;, rate=&#x27;2.00&#x27;), RatesListOutput(date=&#x27;2099-01-03&#x27;, currency=&#x27;ZZZ&#x27;, rate=&#x27;3.00&#x27;)]
+  currency = &#x27;ZZZ&#x27;
+  other_currency = &#x27;YYY&#x27;
+  dates = [&#x27;2099-01-03&#x27;, &#x27;2099-01-01&#x27;, &#x27;2099-01-02&#x27;]
+--- drydock: end values ---
+Traceback (most recent call last):
+  File &quot;rates_list_filters_and_order.py&quot;, line 20, in &lt;module&gt;
+    assert [(row.date, row.currency, row.rate) for row in all_rows if row.date in dates] == [
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError
+</pre></article>
+</main>
+</body>
+</html>

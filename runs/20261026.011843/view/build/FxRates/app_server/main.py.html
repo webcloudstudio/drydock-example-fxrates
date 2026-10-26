@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>build/FxRates/app_server/main.py</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>build/FxRates/app_server/main.py</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../build/FxRates/app_server/main.py">Raw file</a></div></header>
+<article class="doc"><pre>from __future__ import annotations
+import re
+from decimal import Decimal, ROUND_HALF_EVEN
+from fastapi import FastAPI, HTTPException, Query
+from services.queries import rows,effective,currency_history,valid_date,decfmt
+
+def create_app() -&gt; FastAPI:
+ app=FastAPI(title=&#x27;FxRates&#x27;)
+ @app.get(&#x27;/health&#x27;)
+ def health(): return {&#x27;status&#x27;:&#x27;ok&#x27;}
+ @app.get(&#x27;/stats&#x27;)
+ def stats():
+  rs=rows(); ds=sorted({r.date for r in rs})
+  return {&#x27;dates&#x27;:len(ds),&#x27;rates&#x27;:len(rs),&#x27;first&#x27;:ds[0] if ds else None,&#x27;last&#x27;:ds[-1] if ds else None}
+ @app.get(&#x27;/currencies&#x27;)
+ def currencies(): return {&#x27;base&#x27;:&#x27;EUR&#x27;,&#x27;currencies&#x27;:sorted({r.currency for r in rows()})}
+ @app.get(&#x27;/rates/latest&#x27;)
+ def latest(): return rates_for(&#x27;latest&#x27;)
+ @app.get(&#x27;/rates/{requested}&#x27;)
+ def rates_for(requested: str):
+  rs=rows()
+  if requested==&#x27;latest&#x27;: as_of=max((r.date for r in rs),default=None)
+  else:
+   if not valid_date(requested): raise HTTPException(422)
+   as_of=requested
+  if not as_of: raise HTTPException(404)
+  selected=effective(as_of)
+  if not selected: raise HTTPException(404)
+  actual=selected[0].date
+  return {&#x27;date&#x27;:actual,&#x27;requested&#x27;:requested,&#x27;base&#x27;:&#x27;EUR&#x27;,&#x27;rates&#x27;:{r.currency:r.rate for r in selected}}
+ @app.get(&#x27;/history/{code}&#x27;)
+ def history(code: str,start: str|None=None,end: str|None=None):
+  if start is not None and not valid_date(start) or end is not None and not valid_date(end): raise HTTPException(422)
+  if start and end and start&gt;end: raise HTTPException(422)
+  rs=currency_history(code,start,end)
+  if rs is None: raise HTTPException(404)
+  if not rs: return {&#x27;currency&#x27;:code,&#x27;base&#x27;:&#x27;EUR&#x27;,&#x27;count&#x27;:0,&#x27;min&#x27;:None,&#x27;max&#x27;:None,&#x27;mean&#x27;:None,&#x27;points&#x27;:[]}
+  lo=min(rs,key=lambda r:Decimal(r.rate)); hi=max(rs,key=lambda r:Decimal(r.rate)); mean=sum((Decimal(r.rate) for r in rs),Decimal(0))/len(rs)
+  return {&#x27;currency&#x27;:code,&#x27;base&#x27;:&#x27;EUR&#x27;,&#x27;count&#x27;:len(rs),&#x27;min&#x27;:lo.rate,&#x27;max&#x27;:hi.rate,&#x27;mean&#x27;:decfmt(mean,&#x27;0.000001&#x27;),&#x27;points&#x27;:[{&#x27;date&#x27;:r.date,&#x27;rate&#x27;:r.rate} for r in rs]}
+ @app.get(&#x27;/convert&#x27;)
+ def convert(source: str=Query(alias=&#x27;from&#x27;),target: str=Query(alias=&#x27;to&#x27;),amount: str=Query(...),date: str|None=None):
+  if not re.fullmatch(r&#x27;[0-9]+(?:\.[0-9]+)?&#x27;,amount): raise HTTPException(422)
+  if date is not None and not valid_date(date): raise HTTPException(422)
+  rs=rows(); asof=date or max((r.date for r in rs),default=None)
+  if not asof: raise HTTPException(404)
+  selected=effective(asof)
+  if not selected: raise HTTPException(404)
+  actual=selected[0].date; rates={r.currency:Decimal(r.rate) for r in selected}; rates[&#x27;EUR&#x27;]=Decimal(1)
+  if source not in rates or target not in rates: raise HTTPException(404)
+  exact=rates[target]/rates[source]; result=Decimal(amount)*exact
+  return {&#x27;date&#x27;:actual,&#x27;from&#x27;:source,&#x27;to&#x27;:target,&#x27;amount&#x27;:amount,&#x27;rate&#x27;:decfmt(exact,&#x27;0.000001&#x27;),&#x27;result&#x27;:decfmt(result,&#x27;0.01&#x27;)}
+ return app
+app=create_app()
+</pre></article>
+</main>
+</body>
+</html>

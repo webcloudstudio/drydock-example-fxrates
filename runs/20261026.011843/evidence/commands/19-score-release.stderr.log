@@ -1,0 +1,2 @@
+error: release gate FAILED for FxRates
+  st-009 is NOT MET: The application's automated tests shall exercise fetch through a stubbed download and shall not open a network connection.

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>build/FxRates/cli/commands.py</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>build/FxRates/cli/commands.py</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../build/FxRates/cli/commands.py">Raw file</a></div></header>
+<article class="doc"><pre>&quot;&quot;&quot;Command dispatch boundary; feature blocks provide command behavior.&quot;&quot;&quot;
+
+from __future__ import annotations
+
+import argparse
+import sys
+
+
+def dispatch(args: argparse.Namespace) -&gt; int:
+    print(f&quot;error: unknown command: {args.command}&quot;, file=sys.stderr)
+    return 2
+</pre></article>
+</main>
+</body>
+</html>

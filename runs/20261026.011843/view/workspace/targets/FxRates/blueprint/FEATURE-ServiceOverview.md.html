@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-ServiceOverview.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-ServiceOverview.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-ServiceOverview.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Service Overview</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261026 V1</td></tr><tr><td>Description</td><td>Serves health, database statistics, and available currencies.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md, DATABASE.md</td></tr><tr><td>Provides</td><td>GET /health, GET /stats, GET /currencies</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Expose basic service health and a summary of the rates currently stored.</p>
+<h2>Routes</h2>
+<div class="scroll"><table><thead><tr><th>Method and path</th><th>Behavior</th></tr></thead><tbody><tr><td>GET <code>/health</code></td><td>Always returns status 200 and <code>{&quot;status&quot;:&quot;ok&quot;}</code>.</td></tr><tr><td>GET <code>/stats</code></td><td>Returns distinct publication-date count, stored-rate count, and earliest/latest publication dates. Empty date bounds are null.</td></tr><tr><td>GET <code>/currencies</code></td><td>Returns base <code>EUR</code> and the ascending codes with at least one stored rate.</td></tr></tbody></table></div>
+<h2>Database Interface</h2>
+<ul><li><code>FEATURE-RATE-005</code> — read: list all stored rates - supplies: — - returns: <code>date</code>, <code>currency</code>, <code>rate</code></li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC overview-routes ===<br>Intent: Health, statistics, and currencies routes are reachable and reflect persisted state.</p>
+<p>Requires: python-package=httpx; scope=test</p>
+<p>from app_server.testing import web_client from persistence.testing import db_session</p>
+<p>with db_session() as db: date = &quot;2096-08-01&quot; rate = &quot;1.75&quot; db.rates.upsert(date=date, currency=&quot;ZZZ&quot;, rate=rate)</p>
+<p>client = web_client() health = client.get(&quot;/health&quot;) stats = client.get(&quot;/stats&quot;) currencies = client.get(&quot;/currencies&quot;) assert health.status_code == 200 assert health.json()[&quot;status&quot;] == &quot;ok&quot; assert stats.status_code == 200 assert stats.json()[&quot;dates&quot;] &gt;= 1 assert stats.json()[&quot;rates&quot;] &gt;= 1 assert stats.json()[&quot;first&quot;] is not None assert stats.json()[&quot;last&quot;] is not None assert currencies.status_code == 200 assert &quot;ZZZ&quot; in currencies.json()[&quot;currencies&quot;] === END AC overview-routes ===</p>
+<p>=== AC stats-empty-contract ===<br>Intent: Statistics expose the declared null bounds when the rates table is empty.</p>
+<p>Requires: python-package=httpx; scope=test</p>
+<p>from app_server.testing import web_client</p>
+<p>client = web_client() response = client.get(&quot;/stats&quot;) assert response.status_code == 200 body = response.json() assert body[&quot;first&quot;] is None or isinstance(body[&quot;first&quot;], str) assert body[&quot;last&quot;] is None or isinstance(body[&quot;last&quot;], str) === END AC stats-empty-contract ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Totals, currencies, and date bounds come from persisted rate records; do not hardcode them.</li><li>Currency codes are returned in ascending order.</li><li>EUR remains the API base currency with implicit rate one.</li></ul></article>
+</main>
+</body>
+</html>

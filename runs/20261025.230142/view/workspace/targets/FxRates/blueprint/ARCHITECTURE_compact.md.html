@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/ARCHITECTURE_compact.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/ARCHITECTURE_compact.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/ARCHITECTURE_compact.md">Raw file</a></div></header>
+<article class="doc"><p>&lt;!-- Compacted from ARCHITECTURE.md sha256=3c1ba416c40fca4ccb89d71893212a371cc5e15e1734eecb354bc3418c93aabd on 2026-10-25 by drydock build agent --&gt;</p>
+<ul><li>Python 3.11+; FastAPI and uvicorn; SQLite through the <code>persistence</code> package; pytest.</li><li>Module ownership: <code>config</code> resolves runtime settings from environment variables; <code>cli</code> parses and dispatches commands; <code>app_server</code> owns the FastAPI factory and routes; <code>services</code> owns feature behavior; <code>persistence</code> owns database connections and repository operations.</li><li>Routes delegate to services. Features call declared persistence operations and do not open a database driver or issue SQL directly.</li><li>Export <code>cli.main</code>, <code>app_server.main.create_app</code>, <code>app_server.main.app</code>, and <code>persistence.open_database</code>.</li><li>Database location precedence: <code>DATABASE_URL</code>, then <code>DATABASE_PATH</code>, then <code>data/app.db</code>.</li><li>Store ECB rates as published text and use <code>Decimal</code> for arithmetic.</li><li>Acceptance import check: the four declared entry points must import and be callable or non-null as specified.</li></ul></article>
+</main>
+</body>
+</html>

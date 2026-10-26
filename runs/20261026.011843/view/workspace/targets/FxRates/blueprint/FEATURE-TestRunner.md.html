@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-TestRunner.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-TestRunner.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-TestRunner.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Test Runner</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261026 V1</td></tr><tr><td>Description</td><td>Provides the offline POSIX test command for the project’s pytest suite.</td></tr><tr><td>Depends On</td><td>FEATURE-HistoryFetch.md, FEATURE-ServiceOverview.md, FEATURE-EffectiveRates.md, FEATURE-CurrencyConversion.md, FEATURE-CurrencyHistory.md</td></tr><tr><td>Provides</td><td>bin/test.sh</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Provide one command that runs the application&#x27;s pytest suite from the project root. It succeeds only when pytest reports the complete suite passes.</p>
+<h2>Behavior</h2>
+<ul><li><code>bin/test.sh</code> is POSIX-compatible and runs pytest from the application root.</li><li>The suite covers CLI commands and load validation, all API endpoints, effective-date resolution, Decimal rounding, and error statuses.</li><li>Fetch tests replace the downloader with a stub. The automated test suite makes no network connection.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC test-runner-exits-successfully ===<br>Intent: The project test runner exits successfully when run from the application root after implementation stories are complete.</p>
+<p>Requires: executable=sh; scope=test</p>
+<p>import subprocess</p>
+<p>result = subprocess.run( [&quot;sh&quot;, &quot;bin/test.sh&quot;], capture_output=True, text=True, ) print(result.stdout) print(result.stderr) assert result.returncode == 0 === END AC test-runner-exits-successfully ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Do not permit automated tests to contact the ECB or any other network host.</li><li>Keep the runner POSIX-compatible.</li></ul></article>
+</main>
+</body>
+</html>

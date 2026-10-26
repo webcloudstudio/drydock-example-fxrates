@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/commands/16-test.stdout.log</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/commands/16-test.stdout.log</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/commands/16-test.stdout.log">Raw file</a></div></header>
+<article class="doc"><pre>PASS A1: fxrates init
+PASS A2: fxrates load /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.011843/build/FxRates/sources/eurofxref-hist_2025-01.csv
+PASS A3: fxrates load /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.011843/build/FxRates/sources/eurofxref-hist_2025-01.csv
+PASS A4: fxrates load /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.011843/build/FxRates/sources/eurofxref-hist_bad.csv
+PASS A5: fxrates load /tmp/tmp.BgrrB9rm7n/no-such-file.csv
+PASS U1: fxrates 
+PASS U2: fxrates frobnicate
+PASS U3: fxrates load
+PASS U4: fxrates serve --port notaport
+PASS H1: GET /health
+PASS H2: GET /stats
+PASS H3: GET /currencies
+PASS H4: GET /rates/2025-01-17
+PASS H5: GET /rates/2025-01-18
+PASS H6: GET /rates/2024-12-31
+PASS H7: GET /rates/2025-13-01
+PASS H8: GET /rates/latest
+PASS H9: GET /convert?from=USD&amp;to=GBP&amp;amount=100&amp;date=2025-01-17
+PASS H10: GET /convert?from=EUR&amp;to=JPY&amp;amount=250.25&amp;date=2025-01-05
+PASS H11: GET /convert?from=GBP&amp;to=EUR&amp;amount=1000
+PASS H12: GET /convert?from=SEK&amp;to=CNY&amp;amount=12345.67&amp;date=2025-01-20
+PASS H13: GET /convert?from=USD&amp;to=XXX&amp;amount=1
+PASS H14: GET /convert?from=USD&amp;to=GBP
+PASS H15: GET /convert?from=USD&amp;to=GBP&amp;amount=abc
+PASS H16: GET /convert?from=USD&amp;to=GBP&amp;amount=10&amp;date=2024-12-01
+PASS H17: GET /history/USD?start=2025-01-20&amp;end=2025-01-24
+PASS H18: GET /history/CHF?start=2025-01-27
+PASS H19: GET /history/HRK
+PASS H20: GET /history/USD?start=2025-02-01
+PASS H21: GET /history/GBP?start=2025-01-31-x
+PASS L1: fxrates load /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.011843/build/FxRates/sources/eurofxref-hist_2025-02-03_04.csv
+PASS L2: GET /stats
+PASS L3: GET /rates/latest
+PASS L4: GET /rates/2025-02-01
+PASS L5: GET /history/AUD?start=2025-01-30
+FxRates: 35 passed, 0 failed (of 35)
+</pre></article>
+</main>
+</body>
+</html>

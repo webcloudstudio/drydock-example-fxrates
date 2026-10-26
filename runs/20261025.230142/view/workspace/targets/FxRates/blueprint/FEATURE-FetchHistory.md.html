@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-FetchHistory.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-FetchHistory.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-FetchHistory.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Fetch ECB History</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261025 V1</td></tr><tr><td>Description</td><td>Fetch and load the ECB reference-rate history archive.</td></tr><tr><td>Depends On</td><td>FEATURE-CliFoundation.md, FEATURE-LoadHistory.md</td></tr><tr><td>Provides</td><td><code>fxrates fetch</code></td></tr><tr><td>Consumes</td><td><code>fxrates load</code></td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p><code>fxrates fetch</code> downloads the ECB history ZIP, extracts <code>eurofxref-hist.csv</code>, and loads it using the same validation, replacement, reporting, and exit-code behavior as <code>fxrates load</code>.</p>
+<h2>Workflow</h2>
+<p>Use Python standard-library download and ZIP facilities. Keep the download replaceable so automated tests can provide archive bytes without network access. Pass the extracted CSV through the shared loader; do not implement a separate parser or persistence path.</p>
+<p>A failed download returns exit code <code>1</code>, writes no standard output, and emits one diagnostic line to standard error. A successfully fetched file follows the loader’s behavior.</p>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC fetch_entry_point ===<br>Intent: The fetch command is callable and reports an operational failure when its download fails.</p>
+<p>import io import zipfile from cli.testing import cli_runner</p>
+<p>code, stdout, stderr = cli_runner(&quot;fetch&quot;) assert code in (0, 1) === END AC fetch_entry_point ===</p>
+<p>=== AC fetch_loads_stubbed_archive ===<br>Intent: Fetch loads a valid ECB archive supplied by a stub without opening a network connection.</p>
+<p>import io import zipfile from unittest.mock import patch from cli.testing import cli_runner</p>
+<p>csv_data = ( &quot;Date,ZZZ,\n&quot; &quot;2099-01-02,1.2300,\n&quot; ).encode(&quot;ascii&quot;) archive = io.BytesIO() with zipfile.ZipFile(archive, &quot;w&quot;) as bundle: bundle.writestr(&quot;eurofxref-hist.csv&quot;, csv_data) payload = archive.getvalue()</p>
+<p>with patch(&quot;urllib.request.urlopen&quot;) as download: download.return_value.<strong>enter</strong>.return_value.read.return_value = payload code, stdout, stderr = cli_runner(&quot;fetch&quot;)</p>
+<p>assert code == 0 === END AC fetch_loads_stubbed_archive ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Use the ECB history ZIP URL and extract <code>eurofxref-hist.csv</code>.</li><li>Reuse the shared loader and its validation and reporting behavior.</li><li>Automated tests replace the download with a stub and never use the network.</li><li>Do not read or modify supplied files under <code>sources/</code>.</li></ul></article>
+</main>
+</body>
+</html>

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/evidence/score-release.json</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/evidence/score-release.json</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/evidence/score-release.json">Raw file</a></div></header>
+<article class="doc"><pre>{
+  &quot;schema_version&quot;: 5,
+  &quot;recorded_at&quot;: &quot;2026-10-26T01:33:21+00:00&quot;,
+  &quot;target&quot;: &quot;FxRates&quot;,
+  &quot;verdict&quot;: &quot;FAILED&quot;,
+  &quot;verdict_line&quot;: &quot;FxRates: FAILED \u2014 8 of 9&quot;,
+  &quot;statement&quot;: &quot;FxRates: FAILED \u2014 8 of 9\n\n  st-001  MET       [\&quot;sh\&quot;, \&quot;sources/run.sh\&quot;] exited 0; governed gate: sh sources/run.sh exited 0; governed gate output: FxRates: 35 passed, 0 failed (of 35)\n  st-002  MET       bin/test.sh: executable POSIX shell script; sh bin/test.sh: exit 0, 1 passed\n  st-003  MET       services/loader.py: load_text parses before opening the database and upserts each parsed rate; .drydock-probe/loader_probe.py: passed text preservation, replacement, and atomic invalid-load checks\n  st-004  MET       app_server/main.py: /health returns {\&quot;status\&quot;:\&quot;ok\&quot;}; sources/run.sh: starts fxrates serve and checks /health; governed gate: PASS H1: GET /health\n  st-005  MET       app_server/main.py: rates_for uses effective(requested) and raises 404 when no rates are selected; governed gate: PASS H5 for 2025-01-18 resolving to 2025-01-17; PASS H6 for 2024-12-31 returning 404\n  st-006  MET       app_server/main.py: conversion and history calculations use Decimal; services/queries.py: decfmt quantizes with ROUND_HALF_EVEN; governed gate: PASS H9-H12 conversions and PASS H17-H18 history statistics\n  st-007  MET       app_server/main.py: malformed dates and amounts raise HTTP 422; unknown currencies raise HTTP 404; governed gate: PASS H7, H13-H16, H21\n  st-008  MET       services/loader.py and services/queries.py: database access goes through persistence.open_database; config.py: DATABASE_URL is the first database-location setting; schema.sql: rates.rate is TEXT NOT NULL; persistence/schema.py: rate fields are typed as str\n  st-009  NOT MET   tests/test_architecture_imports.py: only test_architecture_entry_points_are_importable is defined; services/fetch.py: fetch calls download_archive, but no automated test stubs or calls it&quot;,
+  &quot;complete&quot;: false,
+  &quot;governed_gate&quot;: {
+    &quot;name&quot;: &quot;full&quot;,
+    &quot;outcome&quot;: &quot;PASS&quot;,
+    &quot;argv&quot;: [
+      &quot;sh&quot;,
+      &quot;sources/run.sh&quot;
+    ],
+    &quot;return_code&quot;: 0,
+    &quot;duration_ms&quot;: 15544,
+    &quot;detail&quot;: &quot;&quot;,
+    &quot;timed_out&quot;: false,
+    &quot;build_identity&quot;: &quot;06edffc48bd07327&quot;,
+    &quot;stdout&quot;: &quot;PASS A1: fxrates init\nPASS A2: fxrates load /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.011843/build/FxRates/sources/eurofxref-hist_2025-01.csv\nPASS A3: fxrates load /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.011843/build/FxRates/sources/eurofxref-hist_2025-01.csv\nPASS A4: fxrates load /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.011843/build/FxRates/sources/eurofxref-hist_bad.csv\nPASS A5: fxrates load /tmp/tmp.elyL8qP64g/no-such-file.csv\nPASS U1: fxrates \nPASS U2: fxrates frobnicate\nPASS U3: fxrates load\nPASS U4: fxrates serve --port notaport\nPASS H1: GET /health\nPASS H2: GET /stats\nPASS H3: GET /currencies\nPASS H4: GET /rates/2025-01-17\nPASS H5: GET /rates/2025-01-18\nPASS H6: GET /rates/2024-12-31\nPASS H7: GET /rates/2025-13-01\nPASS H8: GET /rates/latest\nPASS H9: GET /convert?from=USD&amp;to=GBP&amp;amount=100&amp;date=2025-01-17\nPASS H10: GET /convert?from=EUR&amp;to=JPY&amp;amount=250.25&amp;date=2025-01-05\nPASS H11: GET /convert?from=GBP&amp;to=EUR&amp;amount=1000\nPASS H12: GET /convert?from=SEK&amp;to=CNY&amp;amount=12345.67&amp;date=2025-01-20\nPASS H13: GET /convert?from=USD&amp;to=XXX&amp;amount=1\nPASS H14: GET /convert?from=USD&amp;to=GBP\nPASS H15: GET /convert?from=USD&amp;to=GBP&amp;amount=abc\nPASS H16: GET /convert?from=USD&amp;to=GBP&amp;amount=10&amp;date=2024-12-01\nPASS H17: GET /history/USD?start=2025-01-20&amp;end=2025-01-24\nPASS H18: GET /history/CHF?start=2025-01-27\nPASS H19: GET /history/HRK\nPASS H20: GET /history/USD?start=2025-02-01\nPASS H21: GET /history/GBP?start=2025-01-31-x\nPASS L1: fxrates load /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.011843/build/FxRates/sources/eurofxref-hist_2025-02-03_04.csv\nPASS L2: GET /stats\nPASS L3: GET /rates/latest\nPASS L4: GET /rates/2025-02-01\nPASS L5: GET /history/AUD?start=2025-01-30\nFxRates: 35 passed, 0 failed (of 35)\n&quot;,
+    &quot;stderr&quot;: &quot;&quot;
+  },
+  &quot;criteria&quot;: [
+    {
+      &quot;criterion_id&quot;: &quot;st-001&quot;,
+      &quot;verdict&quot;: &quot;MET&quot;,
+      &quot;rationale&quot;: &quot;The supplied governed gate exited zero, reporting 35 passed and 0 failed.&quot;,
+      &quot;evidence&quot;: [
+        &quot;[\&quot;sh\&quot;, \&quot;sources/run.sh\&quot;] exited 0&quot;,
+        &quot;governed gate: sh sources/run.sh exited 0&quot;,
+        &quot;governed gate output: FxRates: 35 passed, 0 failed (of 35)&quot;
+      ]
+    },
+    {
+      &quot;criterion_id&quot;: &quot;st-002&quot;,
+      &quot;verdict&quot;: &quot;MET&quot;,
+      &quot;rationale&quot;: &quot;The executable POSIX shell script bin/test.sh ran successfully and its automated tests passed.&quot;,
+      &quot;evidence&quot;: [
+        &quot;bin/test.sh: executable POSIX shell script&quot;,
+        &quot;sh bin/test.sh: exit 0, 1 passed&quot;
+      ]
+    },
+    {
+      &quot;criterion_id&quot;: &quot;st-003&quot;,
+      &quot;verdict&quot;: &quot;MET&quot;,
+      &quot;rationale&quot;: &quot;The loader probe observed published rate text preserved, a same-date and currency rate replaced, and an invalid file returning exit 3 without changing stored rows.&quot;,
+      &quot;evidence&quot;: [
+        &quot;services/loader.py: load_text parses before opening the database and upserts each parsed rate&quot;,
+        &quot;.drydock-probe/loader_probe.py: passed text preservation, replacement, and atomic invalid-load checks&quot;
+      ]
+    },
+    {
+      &quot;criterion_id&quot;: &quot;st-004&quot;,
+      &quot;verdict&quot;: &quot;MET&quot;,
+      &quot;rationale&quot;: &quot;The governed gate started the service on its selected 127.0.0.1 port and verified GET /health returned status 200 with the expected JSON.&quot;,
+      &quot;evidence&quot;: [
+        &quot;app_server/main.py: /health returns {\&quot;status\&quot;:\&quot;ok\&quot;}&quot;,
+        &quot;sources/run.sh: starts fxrates serve and checks /health&quot;,
+        &quot;governed gate: PASS H1: GET /health&quot;
+      ]
+    },
+    {
+      &quot;criterion_id&quot;: &quot;st-005&quot;,
+      &quot;verdict&quot;: &quot;MET&quot;,
+      &quot;rationale&quot;: &quot;The gate confirmed rates resolve to the preceding publication date and return 404 when no publication exists on or before the requested date.&quot;,
+      &quot;evidence&quot;: [
+        &quot;app_server/main.py: rates_for uses effective(requested) and raises 404 when no rates are selected&quot;,
+        &quot;governed gate: PASS H5 for 2025-01-18 resolving to 2025-01-17; PASS H6 for 2024-12-31 returning 404&quot;
+      ]
+    },
+    {
+      &quot;criterion_id&quot;: &quot;st-006&quot;,
+      &quot;verdict&quot;: &quot;MET&quot;,
+      &quot;rationale&quot;: &quot;The governed known-answer checks passed for conversions and history, and the implementation uses Decimal arithmetic with ROUND_HALF_EVEN.&quot;,
+      &quot;evidence&quot;: [
+        &quot;app_server/main.py: conversion and history calculations use Decimal&quot;,
+        &quot;services/queries.py: decfmt quantizes with ROUND_HALF_EVEN&quot;,
+        &quot;governed gate: PASS H9-H12 conversions and PASS H17-H18 history statistics&quot;
+      ]
+    },
+    {
+      &quot;criterion_id&quot;: &quot;st-007&quot;,
+      &quot;verdict&quot;: &quot;MET&quot;,
+      &quot;rationale&quot;: &quot;The gate verified 422 responses for malformed dates, amounts, and missing parameters, and 404 responses for unknown currencies.&quot;,
+      &quot;evidence&quot;: [
+        &quot;app_server/main.py: malformed dates and amounts raise HTTP 422; unknown currencies raise HTTP 404&quot;,
+        &quot;governed gate: PASS H7, H13-H16, H21&quot;
+      ]
+    },
+    {
+      &quot;criterion_id&quot;: &quot;st-008&quot;,
+      &quot;verdict&quot;: &quot;MET&quot;,
+      &quot;rationale&quot;: &quot;Application database access uses the shipped persistence API configured through DATABASE_URL, and the declared rate column and stored rate values are text.&quot;,
+      &quot;evidence&quot;: [
+        &quot;services/loader.py and services/queries.py: database access goes through persistence.open_database&quot;,
+        &quot;config.py: DATABASE_URL is the first database-location setting&quot;,
+        &quot;schema.sql: rates.rate is TEXT NOT NULL&quot;,
+        &quot;persistence/schema.py: rate fields are typed as str&quot;
+      ]
+    },
+    {
+      &quot;criterion_id&quot;: &quot;st-009&quot;,
+      &quot;verdict&quot;: &quot;NOT MET&quot;,
+      &quot;rationale&quot;: &quot;The automated test suite contains only an importability test and does not exercise fetch with a stubbed download.&quot;,
+      &quot;evidence&quot;: [
+        &quot;tests/test_architecture_imports.py: only test_architecture_entry_points_are_importable is defined&quot;,
+        &quot;services/fetch.py: fetch calls download_archive, but no automated test stubs or calls it&quot;
+      ]
+    }
+  ],
+  &quot;guardrail_ids&quot;: [],
+  &quot;observations&quot;: [
+    {
+      &quot;criterion_id&quot;: &quot;st-001&quot;,
+      &quot;kind&quot;: &quot;command&quot;,
+      &quot;source&quot;: &quot;[\&quot;sh\&quot;, \&quot;sources/run.sh\&quot;]&quot;,
+      &quot;return_code&quot;: 0,
+      &quot;pinned&quot;: &quot;MET&quot;,
+      &quot;detail&quot;: &quot;[\&quot;sh\&quot;, \&quot;sources/run.sh\&quot;] exited 0&quot;,
+      &quot;output&quot;: &quot;PASS H8: GET /rates/latest\nPASS H9: GET /convert?from=USD&amp;to=GBP&amp;amount=100&amp;date=2025-01-17\nPASS H10: GET /convert?from=EUR&amp;to=JPY&amp;amount=250.25&amp;date=2025-01-05\nPASS H11: GET /convert?from=GBP&amp;to=EUR&amp;amount=1000\nPASS H12: GET /convert?from=SEK&amp;to=CNY&amp;amount=12345.67&amp;date=2025-01-20\nPASS H13: GET /convert?from=USD&amp;to=XXX&amp;amount=1\nPASS H14: GET /convert?from=USD&amp;to=GBP\nPASS H15: GET /convert?from=USD&amp;to=GBP&amp;amount=abc\nPASS H16: GET /convert?from=USD&amp;to=GBP&amp;amount=10&amp;date=2024-12-01\nPASS H17: GET /history/USD?start=2025-01-20&amp;end=2025-01-24\nPASS H18: GET /history/CHF?start=2025-01-27\nPASS H19: GET /history/HRK\nPASS H20: GET /history/USD?start=2025-02-01\nPASS H21: GET /history/GBP?start=2025-01-31-x\nPASS L1: fxrates load /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.011843/build/FxRates/sources/eurofxref-hist_2025-02-03_04.csv\nPASS L2: GET /stats\nPASS L3: GET /rates/latest\nPASS L4: GET /rates/2025-02-01\nPASS L5: GET /history/AUD?start=2025-01-30\nFxRates: 35 passed, 0 failed (of 35)&quot;
+    }
+  ],
+  &quot;blockers&quot;: [
+    &quot;st-009 is NOT MET: The application&#x27;s automated tests shall exercise fetch through a stubbed download and shall not open a network connection.&quot;
+  ],
+  &quot;attestations&quot;: [],
+  &quot;kit_faults&quot;: [],
+  &quot;warnings&quot;: [],
+  &quot;improvements&quot;: [
+    &quot;Resolve st-009 (NOT MET): The application&#x27;s automated tests shall exercise fetch through a stubbed download and shall not open a network connection.&quot;,
+    &quot;Add an automated test that stubs services.fetch.download_archive, exercises fetch, and verifies no network connection is opened.&quot;
+  ],
+  &quot;identities&quot;: {
+    &quot;code&quot;: &quot;f78f6133e80247c46d40ca58db7682bec8d9ac28&quot;,
+    &quot;sea_trials&quot;: &quot;1c343c4d9bc37c668a2e49ac15bbf48d114963747dc664f225587f2b40ee745d&quot;,
+    &quot;blueprint&quot;: {
+      &quot;ARCHITECTURE.md&quot;: &quot;e09d35c657d78ce36079b7c0d27d5e754db76d9f1ac019d69daa701d30577be3&quot;,
+      &quot;DATABASE.md&quot;: &quot;6e372857a8710aeeab671a46c027bb8bcb4f52627ea060f994d311119037ca9a&quot;,
+      &quot;FEATURE-CurrencyConversion.md&quot;: &quot;29e2700c30e7227cca27f465d00dbaf859d786125ea964f560ea5f186aa6a83f&quot;,
+      &quot;FEATURE-CurrencyHistory.md&quot;: &quot;b8cdd8dc96aa1f503db0f69b7d755f8bdaad293379e0f7277206d87fbc8ab68b&quot;,
+      &quot;FEATURE-DatabaseInitialization.md&quot;: &quot;ac4da762c80aa57ee2bcdaec021660dd3daf5c48b5689b4cf902b512588638db&quot;,
+      &quot;FEATURE-EffectiveRates.md&quot;: &quot;b396463350479502d012f46177833c551183170ebaa30ecb736a3fdc0596fc75&quot;,
+      &quot;FEATURE-EndToEndVerification.md&quot;: &quot;c3b04ae352e51dbaddeec3a27f2f62e15764071636e0a045e06307dc326df2ec&quot;,
+      &quot;FEATURE-HistoryFetch.md&quot;: &quot;19e44325a457561390ec735107de22dc102dec97615351d8961d66e4dece74c0&quot;,
+      &quot;FEATURE-HistoryLoading.md&quot;: &quot;a01097e0636fc0c485ac5a8b53a203735d7a5973135bf3e2e58754b3d0c32870&quot;,
+      &quot;FEATURE-ServiceOverview.md&quot;: &quot;da2812f55349dde50d8ddfb04b0ba8a385f14e1b319de6f5545026471b301d61&quot;,
+      &quot;FEATURE-TestRunner.md&quot;: &quot;5c9dc6edd03739c93be248025d18c02b5a4579f0e68dff5628c6b7662515498a&quot;
+    }
+  },
+  &quot;execution_id&quot;: &quot;20261026.013238.340Z-2a5c35ab&quot;
+}
+</pre></article>
+</main>
+</body>
+</html>

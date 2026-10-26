@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/prompt_outputs/20261025.230321.687Z_fxrates_plan_codex.output.txt</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/prompt_outputs/20261025.230321.687Z_fxrates_plan_codex.output.txt</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/prompt_outputs/20261025.230321.687Z_fxrates_plan_codex.output.txt">Raw file</a></div></header>
+<article class="doc"><pre>=== BEGIN ARTIFACT ARCHITECTURE.md ===
+# ARCHITECTURE: FxRates Application
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261025 V1 |
+| Description | Defines the modules and ownership boundaries for the local currency rates service. |
+| Depends On  |  |
+| Provides    | application module boundaries |
+| Consumes    |  |
+
+## Questions
+
+- None.
+
+## Technology Stack
+
+- Python 3.11 or newer provides the application language and runtime.
+- FastAPI defines the JSON API; uvicorn serves it on localhost.
+- SQLite stores rates through the generated persistence package.
+- The `fxrates` CLI provides initialization, loading, fetching, and serving commands.
+- pytest runs the project test suite; FastAPI TestClient exercises the API in-process.
+- POSIX sh runs the project test launcher and supplied grader.
+
+## Modules and Ownership
+
+| Module | Owns | May access |
+|--------|------|------------|
+| `config` | Database location and runtime configuration | Environment variables |
+| `cli` | Command parsing and command dispatch | CLI feature services and `app_server` entry point |
+| `app_server` | FastAPI application factory and HTTP routes | API services |
+| `services` | Loading, rate lookup, conversion, and history behavior | `persistence` package and standard-library helpers |
+| `persistence` | Database connections and generated repository operations | SQLite driver through the shipped persistence library |
+
+Application features call declared repository operations through `persistence`; they do not open a database driver or issue SQL directly. Routes delegate behavior to services. The CLI dispatches commands to their feature implementations, and `serve` runs the application exposed by `app_server`.
+
+## Programmatic Acceptance
+
+=== AC architecture_modules_import ===
+Intent: The application module boundaries are importable and expose the declared API and CLI entry points.
+
+import importlib
+
+cli = importlib.import_module(&quot;cli&quot;)
+app_server = importlib.import_module(&quot;app_server.main&quot;)
+persistence = importlib.import_module(&quot;persistence&quot;)
+
+assert callable(cli.main)
+assert callable(app_server.create_app)
+assert app_server.app is not None
+assert callable(persistence.open_database)
+=== END AC architecture_modules_import ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Application code accesses SQLite only through the generated persistence package.
+- Store rates as ECB-published text and use Decimal for rate arithmetic.
+- Resolve database configuration from `DATABASE_URL`, then `DATABASE_PATH`, then `data/app.db`.
+- Do not read or modify `sources/run.sh` or supplied data files from application code.
+
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-CliFoundation.md ===
+# FEATURE: CLI Foundation
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261025 V1 |
+| Description | Provides the callable command-line entry point and root executable foundation. |
+| Depends On  | ARCHITECTURE.md |
+| Provides    | `cli.main(argv: list[str] | None) -&gt; int`, `./fxrates` |
+| Consumes    |  |
+
+## Questions
+
+- None.
+
+## Purpose
+
+The `cli` package exposes `main(argv: list[str] | None = None) -&gt; int`, and the executable at the application root delegates to it. Feature stories add the supported subcommands.
+
+## Programmatic Acceptance
+
+=== AC cli_entry_point ===
+Intent: The CLI foundation exposes a callable entry point returning an integer status.
+
+from cli import main
+
+result = main([&quot;__foundation_probe__&quot;])
+assert isinstance(result, int)
+=== END AC cli_entry_point ===
+
+=== AC cli_runner_contract ===
+Intent: The published CLI runner returns an integer exit code and captured output strings.
+
+from cli.testing import cli_runner
+
+code, stdout, stderr = cli_runner(&quot;__foundation_probe__&quot;)
+assert isinstance(code, int)
+assert isinstance(stdout, str)
+assert isinstance(stderr, str)
+=== END AC cli_runner_contract ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- The root executable is named `fxrates`.
+- Diagnostics are written to standard error.
+- Command implementations use the declared persistence boundary when accessing stored rates.
+
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-ApiFoundation.md ===
+# FEATURE: API Foundation
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261025 V1 |
+| Description | Provides the FastAPI application factory and module-level application. |
+| Depends On  | ARCHITECTURE.md, DATABASE.md |
+| Provides    | `app_server.main:create_app`, `app_server.main:app`, `app_server.testing:web_client` |
+| Consumes    | rates repository operations |
+
+## Questions
+
+- None.
+
+## Purpose
+
+`app_server.main.create_app()` constructs the service application, and `app_server.main.app` is the module-level ASGI application used by uvicorn. `app_server.testing.web_client()` returns a TestClient for the application so API behavior can be exercised in-process.
+
+## Programmatic Acceptance
+
+=== AC api_factory_and_app ===
+Intent: The application factory returns a FastAPI application and the module exports its application instance.
+Requires: python-package=httpx; scope=test
+
+from fastapi import FastAPI
+from app_server.main import app, create_app
+
+created = create_app()
+assert isinstance(created, FastAPI)
+assert isinstance(app, FastAPI)
+=== END AC api_factory_and_app ===
+
+=== AC api_test_client ===
+Intent: The published web client callable returns a client for the application.
+Requires: python-package=httpx; scope=test
+
+from fastapi.testclient import TestClient
+from app_server.testing import web_client
+
+client = web_client()
+assert isinstance(client, TestClient)
+client.close()
+=== END AC api_test_client ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Bind the API to `127.0.0.1` when serving.
+- Application database access goes through the generated persistence package.
+- The API returns JSON responses.
+
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-InitializeRates.md ===
+# FEATURE: Initialize Rates
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261025 V1 |
+| Description | Initializes the rates store from the command line. |
+| Depends On  | FEATURE-CliFoundation.md, DATABASE.md |
+| Provides    | `fxrates init` |
+| Consumes    | `rates.delete` |
+
+## Questions
+
+- None.
+
+## Trigger and Behavior
+
+`fxrates init` removes existing rate records and leaves the rates store empty. It succeeds with exit code `0` and no standard output. The command uses the declared `rates.delete` repository operation and does not open the database driver directly.
+
+## Programmatic Acceptance
+
+=== AC init_clears_rates ===
+Intent: Initialization removes existing rates from the configured repository.
+
+from cli.testing import cli_runner
+from persistence.testing import db_session
+
+date = &quot;2099-01-02&quot;
+currency = &quot;ZZZ&quot;
+rate = &quot;1.2300&quot;
+
+with db_session() as db:
+    db.rates.upsert(date=date, currency=currency, rate=rate)
+    assert db.rates.get(date=date, currency=currency) is not None
+
+code, stdout, stderr = cli_runner(&quot;init&quot;)
+assert code == 0
+
+with db_session() as db:
+    assert db.rates.get(date=date, currency=currency) is None
+=== END AC init_clears_rates ===
+
+=== AC init_usage_errors ===
+Intent: Initialization command dispatch does not treat an unknown command as successful.
+
+from cli.testing import cli_runner
+
+code, stdout, stderr = cli_runner(&quot;unknown-command&quot;)
+assert code == 2
+=== END AC init_usage_errors ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Initialization drops and recreates the rates table empty, as specified.
+- The command accesses persistence only through the generated repository package.
+- A failing command writes no standard output and emits a diagnostic to standard error.
+
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-LoadHistory.md ===
+# FEATURE: Load ECB History
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261025 V1 |
+| Description | Validates and atomically loads ECB reference rate history files. |
+| Depends On  | FEATURE-CliFoundation.md, FEATURE-InitializeRates.md, DATABASE.md |
+| Provides    | `fxrates load &lt;csv&gt;` |
+| Consumes    | `rates.get`, `rates.list`, `rates.upsert` |
+
+## Questions
+
+- None.
+
+## Trigger and Behavior
+
+`fxrates load &lt;csv&gt;` validates the entire CSV before its first write. The header begins with `Date`, followed by three-letter uppercase currency codes; a trailing empty field is ignored. Each data row has a real, non-repeated `YYYY-MM-DD` date and one value per currency. `N/A` is skipped; each other value must match `[0-9]+(\.[0-9]+)?` and be nonzero. Valid values are stored exactly as published text. Existing date/currency pairs are replaced.
+
+On success, standard output is CSV with header `dates,rates` and one row containing the number of dates with at least one stored rate and the number of rates stored. An unreadable file exits `1`; an invalid file exits `3`. A failing command writes nothing to standard output and one diagnostic line to standard error.
+
+## Programmatic Acceptance
+
+=== AC load_published_text_and_counts ===
+Intent: Loading the staged January ECB file stores its published non-N/A values and reports the dates and rates through the command contract.
+
+from cli.testing import cli_runner
+from persistence.testing import db_session
+
+code, stdout, stderr = cli_runner(&quot;init&quot;)
+assert code == 0
+
+code, stdout, stderr = cli_runner(&quot;load&quot;, &quot;sources/eurofxref-hist_2025-01.csv&quot;)
+assert code == 0
+
+with db_session() as db:
+    rows = db.rates.list(currency=&quot;USD&quot;)
+    january_rows = [row for row in rows if row.date.startswith(&quot;2025-01&quot;)]
+    assert len(january_rows) == 22
+    assert all(isinstance(row.rate, str) for row in january_rows)
+    assert db.rates.get(date=&quot;2025-01-31&quot;, currency=&quot;USD&quot;).rate == &quot;1.0393&quot;
+    assert db.rates.get(date=&quot;2025-01-31&quot;, currency=&quot;HRK&quot;) is None
+=== END AC load_published_text_and_counts ===
+
+=== AC load_is_atomic_on_invalid_file ===
+Intent: A file with an invalid rate is rejected without storing any of its rows.
+
+from cli.testing import cli_runner
+from persistence.testing import db_session
+
+with db_session() as db:
+    before = len(db.rates.list())
+
+code, stdout, stderr = cli_runner(&quot;load&quot;, &quot;sources/eurofxref-hist_bad.csv&quot;)
+assert code == 3
+
+with db_session() as db:
+    after = len(db.rates.list())
+assert after == before
+=== END AC load_is_atomic_on_invalid_file ===
+
+=== AC load_replaces_existing_pair ===
+Intent: Loading a file that includes an existing date and currency replaces the stored value with its published text.
+
+from cli.testing import cli_runner
+from persistence.testing import db_session
+
+date = &quot;2025-01-31&quot;
+currency = &quot;USD&quot;
+
+with db_session() as db:
+    db.rates.upsert(date=date, currency=currency, rate=&quot;9.99&quot;)
+
+code, stdout, stderr = cli_runner(&quot;load&quot;, &quot;sources/eurofxref-hist_2025-01.csv&quot;)
+assert code == 0
+
+with db_session() as db:
+    row = db.rates.get(date=date, currency=currency)
+assert row.rate == &quot;1.0393&quot;
+=== END AC load_replaces_existing_pair ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Validate the whole file before the first write; rejection changes nothing.
+- Preserve published rate text and skip `N/A` values.
+- Replace rates for an existing date and currency pair.
+- Do not read or modify the supplied grader or data files from application code.
+- Database access goes through the generated persistence package.
+
+=== END ARTIFACT</pre></article>
+</main>
+</body>
+</html>

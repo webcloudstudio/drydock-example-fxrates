@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/commands/17-score-acceptance.stdout.log</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/commands/17-score-acceptance.stdout.log</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/commands/17-score-acceptance.stdout.log">Raw file</a></div></header>
+<article class="doc"><pre>Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
+  ✓ PASS        [1/26]  architecture-imports            architecture  ARCHITECTURE.md
+  ✓ PASS        [2/26]  rates-upsert                    database      DATABASE.md
+  ✓ PASS        [3/26]  rates-effective-rates           database      DATABASE.md
+  ✓ PASS        [4/26]  rates-by-date                   database      DATABASE.md
+  ✓ PASS        [5/26]  rates-history                   database      DATABASE.md
+  ✓ PASS        [6/26]  rates-list                      database      DATABASE.md
+  ✗ FAIL        [7/26]  init-empty                      data-001      FEATURE-DatabaseInitialization.md
+  ✓ PASS        [8/26]  init-usage                      data-001      FEATURE-DatabaseInitialization.md
+  ✓ PASS        [9/26]  load-valid-fixture              data-002      FEATURE-HistoryLoading.md
+  ✓ PASS        [10/26]  load-repeat                     data-002      FEATURE-HistoryLoading.md
+  ✓ PASS        [11/26]  load-rejection-atomic           data-002      FEATURE-HistoryLoading.md
+  ✓ PASS        [12/26]  load-missing-file               data-002      FEATURE-HistoryLoading.md
+  ✗ FAIL        [13/26]  overview-routes                 api-001       FEATURE-ServiceOverview.md
+  ✗ FAIL        [14/26]  stats-empty-contract            api-001       FEATURE-ServiceOverview.md
+  ✗ FAIL        [15/26]  effective-rate-routes           api-002       FEATURE-EffectiveRates.md
+  ✗ FAIL        [16/26]  effective-rate-errors           api-002       FEATURE-EffectiveRates.md
+  ✗ FAIL        [17/26]  history-route                   api-004       FEATURE-CurrencyHistory.md
+  ✗ FAIL        [18/26]  history-summary-and-empty       api-004       FEATURE-CurrencyHistory.md
+  ✗ FAIL        [19/26]  history-errors                  api-004       FEATURE-CurrencyHistory.md
+  ✗ FAIL        [20/26]  conversion-route                api-003       FEATURE-CurrencyConversion.md
+  ✗ FAIL        [21/26]  conversion-rounding             api-003       FEATURE-CurrencyConversion.md
+  ✗ FAIL        [22/26]  conversion-errors               api-003       FEATURE-CurrencyConversion.md
+  ✓ PASS        [23/26]  fetch-stubbed                   data-003      FEATURE-HistoryFetch.md
+  ✗ FAIL        [24/26]  fetch-operational-error         data-003      FEATURE-HistoryFetch.md
+  ✓ PASS        [25/26]  test-runner-exits-successfully  qa-001        FEATURE-TestRunner.md
+  ✓ PASS        [26/26]  supplied-grader                 qa-002        FEATURE-EndToEndVerification.md
+
+Acceptance verification: FxRates  (2026-10-26T01:31:09+00:00)
+  PASS 14   FAIL 12   UNVERIFIED 0   (26 AC)
+
+  ✓ PASS        architecture-imports            architecture  ARCHITECTURE.md
+  ✓ PASS        rates-upsert                    database      DATABASE.md
+  ✓ PASS        rates-effective-rates           database      DATABASE.md
+  ✓ PASS        rates-by-date                   database      DATABASE.md
+  ✓ PASS        rates-history                   database      DATABASE.md
+  ✓ PASS        rates-list                      database      DATABASE.md
+  ✗ FAIL        init-empty                      data-001      FEATURE-DatabaseInitialization.md
+  ✓ PASS        init-usage                      data-001      FEATURE-DatabaseInitialization.md
+  ✓ PASS        load-valid-fixture              data-002      FEATURE-HistoryLoading.md
+  ✓ PASS        load-repeat                     data-002      FEATURE-HistoryLoading.md
+  ✓ PASS        load-rejection-atomic           data-002      FEATURE-HistoryLoading.md
+  ✓ PASS        load-missing-file               data-002      FEATURE-HistoryLoading.md
+  ✗ FAIL        overview-routes                 api-001       FEATURE-ServiceOverview.md
+  ✗ FAIL        stats-empty-contract            api-001       FEATURE-ServiceOverview.md
+  ✗ FAIL        effective-rate-routes           api-002       FEATURE-EffectiveRates.md
+  ✗ FAIL        effective-rate-errors           api-002       FEATURE-EffectiveRates.md
+  ✗ FAIL        history-route                   api-004       FEATURE-CurrencyHistory.md
+  ✗ FAIL        history-summary-and-empty       api-004       FEATURE-CurrencyHistory.md
+  ✗ FAIL        history-errors                  api-004       FEATURE-CurrencyHistory.md
+  ✗ FAIL        conversion-route                api-003       FEATURE-CurrencyConversion.md
+  ✗ FAIL        conversion-rounding             api-003       FEATURE-CurrencyConversion.md
+  ✗ FAIL        conversion-errors               api-003       FEATURE-CurrencyConversion.md
+  ✓ PASS        fetch-stubbed                   data-003      FEATURE-HistoryFetch.md
+  ✗ FAIL        fetch-operational-error         data-003      FEATURE-HistoryFetch.md
+  ✓ PASS        test-runner-exits-successfully  qa-001        FEATURE-TestRunner.md
+  ✓ PASS        supplied-grader                 qa-002        FEATURE-EndToEndVerification.md
+
+  ✗ FAIL        init-empty
+        intent: Initialization clears existing rates and leaves the table empty.
+        assertion: assert exit_code == 0 → AssertionError
+        raised at: init-empty.py:12
+        process exit code: 1
+        values at failure:
+          exit_code = 1
+        criterion code:
+             1 | from cli.testing import cli_runner
+             2 | from persistence.testing import db_session
+             3 |
+             4 | date = &quot;2098-06-01&quot;
+             5 | currency = &quot;ZZZ&quot;
+             6 | rate = &quot;1.5&quot;
+             7 |
+             8 | with db_session() as db:
+             9 |     db.rates.upsert(date=date, currency=currency, rate=rate)
+            10 |
+            11 | exit_code, stdout, stderr = cli_runner(&quot;init&quot;)
+          &gt; 12 | assert exit_code == 0
+            13 | with db_session() as db:
+            14 |     rows = db.rates.by_date(date=date)
+            15 |     assert not any(row.currency == currency for row in rows)
+        check stderr:
+          Traceback (most recent call last):
+            File &quot;init-empty.py&quot;, line 12, in &lt;module&gt;
+              assert exit_code == 0
+                     ^^^^^^^^^^^^^^
+          AssertionError
+
+  ✗ FAIL        overview-routes
+        intent: Health, statistics, and currencies routes are reachable and reflect persisted state.
+        assertion: ModuleNotFoundError: No module named &#x27;app_server.testing&#x27;
+        raised at: overview-routes.py:1
+        process exit code: 1
+        error: ModuleNotFoundError: No module named &#x27;app_server.testing&#x27;
+        criterion code:
+          &gt;  1 | from app_server.testing import web_client
+             2 | from persistence.testing import db_session
+             3 |
+             4 | with db_session() as db:
+             5 |     date = &quot;2096-08-01&quot;
+             6 |     rate = &quot;1.75&quot;
+             7 |     db.rates.upsert(date=date, currency=&quot;ZZZ&quot;, rate=rate)
+             8 |
+             9 | client = web_client()
+            10 | health = client.get(&quot;/health&quot;)
+            11 | stats = client.get(&quot;/stats&quot;)
+            12 | currencies = client.get(&quot;/currencies&quot;)
+            13 | assert health.status_code == 200
+            14 | assert health.json()[&quot;status&quot;] == &quot;ok&quot;
+            15 | assert stats.status_code == 200
+            16 | assert stats.json()[&quot;dates&quot;] &gt;= 1
+            17 | assert stats.json()[&quot;rates&quot;] &gt;= 1
+            18 | assert stats.json()[&quot;first&quot;] is not None
+            19 | assert stats.json()[&quot;last&quot;] is not None
+            20 | assert currencies.status_code == 200
+            21 | assert &quot;ZZZ&quot; in currencies.json()[&quot;currencies&quot;]
+        check stderr:
+          Traceback (most recent call last):
+            File &quot;overview-routes.py&quot;, line 1, in &lt;module&gt;
+              from app_server.testing import web_client
+          ModuleNotFoundError: No module named &#x27;app_server.testing&#x27;
+
+  ✗ FAIL        stats-empty-contract
+        intent: Statistics expose the declared null bounds when the rates table is empty.
+        assertion: ModuleNotFoundError: No module named &#x27;app_server.testing&#x27;
+        raised at: stats-empty-contract.py:1
+        process exit code: 1
+        error: ModuleNotFoundError: No module named &#x27;app_server.testing&#x27;
+        criterion code:
+          &gt; 1 | from app_server.testing import web_client
+            2 |
+            3 | client = web_client()
+            4 | response = client.get(&quot;/stats&quot;)
+            5 | assert response.status_code == 200
+            6 | body = response.json()
+            7 | assert body[&quot;first&quot;] is None or isinstance(body[&quot;first&quot;], str)
+            8 | assert body[&quot;last&quot;] is None or isinstance(body[&quot;last&quot;], str)
+        check stderr:
+          Traceback (most recent call last):
+            File &quot;stats-empty-contract.py&quot;, line 1, in &lt;module&gt;
+              from app_server.testing import web_client
+          ModuleNotFoundError: No module named &#x27;app_server.testing&#x27;
+
+  ✗ FAIL        effective-rate-routes
+        intent: Both effective-rate routes return successful responses for dates backed by rates.
+        assertion: ModuleNotFoundError: No module named &#x27;app_server.testing&#x27;
+        raised at: effective-rate-routes.py:1
+        process exit code: 1
+        error: ModuleNotFoundError: No module named &#x27;app_server.testing&#x27;
+        criterion code:
+          &gt;  1 | from app_server.testing import web_client
+             2 | from cli.testing import cli_runner
+             3 | from persistence.testing import db_session
+             4 |
+             5 | with db_session() as db:
+             6 |     for date, currency, rate in [
+             7 |         (&quot;2099-01-01&quot;, &quot;AAA&quot;, &quot;1.25&quot;),
+             8 |         (&quot;2099-01-01&quot;, &quot;ZZZ&quot;, &quot;2.5&quot;),
+             9 |     ]:
+            10 |         db.rates.upsert(date=date, currency=currency, rate=rate)
+            11 |
+            12 | client = web_client()
+            13 | assert client.get(&quot;/rates/2099-01-01&quot;).status_code == 200
+            14 | assert client.get(&quot;/rates/latest&quot;).status_code == 200
+        check stderr:
+          Traceback (most recent call last):
+            File &quot;effective-rate-routes.py&quot;, line 1, in &lt;module&gt;
+              from app_server.testing import web_client
+          ModuleNotFoundError: No module named &#x27;app_server.testing&#x27;
+
+  ✗ FAIL        effective-rate-errors
+        intent: A malformed requested date is rejected, and a date before all stored rates is not found.
+        assertion: ModuleNotFoundError: No module named &#x27;app_server.testing&#x27;
+        raised at: effective-rate-errors.py:1
+        process exit code: 1
+        error: ModuleNotFoundError: No module named &#x27;app_server.testing&#x27;
+        criterion code:
+          &gt; 1 | from app_server.testing import web_client
+            2 | from persistence.testing import db_session
+            3 |
+            4 | with db_session() as db:
+            5 |     db.rates.upsert(date=&quot;2099-02-02&quot;, currency=&quot;AAA&quot;, rate=&quot;1.25&quot;)
+            6 |
+            7 | client = web_client()
+            8 | assert client.get(&quot;/rates/not-a-date&quot;).status_code == 422
+            9 | assert client.get(&quot;/rates/2099-02-01&quot;).status_code == 404
+        check stderr:
+          Traceback (most recent call last):
+            File &quot;effective-rate-errors.py&quot;, line 1, in &lt;module&gt;
+              from app_server.testing import web_client
+          ModuleNotFoundError: No module named &#x27;app_server.testing&#x27;
+
+  ✗ FAIL        history-route
+        intent: The history route returns stored points in ascending date order for the requested currency and range.
+        assertion: ModuleNotFoundError: No module named &#x27;app_server.testing&#x27;
+        raised at: history-route.py:1
+        process exit code: 1
+        error: ModuleNotFoundError: No module named &#x27;app_server.testing&#x27;
+        criterion code:
+          &gt;  1 | from app_server.testing import web_client
+             2 | from persistence.testing import db_session
+             3 |
+             4 | currency = &quot;ZZZ&quot;
+             5 | first_date = &quot;2099-04-01&quot;
+             6 | second_date = &quot;2099-04-02&quot;
+             7 | rate = &quot;1.5&quot;
+             8 |
+             9 | with db_session() as db:
+            10 |     db.rates.upsert(date=second_date, currency=currency, rate=rate)
+            11 |     db.rates.upsert(date=first_date, currency=currency, rate=rate)
+            12 |
+            13 | response = web_client().get(
+            14 |     f&quot;/history/{currency}&quot;,
+            15 |     params={&quot;start&quot;: first_date, &quot;end&quot;: second_date},
+            16 | )
+            17 | assert response.status_code == 200
+            18 | body = response.json()
+            19 | assert [point[&quot;date&quot;] for point in body[&quot;points&quot;]] == [first_date, second_date]
+            20 | assert [point[&quot;rate&quot;] for point in body[&quot;points&quot;]] == [rate, rate]
+        check stderr:
+          Traceback (most recent call last):
+            File &quot;history-route.py&quot;, line 1, in &lt;module&gt;
+              from app_server.testing import web_client
+          ModuleNotFoundError: No module named &#x27;app_server.testing&#x27;
+
+  ✗ FAIL        history-summary-and-empty
+        intent: History reports the count and extrema of stored points and represents a valid empty period with null statistics.
+        assertion: ModuleNotFoundError: No module named &#x27;app_server.testing&#x27;
+        raised at: history-summary-and-empty.py:2
+        process exit code: 1
+        error: ModuleNotFoundError: No module named &#x27;app_server.testing&#x27;
+        criterion code:
+             1 | from decimal import Decimal, ROUND_HALF_EVEN
+          &gt;  2 | from app_server.testing import web_client
+             3 | from persistence.testing import db_session
+             4 |
+             5 | currency = &quot;ZZZ&quot;
+             6 | date = &quot;2099-04-03&quot;
+             7 | rate = &quot;1.5&quot;
+             8 | expected_mean = Decimal(rate).quantize(Decimal(&quot;0.000001&quot;), rounding=ROUND_HALF_EVEN)
+             9 |
+            10 | with db_session() as db:
+            11 |     db.rates.upsert(date=date, currency=currency, rate=rate)
+            12 |
+            13 | client = web_client()
+            14 | response = client.get(f&quot;/history/{currency}&quot;)
+            15 | assert response.status_code == 200
+            16 | body = response.json()
+            17 | assert body[&quot;count&quot;] == 1
+            18 | assert body[&quot;min&quot;] == rate
+            19 | assert body[&quot;max&quot;] == rate
+            20 | assert body[&quot;mean&quot;] == f&quot;{expected_mean:.6f}&quot;
+            21 |
+            22 | empty = client.get(f&quot;/history/{currency}&quot;, params={&quot;start&quot;: &quot;2099-04-04&quot;})
+            23 | assert empty.status_code == 200
+            24 | empty_body = empty.json()
+            25 | assert empty_body[&quot;count&quot;] == 0
+            26 | assert empty_body[&quot;min&quot;] is None
+            27 | assert empty_body[&quot;max&quot;] is None
+            28 | assert empty_body[&quot;mean&quot;] is None
+            29 | assert empty_body[&quot;points&quot;] == []
+        check stderr:
+          Traceback (most recent call last):
+            File &quot;history-summary-and-empty.py&quot;, line 2, in &lt;module&gt;
+              from app_server.testing import web_client
+          ModuleNotFoundError: No module named &#x27;app_server.testing&#x27;
+
+  ✗ FAIL        history-errors
+        intent: History rejects malformed date bounds and an unavailable currency.
+        assertion: ModuleNotFoundError: No module named &#x27;app_server.testing&#x27;
+        raised at: history-errors.py:1
+        process exit code: 1
+        error: ModuleNotFoundError: No module named &#x27;app_server.testing&#x27;
+        criterion code:
+          &gt; 1 | from app_server.testing import web_client
+            2 | from persistence.testing import db_session
+            3 |
+            4 | with db_session() as db:
+            5 |     db.rates.upsert(date=&quot;2099-04-05&quot;, currency=&quot;AAA&quot;, rate=&quot;2&quot;)
+            6 |
+            7 | client = web_client()
+            8 | assert client.get(&quot;/history/AAA&quot;, params={&quot;start&quot;: &quot;2025-13-01&quot;}).status_code == 422
+            9 | assert client.get(&quot;/history/NOX&quot;).status_code == 404
+        check stderr:
+          Traceback (most recent call last):
+            File &quot;history-errors.py&quot;, line 1, in &lt;module&gt;
+              from app_server.testing import web_client
+          ModuleNotFoundError: No module named &#x27;app_server.testing&#x27;
+
+  ✗ FAIL        conversion-route
+        intent: The conversion route returns a successful response and echoes the supplied amount and currency codes.
+        assertion: ModuleNotFoundError: No module named &#x27;app_server.testing&#x27;
+        raised at: conversion-route.py:1
+        process exit code: 1
+        error: ModuleNotFoundError: No module named &#x27;app_server.testing&#x27;
+        criterion code:
+          &gt;  1 | from app_server.testing import web_client
+             2 | from persistence.testing import db_session
+             3 |
+             4 | date = &quot;2099-03-01&quot;
+             5 | amount = &quot;2.00&quot;
+             6 | source_rate = &quot;2&quot;
+             7 | target_rate = &quot;5&quot;
+             8 |
+             9 | with db_session() as db:
+            10 |     db.rates.upsert(date=date, currency=&quot;AAA&quot;, rate=source_rate)
+            11 |     db.rates.upsert(date=date, currency=&quot;ZZZ&quot;, rate=target_rate)
+            12 |
+            13 | response = web_client().get(
+            14 |     &quot;/convert&quot;,
+            15 |     params={&quot;from&quot;: &quot;AAA&quot;, &quot;to&quot;: &quot;ZZZ&quot;, &quot;amount&quot;: amount, &quot;date&quot;: date},
+            16 | )
+            17 | assert response.status_code == 200
+            18 | body = response.json()
+            19 | assert body[&quot;amount&quot;] == amount
+            20 | assert body[&quot;from&quot;] == &quot;AAA&quot;
+            21 | assert body[&quot;to&quot;] == &quot;ZZZ&quot;
+            22 | assert body[&quot;date&quot;] == date
+        check stderr:
+          Traceback (most recent call last):
+            File &quot;conversion-route.py&quot;, line 1, in &lt;module&gt;
+              from app_server.testing import web_client
+          ModuleNotFoundError: No module named &#x27;app_server.testing&#x27;
+
+  ✗ FAIL        conversion-rounding
+        intent: The conversion rate and result use exact source rates and half-even rounding at their specified precisions.
+        assertion: ModuleNotFoundError: No module named &#x27;app_server.testing&#x27;
+        raised at: conversion-rounding.py:2
+        process exit code: 1
+        error: ModuleNotFoundError: No module named &#x27;app_server.testing&#x27;
+        criterion code:
+             1 | from decimal import Decimal, ROUND_HALF_EVEN
+          &gt;  2 | from app_server.testing import web_client
+             3 | from persistence.testing import db_session
+             4 |
+             5 | date = &quot;2099-03-02&quot;
+             6 | amount = &quot;2.00&quot;
+             7 | source_rate = &quot;2&quot;
+             8 | target_rate = &quot;5&quot;
+             9 | expected_rate = (Decimal(target_rate) / Decimal(source_rate)).quantize(
+            10 |     Decimal(&quot;0.000001&quot;), rounding=ROUND_HALF_EVEN
+            11 | )
+            12 | expected_result = (Decimal(amount) * Decimal(target_rate) / Decimal(source_rate)).quantize(
+            13 |     Decimal(&quot;0.01&quot;), rounding=ROUND_HALF_EVEN
+            14 | )
+            15 |
+            16 | with db_session() as db:
+            17 |     db.rates.upsert(date=date, currency=&quot;AAA&quot;, rate=source_rate)
+            18 |     db.rates.upsert(date=date, currency=&quot;ZZZ&quot;, rate=target_rate)
+            19 |
+            20 | response = web_client().get(
+            21 |     &quot;/convert&quot;,
+            22 |     params={&quot;from&quot;: &quot;AAA&quot;, &quot;to&quot;: &quot;ZZZ&quot;, &quot;amount&quot;: amount, &quot;date&quot;: date},
+            23 | )
+            24 | assert response.status_code == 200
+            25 | body = response.json()
+            26 | assert body[&quot;rate&quot;] == f&quot;{expected_rate:.6f}&quot;
+            27 | assert body[&quot;result&quot;] == f&quot;{expected_result:.2f}&quot;
+        check stderr:
+          Traceback (most recent call last):
+            File &quot;conversion-rounding.py&quot;, line 2, in &lt;module&gt;
+              from app_server.testing import web_client
+          ModuleNotFoundError: No module named &#x27;app_server.testing&#x27;
+
+  ✗ FAIL        conversion-errors
+        intent: The conversion route rejects a missing or malformed amount and returns not found for an unavailable currency.
+        assertion: ModuleNotFoundError: No module named &#x27;app_server.testing&#x27;
+        raised at: conversion-errors.py:1
+        process exit code: 1
+        error: ModuleNotFoundError: No module named &#x27;app_server.testing&#x27;
+        criterion code:
+          &gt;  1 | from app_server.testing import web_client
+             2 | from persistence.testing import db_session
+             3 |
+             4 | with db_session() as db:
+             5 |     db.rates.upsert(date=&quot;2099-03-03&quot;, currency=&quot;AAA&quot;, rate=&quot;2&quot;)
+             6 |
+             7 | client = web_client()
+             8 | assert client.get(&quot;/convert&quot;, params={&quot;from&quot;: &quot;AAA&quot;, &quot;to&quot;: &quot;ZZZ&quot;}).status_code == 422
+             9 | assert client.get(
+            10 |     &quot;/convert&quot;,
+            11 |     params={&quot;from&quot;: &quot;AAA&quot;, &quot;to&quot;: &quot;ZZZ&quot;, &quot;amount&quot;: &quot;abc&quot;},
+            12 | ).status_code == 422
+            13 | assert client.get(
+            14 |     &quot;/convert&quot;,
+            15 |     params={&quot;from&quot;: &quot;AAA&quot;, &quot;to&quot;: &quot;ZZZ&quot;, &quot;amount&quot;: &quot;1&quot;},
+            16 | ).status_code == 404
+        check stderr:
+          Traceback (most recent call last):
+            File &quot;conversion-errors.py&quot;, line 1, in &lt;module&gt;
+              from app_server.testing import web_client
+          ModuleNotFoundError: No module named &#x27;app_server.testing&#x27;
+
+  ✗ FAIL        fetch-operational-error
+        intent: A failed archive download returns the operational failure exit code.
+        assertion: assert code == 1 → AssertionError
+        raised at: fetch-operational-error.py:6
+        process exit code: 1
+        values at failure:
+          code = 3
+        criterion code:
+            1 | from cli.testing import cli_runner
+            2 | from unittest.mock import patch
+            3 |
+            4 | with patch(&quot;services.fetch.download_archive&quot;, side_effect=OSError()):
+            5 |     code, _, _ = cli_runner(&quot;fetch&quot;)
+          &gt; 6 | assert code == 1
+        check stderr:
+          Traceback (most recent call last):
+            File &quot;fetch-operational-error.py&quot;, line 6, in &lt;module&gt;
+              assert code == 1
+                     ^^^^^^^^^
+          AssertionError
+
+  Run `drydock score ac FxRates --full` for untruncated output per failure.
+
+
+Soundings: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.011843/workspace/targets/FxRates/SOUNDINGS.md
+Target - committed project workspace git store
+</pre></article>
+</main>
+</body>
+</html>

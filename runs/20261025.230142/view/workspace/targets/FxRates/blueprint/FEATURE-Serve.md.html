@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-Serve.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-Serve.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-Serve.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Serve API</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261025 V1</td></tr><tr><td>Description</td><td>Run the HTTP API on the requested local port until stopped.</td></tr><tr><td>Depends On</td><td>FEATURE-CliFoundation.md, FEATURE-ApiFoundation.md</td></tr><tr><td>Provides</td><td>fxrates serve</td></tr><tr><td>Consumes</td><td>app_server.main:app</td></tr></tbody></table></div>
+<h2>Workflow</h2>
+<ul><li><code>fxrates serve</code> runs uvicorn in the foreground using <code>app_server.main:app</code>.</li><li>Bind only to <code>127.0.0.1</code>.</li><li>Use the supplied <code>--port</code> value; when omitted, use port <code>8000</code>.</li><li>Run until stopped, and stop cleanly on SIGTERM.</li><li>A non-integer <code>--port</code> is a usage error with exit code 2.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC serve_default_port ===<br>Intent: The CLI accepts serve without an explicit port and returns a running server process.<br>Requires: executable=python3; scope=test</p>
+<p>import subprocess</p>
+<p>process = subprocess.Popen( [&quot;./fxrates&quot;, &quot;serve&quot;], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, ) try: assert process.poll() is None finally: process.terminate() process.wait(timeout=10) === END AC serve_default_port ===</p>
+<p>=== AC serve_requested_port ===<br>Intent: The CLI accepts an explicit integer port and starts the server process.<br>Requires: executable=python3; scope=test</p>
+<p>import socket import subprocess</p>
+<p>with socket.socket() as sock: sock.bind((&quot;127.0.0.1&quot;, 0)) port = sock.getsockname()[1]</p>
+<p>process = subprocess.Popen( [&quot;./fxrates&quot;, &quot;serve&quot;, &quot;--port&quot;, str(port)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, ) try: assert process.poll() is None finally: process.terminate() process.wait(timeout=10) === END AC serve_requested_port ===</p>
+<p>=== AC serve_bad_port ===<br>Intent: A non-integer port is rejected as a usage error.<br>Requires: executable=python3; scope=test</p>
+<p>import subprocess</p>
+<p>result = subprocess.run( [&quot;./fxrates&quot;, &quot;serve&quot;, &quot;--port&quot;, &quot;notaport&quot;], capture_output=True, text=True, ) assert result.returncode == 2 === END AC serve_bad_port ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Bind the service to <code>127.0.0.1</code>.</li><li>Keep the server in the foreground and stop cleanly on SIGTERM.</li></ul></article>
+</main>
+</body>
+</html>

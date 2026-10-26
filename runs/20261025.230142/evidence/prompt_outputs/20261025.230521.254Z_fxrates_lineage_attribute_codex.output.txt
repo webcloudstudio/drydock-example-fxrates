@@ -1,0 +1,14 @@
+<unattached story="architecture"/>
+<unattached story="database"/>
+<unattached story="api-foundation"/>
+<unattached story="cli-foundation"/>
+<unattached story="load_init"/>
+<unattached story="load_history"/>
+<unattached story="api_reference"/>
+<unattached story="api_rates"/>
+<unattached story="api_convert"/>
+<unattached story="api_history"/>
+<unattached story="api_serve"/>
+<unattached story="load_fetch"/>
+<unattached story="api_errors"/>
+<unattached story="release_verification"/>

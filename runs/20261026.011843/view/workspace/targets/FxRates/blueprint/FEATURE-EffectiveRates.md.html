@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-EffectiveRates.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-EffectiveRates.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-EffectiveRates.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Effective Rates</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261026 V1</td></tr><tr><td>Description</td><td>Resolves stored rates for a requested or latest ECB publication date.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md, DATABASE.md, FEATURE-HistoryLoading.md</td></tr><tr><td>Provides</td><td>GET /rates/{date}, GET /rates/latest</td></tr><tr><td>Consumes</td><td>rates.effective_rates, rates.by_date</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Return the rates for the latest publication date on or before a valid requested date. The latest endpoint resolves the most recent stored publication date.</p>
+<h2>Behavior</h2>
+<ul><li><code>GET /rates/{date}</code> accepts a real calendar date in <code>YYYY-MM-DD</code> form and returns <code>{&quot;date&quot;: effective_date, &quot;requested&quot;: requested_date, &quot;base&quot;: &quot;EUR&quot;, &quot;rates&quot;: {currency: published_rate_text}}</code>.</li><li><code>GET /rates/latest</code> returns the same shape, with <code>&quot;requested&quot;: &quot;latest&quot;</code>.</li><li>Rates include every currency stored on the effective date, in a JSON object.</li><li>Return 404 when no publication exists on or before the requested date, or when the database contains no rates.</li><li>A malformed path date returns 422.</li><li>Choose the effective date using <code>rates.effective_rates</code>; fetch that date&#x27;s full set with <code>rates.by_date</code>.</li></ul>
+<h2>Database Interface</h2>
+<ul><li><code>FEATURE-RATE-002</code> — read: find rates on or before a date - supplies: <code>as_of</code> - returns: <code>date</code>, <code>currency</code>, <code>rate</code></li><li><code>FEATURE-RATE-003</code> — read: list rates for one date - supplies: <code>date</code> - returns: <code>date</code>, <code>currency</code>, <code>rate</code></li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC effective-rate-routes ===<br>Intent: Both effective-rate routes return successful responses for dates backed by rates.</p>
+<p>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx; scope=test</p>
+<p>from app_server.testing import web_client from cli.testing import cli_runner from persistence.testing import db_session</p>
+<p>with db_session() as db: for date, currency, rate in [ (&quot;2099-01-01&quot;, &quot;AAA&quot;, &quot;1.25&quot;), (&quot;2099-01-01&quot;, &quot;ZZZ&quot;, &quot;2.5&quot;), ]: db.rates.upsert(date=date, currency=currency, rate=rate)</p>
+<p>client = web_client() assert client.get(&quot;/rates/2099-01-01&quot;).status_code == 200 assert client.get(&quot;/rates/latest&quot;).status_code == 200 === END AC effective-rate-routes ===</p>
+<p>=== AC effective-rate-errors ===<br>Intent: A malformed requested date is rejected, and a date before all stored rates is not found.</p>
+<p>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx; scope=test</p>
+<p>from app_server.testing import web_client from persistence.testing import db_session</p>
+<p>with db_session() as db: db.rates.upsert(date=&quot;2099-02-02&quot;, currency=&quot;AAA&quot;, rate=&quot;1.25&quot;)</p>
+<p>client = web_client() assert client.get(&quot;/rates/not-a-date&quot;).status_code == 422 assert client.get(&quot;/rates/2099-02-01&quot;).status_code == 404 === END AC effective-rate-errors ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Preserve published rate text in responses.</li><li>Never compute rates with floating point.</li></ul></article>
+</main>
+</body>
+</html>

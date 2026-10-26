@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-HistoryLoading.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-HistoryLoading.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-HistoryLoading.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: ECB History Loading</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261026 V1</td></tr><tr><td>Description</td><td>Validates and atomically loads ECB history CSV files.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md, DATABASE.md</td></tr><tr><td>Provides</td><td><code>fxrates load</code></td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Load ECB historical rates supplied as a CSV file while preserving their published text.</p>
+<h2>Trigger and workflow</h2>
+<p><code>fxrates load &lt;csv&gt;</code> reads the requested file, validates the entire file before the first database write, and then upserts every valid rate through the declared persistence operations. Loading a row for an existing date and currency replaces its rate. The input may include a trailing empty field, which is ignored. <code>N/A</code> values are skipped.</p>
+<p>The header begins with <code>Date</code>; remaining fields are three-letter uppercase currency codes. Each row has one date and one value per currency. Dates must be real <code>YYYY-MM-DD</code> calendar dates and cannot repeat within the file. Rates must match <code>[0-9]+(\.[0-9]+)?</code> and must be nonzero. A wrong field count, invalid or repeated date, or invalid value rejects the whole file without storing anything.</p>
+<p>On success, standard output is CSV with header <code>dates,rates</code>, followed by the count of dates having at least one stored rate and the number of rates stored from the file. A read failure exits 1; a rejected file exits 3; usage errors exit 2. A failing command writes nothing to standard output and one diagnostic line to standard error.</p>
+<h2>Database Interface</h2>
+<ul><li><code>FEATURE-RATE-001</code> — write: replace a stored rate - supplies: <code>date</code>, <code>currency</code>, <code>rate</code> - returns: <code>date</code>, <code>currency</code>, <code>rate</code></li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC load-valid-fixture ===<br>Intent: Loading the staged January fixture preserves source rate text and stores every non-N/A cell.</p>
+<p>from cli.testing import cli_runner from persistence.testing import db_session</p>
+<p>with db_session() as db: before = len(db.rates.list()) code, stdout, stderr = cli_runner(&quot;load&quot;, &quot;sources/eurofxref-hist_2025-01.csv&quot;) assert code == 0 with db_session() as db: rows = db.rates.list() added = [row for row in rows if row.date.startswith(&quot;2025-01-&quot;)] assert len(added) == 176 assert any(row.date == &quot;2025-01-29&quot; and row.currency == &quot;CHF&quot; and row.rate == &quot;0.943&quot; for row in added) === END AC load-valid-fixture ===</p>
+<p>=== AC load-repeat ===<br>Intent: Loading the same file twice leaves the rates table unchanged.</p>
+<p>from cli.testing import cli_runner from persistence.testing import db_session</p>
+<p>first_code, _, _ = cli_runner(&quot;load&quot;, &quot;sources/eurofxref-hist_2025-01.csv&quot;) assert first_code == 0 with db_session() as db: first = sorted((row.date, row.currency, row.rate) for row in db.rates.list() if row.date.startswith(&quot;2025-01-&quot;)) second_code, _, _ = cli_runner(&quot;load&quot;, &quot;sources/eurofxref-hist_2025-01.csv&quot;) assert second_code == 0 with db_session() as db: second = sorted((row.date, row.currency, row.rate) for row in db.rates.list() if row.date.startswith(&quot;2025-01-&quot;)) assert second == first === END AC load-repeat ===</p>
+<p>=== AC load-rejection-atomic ===<br>Intent: An invalid rate rejects the complete file without storing its valid first row.</p>
+<p>from cli.testing import cli_runner from persistence.testing import db_session</p>
+<p>with db_session() as db: before = len(db.rates.list()) code, _, _ = cli_runner(&quot;load&quot;, &quot;sources/eurofxref-hist_bad.csv&quot;) assert code == 3 with db_session() as db: after = len(db.rates.list()) assert after == before === END AC load-rejection-atomic ===</p>
+<p>=== AC load-missing-file ===<br>Intent: A missing input file is an operational failure.</p>
+<p>from cli.testing import cli_runner</p>
+<p>code, _, _ = cli_runner(&quot;load&quot;, &quot;sources/no-such-file.csv&quot;) assert code == 1 === END AC load-missing-file ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Validate the complete input before writing any rate.</li><li>Do not convert published rate strings to floating point or normalize their spelling.</li><li>Use the same database location precedence as the rest of the application.</li><li>Diagnostics are sent to standard error; do not use messages as the acceptance oracle.</li></ul></article>
+</main>
+</body>
+</html>
