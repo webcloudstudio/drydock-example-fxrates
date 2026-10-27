@@ -1,7 +1,7 @@
 #!/bin/sh
 # run.sh — FxRates grader. Do not filter, skip, or reinterpret.
 #
-# Runs ./fxrates against the configured, schema-provisioned test database.
+# Runs ./fxrates against a fresh database initialized by the application.
 # Loads the supplied ECB files from the command line,
 # starts `./fxrates serve` on a free local port, and compares every command's exit code and
 # standard output, and every HTTP response's status and JSON body, with the known answer below.
@@ -19,6 +19,8 @@ APP=$(cd "${1:-.}" && pwd)
 if [ -f "$HERE/eurofxref-hist_2025-01.csv" ]; then DATA=$HERE; else DATA=$(cd "$HERE/../sources" && pwd); fi
 WORK=$(mktemp -d)
 BIN="$APP/fxrates"
+DATABASE_URL="$WORK/fxrates.db"
+export DATABASE_URL
 SERVER=""
 
 stop_server() {
@@ -35,31 +37,6 @@ trap 'exit 1' INT TERM
 if [ ! -x "$BIN" ]; then
     echo "error: no executable ./fxrates at the application root $APP." >&2
     echo "The deliverable is an executable named fxrates at the application root." >&2
-    exit 1
-fi
-
-# Validate the configured store without creating a database or changing application DSNs.
-# The test store is owned by this grading run: init empties rates before fixture loading.
-if ! (cd "$APP" && python3 - <<'PY_STORE'
-import os
-from pathlib import Path
-import sqlite3
-import sys
-
-location = os.environ.get("DATABASE_URL") or os.environ.get("DATABASE_PATH") or "data/app.db"
-if location.startswith("sqlite://"):
-    location = location[len("sqlite://"):]
-try:
-    store = Path(location).expanduser().resolve()
-    with sqlite3.connect(store.as_uri() + "?mode=ro", uri=True) as db:
-        if db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='rates'").fetchone() is None:
-            raise RuntimeError("configured database has no rates table")
-except (OSError, sqlite3.Error, RuntimeError) as error:
-    print(f"error: grading requires the schema-provisioned test store at {location}: {error}", file=sys.stderr)
-    print("Provision the configured store through the DATABASE owner before grading; the grader does not create schema.", file=sys.stderr)
-    sys.exit(1)
-PY_STORE
-); then
     exit 1
 fi
 
@@ -150,6 +127,7 @@ start_server() {
     done
 }
 
+# Init owns schema creation for this new test store; never run a build or DDL here.
 # ── A. Command line: initialize and load ───────────────────────────────────────────────
 check A1 0 init < /dev/null
 check A2 0 load "$DATA/eurofxref-hist_2025-01.csv" <<'EOF'

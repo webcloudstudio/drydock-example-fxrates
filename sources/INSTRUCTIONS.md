@@ -19,10 +19,11 @@ the application root.
 into the application root with the data files. `drydock uat` runs `sh sources/run.sh` from the
 completed application root and takes its exit code and output as the score.
 
-The DATABASE build step provisions the configured SQLite store and its schema before grading.
-The harness retains `DATABASE_URL` and `DATABASE_PATH`, using the same resolution order as the
-application. It refuses a missing database or a missing `rates` table before running checks; it
-never substitutes an empty database or creates schema. It runs `./fxrates init` and
+The harness selects a fresh temporary SQLite database through `DATABASE_URL` and runs
+`./fxrates init` before any load or server command. Init creates missing tables and indexes by
+calling the generated `persistence.initialize_database(dsn)` interface, which applies the
+DATABASE-owned `schema.sql`. Creating the temporary file alone does not initialize it.
+The harness then runs
 `./fxrates load`, starts `./fxrates serve --port <port>` in the background on a free local port,
 waits up to 30 seconds for `GET /health`, and then runs HTTP requests against `127.0.0.1`. It
 makes 35 checks. A command check compares exit code and standard output. An HTTP check compares
@@ -54,15 +55,18 @@ the database.
 persistence library and the relational layer generated from `DATABASE.md`. Application code never
 opens a database driver directly.
 
-The DATABASE build step owns schema creation. Application startup and `fxrates init` never
-create, drop, or alter tables. `init` removes all rates through the generated persistence
-interface and leaves the provisioned schema intact. A missing store or schema is a provisioning
-failure, not a request for application code to create it.
+The DATABASE build step generates the persistence package and `schema.sql`. Explicit runtime
+initialization belongs to that package: `fxrates init` calls `persistence.initialize_database(dsn)`
+with the configured location, then closes the returned database. The initializer creates missing
+tables and indexes from the generated script; it never drops tables, deletes records, or migrates
+existing table definitions. Repeated init succeeds and preserves all existing rates. Ordinary
+application startup opens the selected store without initializing it. Application code neither
+authors SQL nor reads the schema script directly.
 
-Grading owns the contents of the configured test store: it empties `rates`, loads the supplied
-files, and leaves those loaded rows in place. Do not grade against a store containing data that
-must be retained. During an agent call, use Drydock's schema-provisioned test store inherited
-through the database environment; do not override it with a new unprovisioned database.
+The grader owns its temporary test database and removes it on exit. Its fresh-store init must
+work without a preceding Drydock build step against that particular file. Tests may also select
+an isolated temporary store, but must call the application initializer before using its tables.
+Never delete or replace the configured working application database to prepare a test.
 
 One table:
 
@@ -77,7 +81,7 @@ and never a float. Arithmetic on rates uses Python's `decimal` module.
 
 | Command | Behavior | Standard output |
 |---|---|---|
-| `fxrates init` | Removes every row from the provisioned `rates` table through the persistence interface; preserves the schema. | Nothing. |
+| `fxrates init` | Creates missing tables and indexes through `persistence.initialize_database(dsn)`; preserves existing schema and rates. | Nothing. |
 | `fxrates load <csv>` | Loads an ECB history file (rules below). | `dates,rates`, then the number of dates and of rates stored from the file. |
 | `fxrates fetch` | Downloads `https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist.zip`, extracts `eurofxref-hist.csv`, and loads it as `load` does. | As `load`. |
 | `fxrates serve [--port <n>]` | Serves the HTTP API on `127.0.0.1:<n>` with uvicorn until stopped. Default port `8000`. | Nothing required. |
@@ -150,7 +154,8 @@ A load that completes while the server is running is visible to the next request
 The completed application provides a POSIX-compatible `bin/test.sh` that runs its own pytest suite
 from the application root and exits zero only when every test passes. The suite covers each
 command, each load rule, each endpoint, the effective-date rule, rounding, and each error status,
-against a real, schema-provisioned test database, with `fetch` stubbed. Each test owns its
-records and isolates its writes. A temporary database is valid only after the test fixture
-provisions the declared schema through the persistence owner; creating an empty SQLite file is
-not provisioning. Tests never delete or replace the configured application database.
+against real isolated test databases, with `fetch` stubbed. Test initialization on a missing
+store, repeated initialization, and preservation of existing rates. Fixtures initialize their
+stores through the application init command or generated persistence initializer before CRUD.
+Each test owns its records and isolates its writes. Tests never delete or replace the configured
+working application database.
