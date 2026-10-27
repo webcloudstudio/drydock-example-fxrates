@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>build/FxRates/cli/usage.py</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>build/FxRates/cli/usage.py</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../build/FxRates/cli/usage.py">Raw file</a></div></header>
+<article class="doc"><pre>&quot;&quot;&quot;Argument validation for the fxrates command line, run before any command handler.
+
+parse() returns the command name and the arguments its run() receives as parsed values. Every
+violation raises UsageError, which the dispatcher maps to exit status 2 with nothing on stdout.
+&quot;&quot;&quot;
+
+from __future__ import annotations
+
+import re
+from collections.abc import Callable, Sequence
+
+from cli.errors import UsageError
+
+DEFAULT_PORT = 8000
+_INTEGER = re.compile(r&quot;-?[0-9]+&quot;)
+
+Rule = Callable[[str, list[str]], list[str | int]]
+
+
+def parse(argv: Sequence[str]) -&gt; tuple[str, list[str | int]]:
+    &quot;&quot;&quot;Validate argv and return (command name, parsed arguments); raise UsageError on a violation.&quot;&quot;&quot;
+    if not argv:
+        raise UsageError(&quot;no command given&quot;)
+    name, rest = argv[0], list(argv[1:])
+    rule = _RULES.get(name)
+    if rule is None:
+        # A name outside the declared table is valid only when a command module provides it.
+        # Imported here because cli.dispatch imports this module.
+        from cli.dispatch import resolve
+
+        resolve(name)
+        return name, rest
+    return name, rule(name, rest)
+
+
+def _no_arguments(name: str, rest: list[str]) -&gt; list[str | int]:
+    if rest:
+        raise UsageError(f&quot;{name} takes no arguments&quot;)
+    return []
+
+
+def _load(name: str, rest: list[str]) -&gt; list[str | int]:
+    if any(arg.startswith(&quot;-&quot;) for arg in rest):
+        raise UsageError(f&quot;{name} has an unknown option&quot;)
+    if len(rest) != 1:
+        raise UsageError(f&quot;{name} takes exactly one path&quot;)
+    return [rest[0]]
+
+
+def _serve(name: str, rest: list[str]) -&gt; list[str | int]:
+    if not rest:
+        return [DEFAULT_PORT]
+    if len(rest) != 2 or rest[0] != &quot;--port&quot;:
+        raise UsageError(f&quot;{name} accepts only --port &lt;n&gt;&quot;)
+    if not _INTEGER.fullmatch(rest[1]):
+        raise UsageError(f&quot;--port value {rest[1]!r} is not an integer&quot;)
+    return [int(rest[1])]
+
+
+_RULES: dict[str, Rule] = {
+    &quot;init&quot;: _no_arguments,
+    &quot;fetch&quot;: _no_arguments,
+    &quot;load&quot;: _load,
+    &quot;serve&quot;: _serve,
+}
+</pre></article>
+</main>
+</body>
+</html>

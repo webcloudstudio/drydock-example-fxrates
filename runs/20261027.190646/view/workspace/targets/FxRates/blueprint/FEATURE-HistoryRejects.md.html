@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-HistoryRejects.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-HistoryRejects.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-HistoryRejects.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: History Rejects</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261027 V1</td></tr><tr><td>Description</td><td>GET /history/{code} answers 404 for a currency with no stored rate at all and 422 for a malformed start or end date.</td></tr><tr><td>Depends On</td><td>FEATURE-HistoryEmpty.md</td></tr><tr><td>Provides</td><td>GET /history/{code} rejects</td></tr><tr><td>Consumes</td><td>GET /history/{code} empty</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Distinguish a currency the store has never held, or EUR, which is never stored, from a known currency with an empty range, and refuse malformed dates.</p>
+<h2>Routes</h2>
+<div class="scroll"><table><thead><tr><th>Route</th><th>Condition</th><th>Status</th></tr></thead><tbody><tr><td><code>GET /history/{code}</code></td><td>The currency has no stored rate at all, including <code>EUR</code>, regardless of range</td><td>404</td></tr><tr><td><code>GET /history/{code}</code></td><td><code>start</code> or <code>end</code> is not a real <code>YYYY-MM-DD</code> date</td><td>422</td></tr></tbody></table></div>
+<h2>Behavior</h2>
+<ul><li>The 404 test considers all stored dates, not the requested range; a known currency with an empty range is 200 (FEATURE-HistoryEmpty.md).</li><li>Date validation is FastAPI request validation.</li><li>Error response bodies are not part of the contract.</li></ul>
+<h2>Database Interface</h2>
+<ul><li>None — persistence is owned by DATABASE.md.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC history-unknown-currency ===<br>Intent: A currency with no stored rate returns 404 with or without a range, and EUR returns 404 even while other currencies are stored.<br>Requires: executable=python3; scope=test<br>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx2; scope=test</p>
+<p>from app_server.testing import web_client from persistence.testing import db_session</p>
+<p>route = &quot;/history/{code}&quot; unknown = &quot;ZZQ&quot; with db_session() as db: db.rates.replace_rate(date=&quot;1800-01-10&quot;, currency=&quot;ZZA&quot;, rate=&quot;1.5&quot;) client = web_client() for code in [unknown, &quot;EUR&quot;]: resp = client.get(route.format(code=code)) assert resp.status_code == 404, code resp = client.get( route.format(code=code), params={&quot;start&quot;: &quot;1800-01-01&quot;, &quot;end&quot;: &quot;1800-12-31&quot;} ) assert resp.status_code == 404, code === END AC history-unknown-currency ===</p>
+<p>=== AC history-known-currency-out-of-range ===<br>Intent: A currency with stored rates is not a 404 when the range is empty, so the 404 depends on the whole store and not the range.<br>Requires: executable=python3; scope=test<br>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx2; scope=test</p>
+<p>from app_server.testing import web_client from persistence.testing import db_session</p>
+<p>code = &quot;ZZK&quot; route = &quot;/history/{code}&quot; with db_session() as db: db.rates.replace_rate(date=&quot;1800-02-10&quot;, currency=code, rate=&quot;1.5&quot;) client = web_client() resp = client.get(route.format(code=code), params={&quot;start&quot;: &quot;1801-01-01&quot;}) assert resp.status_code == 200 assert resp.json()[&quot;count&quot;] == 0 === END AC history-known-currency-out-of-range ===</p>
+<p>=== AC history-malformed-dates ===<br>Intent: Malformed or impossible start and end dates on a stored currency are rejected with 422.<br>Requires: executable=python3; scope=test<br>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx2; scope=test</p>
+<p>from app_server.testing import web_client from persistence.testing import db_session</p>
+<p>code = &quot;ZZD&quot; route = &quot;/history/{code}&quot; bad_values = [&quot;2025-01-31-x&quot;, &quot;2025-13-01&quot;, &quot;2025-02-30&quot;, &quot;20250131&quot;, &quot;today&quot;] with db_session() as db: db.rates.replace_rate(date=&quot;1800-03-10&quot;, currency=code, rate=&quot;1.5&quot;) client = web_client() for bad in bad_values: resp = client.get(route.format(code=code), params={&quot;start&quot;: bad}) assert resp.status_code == 422, (&quot;start&quot;, bad, resp.status_code) resp = client.get(route.format(code=code), params={&quot;end&quot;: bad}) assert resp.status_code == 422, (&quot;end&quot;, bad, resp.status_code) resp = client.get(route.format(code=code), params={&quot;start&quot;: &quot;1800-01-01&quot;, &quot;end&quot;: bad}) assert resp.status_code == 422, (&quot;both&quot;, bad, resp.status_code) === END AC history-malformed-dates ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>A currency&#x27;s absence is judged over all stored dates, never over the requested range.</li><li>Do not hand-parse dates; rely on FastAPI request validation for 422.</li></ul></article>
+</main>
+</body>
+</html>

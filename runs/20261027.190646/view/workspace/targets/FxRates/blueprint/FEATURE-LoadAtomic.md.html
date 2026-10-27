@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-LoadAtomic.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-LoadAtomic.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-LoadAtomic.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Atomic Load</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261027 V1</td></tr><tr><td>Description</td><td>Implement fxrates load, which validates the whole ECB history file before its first write and stores nothing when the file is rejected.</td></tr><tr><td>Depends On</td><td>FEATURE-CliFoundation.md, FEATURE-Init.md, FEATURE-EcbParse.md, FEATURE-RateStorage.md</td></tr><tr><td>Provides</td><td>fxrates load</td></tr><tr><td>Consumes</td><td>ecb.parse_history, ratestore.store_rates, cli.main, fxrates init</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p><code>fxrates load &lt;csv&gt;</code> loads an ECB history file into the store. The whole file is checked before the first write, so a rejected file changes nothing, and a rate already stored for the same date and currency is replaced.</p>
+<h2>Interface</h2>
+<ul><li><code>cli/commands/load.py</code> defines <code>load_file(path: str) -&gt; tuple[int, int]</code> and <code>run(args) -&gt; int</code>.</li><li><code>load_file</code> reads the file as UTF-8 text. A file that cannot be read raises <code>OperationalError</code> (exit 1).</li><li>It calls <code>ecb.parse_history</code> on the full text. An invalid file raises <code>RejectedFile</code> (exit 3) before the database is opened for writing.</li><li>It opens the store with <code>persistence.open_database(config.database_path())</code>, calls <code>ratestore.store_rates</code>, closes the database, and returns the <code>(dates, rates)</code> counts.</li><li><code>run</code> calls <code>load_file</code> and returns 0. Printing the summary is owned by FEATURE-LoadSummary.md; this story prints nothing to stdout on success.</li><li>Failure output follows the dispatcher: nothing on stdout, one diagnostic line on stderr.</li></ul>
+<h2>Rules</h2>
+<ol><li>Exit 0 on success, 1 when the file cannot be read, 3 when the file is rejected.</li><li>A rejected file leaves the database exactly as it was, including rows for dates the file shares with the store.</li><li>Loading the same file twice leaves the database unchanged.</li></ol>
+<h2>Database Interface</h2>
+<ul><li>None — persistence is reached through <code>ratestore.store_rates</code>.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC load-stores-rates ===<br>Intent: Loading a valid file exits 0 and stores every non-N/A rate as published text, storing nothing for N/A values.<br>Requires: executable=python3; scope=test</p>
+<p>import csv import os import tempfile from cli.testing import cli_runner from persistence.testing import db_session</p>
+<p>d1, d2 = &quot;1800-06-01&quot;, &quot;1800-06-02&quot; header = [&quot;Date&quot;, &quot;ZZA&quot;, &quot;ZZB&quot;, &quot;ZZC&quot;, &quot;&quot;] rows = [ [d1, &quot;1.2300&quot;, &quot;5&quot;, &quot;N/A&quot;, &quot;&quot;], [d2, &quot;7.25&quot;, &quot;N/A&quot;, &quot;N/A&quot;, &quot;&quot;], ]</p>
+<p>with tempfile.TemporaryDirectory() as tmp: path = os.path.join(tmp, &quot;hist.csv&quot;) with open(path, &quot;w&quot;, newline=&quot;&quot;, encoding=&quot;utf-8&quot;) as fh: writer = csv.writer(fh, lineterminator=&quot;\n&quot;) writer.writerow(header) for row in rows: writer.writerow(row)</p>
+<p>code, out, err = cli_runner(&quot;load&quot;, path) print(out, err) assert code == 0</p>
+<p>with db_session() as db: for i in range(1, len(header) - 1): currency = header[i] rows_back = db.rates.history(currency=currency, start_date=d1, end_date=d2) got = [(r.date, r.rate) for r in rows_back] want = sorted((row[0], row[i]) for row in rows if row[i] != &quot;N/A&quot;) assert got == want === END AC load-stores-rates ===</p>
+<p>=== AC load-replaces-and-repeats ===<br>Intent: A rate already stored for a date and currency is replaced by the loaded text, and loading the same file a second time leaves the stored rows unchanged.<br>Requires: executable=python3; scope=test</p>
+<p>import csv import os import tempfile from cli.testing import cli_runner from persistence.testing import db_session</p>
+<p>d = &quot;1800-06-10&quot; old = &quot;1.0&quot; header = [&quot;Date&quot;, &quot;ZZA&quot;, &quot;ZZB&quot;, &quot;&quot;] row = [d, &quot;3.14&quot;, &quot;2.7&quot;, &quot;&quot;]</p>
+<p>with db_session() as db: db.rates.replace_rate(date=d, currency=&quot;ZZA&quot;, rate=old)</p>
+<p>with tempfile.TemporaryDirectory() as tmp: path = os.path.join(tmp, &quot;hist.csv&quot;) with open(path, &quot;w&quot;, newline=&quot;&quot;, encoding=&quot;utf-8&quot;) as fh: writer = csv.writer(fh, lineterminator=&quot;\n&quot;) writer.writerow(header) writer.writerow(row)</p>
+<p>code, out, err = cli_runner(&quot;load&quot;, path) assert code == 0 with db_session() as db: snapshot = {} for i in (1, 2): rows_back = db.rates.history(currency=header[i], start_date=d, end_date=d) snapshot[header[i]] = [(r.date, r.rate) for r in rows_back] assert snapshot[header[i]] == [(d, row[i])]</p>
+<p>code, out, err = cli_runner(&quot;load&quot;, path) assert code == 0 with db_session() as db: for i in (1, 2): rows_back = db.rates.history(currency=header[i], start_date=d, end_date=d) assert [(r.date, r.rate) for r in rows_back] == snapshot[header[i]] === END AC load-replaces-and-repeats ===</p>
+<p>=== AC load-rejected-stores-nothing ===<br>Intent: A file whose first row is valid and whose second row has an invalid value exits 3, prints nothing to stdout, writes one stderr line, and leaves earlier stored rates and the valid row&#x27;s date untouched.<br>Requires: executable=python3; scope=test</p>
+<p>import csv import os import tempfile from cli.testing import cli_runner from persistence.testing import db_session</p>
+<p>d_ok, d_bad = &quot;1800-06-21&quot;, &quot;1800-06-20&quot; keep_date, keep_rate = &quot;1800-06-22&quot;, &quot;4.4&quot; header = [&quot;Date&quot;, &quot;ZZA&quot;, &quot;ZZB&quot;, &quot;&quot;] rows = [ [d_ok, &quot;1.5&quot;, &quot;2.5&quot;, &quot;&quot;], [d_bad, &quot;1.0x&quot;, &quot;2.5&quot;, &quot;&quot;], ]</p>
+<p>with db_session() as db: db.rates.replace_rate(date=keep_date, currency=&quot;ZZA&quot;, rate=keep_rate)</p>
+<p>with tempfile.TemporaryDirectory() as tmp: path = os.path.join(tmp, &quot;bad.csv&quot;) with open(path, &quot;w&quot;, newline=&quot;&quot;, encoding=&quot;utf-8&quot;) as fh: writer = csv.writer(fh, lineterminator=&quot;\n&quot;) writer.writerow(header) for row in rows: writer.writerow(row)</p>
+<p>code, out, err = cli_runner(&quot;load&quot;, path) print(out, err) assert code == 3 assert out == &quot;&quot; assert len(err.strip().splitlines()) == 1</p>
+<p>with db_session() as db: for currency in (&quot;ZZA&quot;, &quot;ZZB&quot;): rows_back = db.rates.history(currency=currency, start_date=d_bad, end_date=d_ok) assert rows_back == [] kept = db.rates.history(currency=&quot;ZZA&quot;, start_date=keep_date, end_date=keep_date) assert [(r.date, r.rate) for r in kept] == [(keep_date, keep_rate)] === END AC load-rejected-stores-nothing ===</p>
+<p>=== AC load-unreadable-file ===<br>Intent: Loading a path that does not exist is an operational failure that exits 1 with empty stdout and one stderr line.<br>Requires: executable=python3; scope=test</p>
+<p>import os import tempfile from cli.testing import cli_runner</p>
+<p>with tempfile.TemporaryDirectory() as tmp: missing = os.path.join(tmp, &quot;no-such-file.csv&quot;) code, out, err = cli_runner(&quot;load&quot;, missing) print(out, err) assert code == 1 assert out == &quot;&quot; assert len(err.strip().splitlines()) == 1 === END AC load-unreadable-file ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>The whole file is validated before the first write; a rejected file never changes the store.</li><li>The command never initializes the schema; only <code>fxrates init</code> does.</li><li>Application code opens the store only through <code>persistence.open_database</code>.</li></ul></article>
+</main>
+</body>
+</html>

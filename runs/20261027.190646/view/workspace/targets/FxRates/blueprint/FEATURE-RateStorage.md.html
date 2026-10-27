@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-RateStorage.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-RateStorage.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-RateStorage.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Rate Storage</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261027 V1</td></tr><tr><td>Description</td><td>Store parsed rate records through the persistence library, replacing any rate already stored for the same date and currency.</td></tr><tr><td>Depends On</td><td>DATABASE.md, ARCHITECTURE.md</td></tr><tr><td>Provides</td><td>ratestore.store_rates</td></tr><tr><td>Consumes</td><td>db.rates.replace_rate</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p><code>ratestore.store_rates(db, records)</code> writes validated rate records into the <code>rates</code> table. It is the only write path for loaded rates and uses the declared upsert so reloading is idempotent.</p>
+<h2>Interface</h2>
+<ul><li>Module <code>ratestore</code>, function <code>store_rates(db, records) -&gt; tuple[int, int]</code>.</li><li><code>db</code> is an open persistence <code>Database</code>; <code>records</code> is any iterable of three-item sequences <code>(date, currency, rate)</code> such as <code>ecb.Rate</code> tuples.</li><li>Each record is written with <code>db.rates.replace_rate(date=..., currency=..., rate=...)</code>.</li><li>The return value is <code>(dates, rates)</code>: the number of distinct dates and the number of rates written from <code>records</code>.</li><li>Empty <code>records</code> writes nothing and returns <code>(0, 0)</code>.</li><li>The function neither opens nor closes the database and authors no SQL.</li></ul>
+<h2>Rules</h2>
+<ol><li>A rate stored for a (<code>date</code>, <code>currency</code>) that already exists replaces the stored text.</li><li>Writing the same records again leaves the stored rows unchanged and returns the same counts.</li><li>Rate text is stored exactly as given.</li></ol>
+<h2>Database Interface</h2>
+<ul><li><code>FEATURE-RATE-001</code> — write: store a rate, replacing the stored one - supplies: <code>date</code>, <code>currency</code>, <code>rate</code> - returns: <code>date</code>, <code>currency</code>, <code>rate</code></li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC ratestore-round-trip ===<br>Intent: Stored records read back through the history operation with their exact published text, and the returned counts equal the distinct dates and the records written.<br>Requires: executable=python3; scope=test</p>
+<p>from persistence.testing import db_session from ratestore import store_rates</p>
+<p>d1, d2 = &quot;1800-05-01&quot;, &quot;1800-05-02&quot; records = [ (d1, &quot;ZZA&quot;, &quot;1.2300&quot;), (d1, &quot;ZZB&quot;, &quot;10&quot;), (d2, &quot;ZZA&quot;, &quot;1.5&quot;), ]</p>
+<p>with db_session() as db: counts = store_rates(db, records) assert tuple(counts) == (len({r[0] for r in records}), len(records)) for currency in (&quot;ZZA&quot;, &quot;ZZB&quot;): rows = db.rates.history(currency=currency, start_date=d1, end_date=d2) got = [(r.date, r.rate) for r in rows] want = sorted((r[0], r[2]) for r in records if r[1] == currency) assert got == want === END AC ratestore-round-trip ===</p>
+<p>=== AC ratestore-replace-and-idempotent ===<br>Intent: Storing the same records twice leaves one row per date and currency, and storing a changed rate replaces the stored text.<br>Requires: executable=python3; scope=test</p>
+<p>from persistence.testing import db_session from ratestore import store_rates</p>
+<p>d = &quot;1800-05-10&quot; first = [(d, &quot;ZZA&quot;, &quot;1.1&quot;), (d, &quot;ZZB&quot;, &quot;2.2&quot;)] changed = [(d, &quot;ZZA&quot;, &quot;9.90&quot;)]</p>
+<p>with db_session() as db: store_rates(db, first) again = store_rates(db, first) assert tuple(again) == (1, len(first)) rows = db.rates.history(currency=&quot;ZZA&quot;, start_date=d, end_date=d) assert [(r.date, r.rate) for r in rows] == [(d, first[0][2])]</p>
+<p>store_rates(db, changed) rows = db.rates.history(currency=&quot;ZZA&quot;, start_date=d, end_date=d) assert [(r.date, r.rate) for r in rows] == [(d, changed[0][2])] other = db.rates.history(currency=&quot;ZZB&quot;, start_date=d, end_date=d) assert [(r.date, r.rate) for r in other] == [(d, first[1][2])] === END AC ratestore-replace-and-idempotent ===</p>
+<p>=== AC ratestore-empty ===<br>Intent: Empty input writes nothing and reports zero dates and zero rates.<br>Requires: executable=python3; scope=test</p>
+<p>from persistence.testing import db_session from ratestore import store_rates</p>
+<p>with db_session() as db: before = len(db.rates.list_all()) counts = store_rates(db, []) assert tuple(counts) == (0, 0) assert len(db.rates.list_all()) == before === END AC ratestore-empty ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Rates are written only through <code>db.rates.replace_rate</code>; no SQL and no driver import appears in this module.</li><li>Rate values are never converted to floating point.</li></ul></article>
+</main>
+</body>
+</html>

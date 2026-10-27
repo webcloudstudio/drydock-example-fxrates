@@ -1,0 +1,29 @@
+<requirement name="reject-malformed-rate-file" stories="load-parse,load-atomic,cli-failures">
+Date,USD,JPY,
+2025-02-04,1.0345,160.12,
+2025-02-03,1.0x,159.01,
+</requirement>
+<unattached story="foundation-python"/>
+<unattached story="database"/>
+<unattached story="foundation-cli"/>
+<unattached story="foundation-web"/>
+<unattached story="cli-init"/>
+<unattached story="cli-usage"/>
+<unattached story="rate-store"/>
+<unattached story="load-summary"/>
+<unattached story="fetch"/>
+<unattached story="health"/>
+<unattached story="currencies"/>
+<unattached story="stats"/>
+<unattached story="history"/>
+<unattached story="effective-date"/>
+<unattached story="serve"/>
+<unattached story="history-empty"/>
+<unattached story="rates-by-date"/>
+<unattached story="convert"/>
+<unattached story="rates-latest"/>
+<unattached story="history-rejects"/>
+<unattached story="convert-latest"/>
+<unattached story="convert-errors"/>
+<unattached story="live-visibility"/>
+<unattached story="verification"/>

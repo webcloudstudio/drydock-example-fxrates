@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-UsageErrors.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-UsageErrors.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-UsageErrors.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Usage Errors</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261027 V1</td></tr><tr><td>Description</td><td>Command-line argument validation that reports usage errors with exit status 2 before any handler runs.</td></tr><tr><td>Depends On</td><td>FEATURE-CliFoundation.md</td></tr><tr><td>Provides</td><td>fxrates usage validation</td></tr><tr><td>Consumes</td><td>cli.main</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Reject malformed invocations uniformly and hand valid ones to handlers as parsed values.</p>
+<h2>Behavior</h2>
+<p><code>cli.usage.parse(argv) -&gt; (name, args)</code> validates before any handler runs and raises <code>cli.errors.UsageError</code> on a violation. <code>main</code> calls it first, so a usage error exits 2 with one stderr line and empty stdout.</p>
+<div class="scroll"><table><thead><tr><th>Command</th><th>Accepted arguments</th><th><code>args</code> handed to <code>run</code></th></tr></thead><tbody><tr><td><code>init</code></td><td>none</td><td><code>[]</code></td></tr><tr><td><code>fetch</code></td><td>none</td><td><code>[]</code></td></tr><tr><td><code>load</code></td><td>exactly one path</td><td><code>[path]</code></td></tr><tr><td><code>serve</code></td><td>optional <code>--port &lt;n&gt;</code>, <code>n</code> an integer, default 8000</td><td><code>[port]</code> with <code>port</code> an <code>int</code></td></tr></tbody></table></div>
+<p>No command, an unknown command, the wrong argument count, an unknown option, or a <code>--port</code> value that is missing or not an integer is a usage error.</p>
+<h2>Database Interface</h2>
+<ul><li>None — persistence is owned by DATABASE.md.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC usage-errors-exit-2 ===<br>Intent: Every malformed invocation exits 2 with empty stdout and a single stderr line, before any store is touched.<br>Requires: executable=python3; scope=test</p>
+<p>from cli.testing import cli_runner</p>
+<p>cases = [ [], [&quot;frobnicate&quot;], [&quot;load&quot;], [&quot;load&quot;, &quot;a.csv&quot;, &quot;b.csv&quot;], [&quot;init&quot;, &quot;extra&quot;], [&quot;fetch&quot;, &quot;extra&quot;], [&quot;serve&quot;, &quot;--port&quot;, &quot;notaport&quot;], [&quot;serve&quot;, &quot;--port&quot;], ] for argv in cases: code, out, err = cli_runner(*argv) assert code == 2, argv assert out == &quot;&quot;, argv assert len(err.strip().splitlines()) == 1, argv === END AC usage-errors-exit-2 ===</p>
+<p>=== AC parse-valid-arguments ===<br>Intent: parse hands valid arguments on as parsed values, with the serve port an integer defaulting to 8000.<br>Requires: executable=python3; scope=test</p>
+<p>from cli.usage import parse</p>
+<p>port = 9123 path = &quot;rates.csv&quot;</p>
+<p>assert parse([&quot;init&quot;]) == (&quot;init&quot;, []) assert parse([&quot;fetch&quot;]) == (&quot;fetch&quot;, []) assert parse([&quot;load&quot;, path]) == (&quot;load&quot;, [path]) assert parse([&quot;serve&quot;, &quot;--port&quot;, str(port)]) == (&quot;serve&quot;, [port]) assert parse([&quot;serve&quot;]) == (&quot;serve&quot;, [8000]) === END AC parse-valid-arguments ===</p>
+<p>=== AC parse-raises-usage-error ===<br>Intent: parse signals each violation with UsageError, whose exit code is 2.<br>Requires: executable=python3; scope=test</p>
+<p>from cli.errors import UsageError from cli.usage import parse</p>
+<p>bad = [ [], [&quot;frobnicate&quot;], [&quot;load&quot;], [&quot;load&quot;, &quot;a&quot;, &quot;b&quot;], [&quot;serve&quot;, &quot;--port&quot;, &quot;x1&quot;], ] for argv in bad: try: parse(argv) except UsageError as exc: assert exc.exit_code == 2 else: raise AssertionError(argv) === END AC parse-raises-usage-error ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>A usage error writes nothing to standard output and exactly one diagnostic line to standard error.</li><li>Validation runs before any handler, so a usage error never opens or changes the store.</li></ul></article>
+</main>
+</body>
+</html>

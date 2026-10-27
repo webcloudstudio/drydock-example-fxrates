@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-RatesByDate.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-RatesByDate.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-RatesByDate.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Rates By Date</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261027 V1</td></tr><tr><td>Description</td><td>Serve GET /rates/{date}, returning every currency&#x27;s rate on the effective publication date.</td></tr><tr><td>Depends On</td><td>FEATURE-WebFoundation.md, FEATURE-EffectiveDate.md</td></tr><tr><td>Provides</td><td>GET /rates/{date}</td></tr><tr><td>Consumes</td><td>rates.effective_publication</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p><code>GET /rates/{date}</code> answers what the euro reference rates were on a date, falling back to the latest publication on or before it.</p>
+<h2>Routes</h2>
+<div class="scroll"><table><thead><tr><th>Route</th><th>Behavior</th></tr></thead><tbody><tr><td><code>GET /rates/{date}</code></td><td>200 with <code>{&quot;date&quot;: &lt;effective date&gt;, &quot;requested&quot;: &lt;date&gt;, &quot;base&quot;: &quot;EUR&quot;, &quot;rates&quot;: {&lt;code&gt;: &lt;rate&gt;, ...}}</code>. Rates are the stored text as JSON strings. 404 when no publication is on or before the date. 422 when the path date is malformed.</td></tr></tbody></table></div>
+<h2>Behavior</h2>
+<ul><li>The router lives in <code>app_server/routers/rates.py</code> and is included by <code>create_app()</code>. It uses the</li></ul>
+<p>request-scoped database dependency from the web foundation.</p>
+<ul><li>The path date must match <code>YYYY-MM-DD</code> and be a real calendar date; otherwise respond 422 through</li></ul>
+<p>FastAPI request validation.</p>
+<ul><li>The effective date and rates come from <code>services.effective_date.effective_publication</code>.</li></ul>
+<h2>Database Interface</h2>
+<ul><li>None — persistence is reached through <code>rates.effective_publication</code> in FEATURE-EffectiveDate.md.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC rates-by-date-exact ===<br>Intent: A request for a publication date returns that date as both effective and requested, base EUR, and exactly that date&#x27;s rates as stored text, excluding other dates.<br>Requires: executable=python3; scope=test<br>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx2; scope=test</p>
+<p>from persistence.testing import db_session from app_server.testing import web_client</p>
+<p>target = &quot;1800-06-10&quot; other = &quot;1800-06-09&quot; target_rates = {&quot;ZZA&quot;: &quot;1.0298&quot;, &quot;ZZB&quot;: &quot;160.2300&quot;, &quot;ZZC&quot;: &quot;0.84453&quot;} other_rates = {&quot;ZZA&quot;: &quot;5&quot;, &quot;ZZD&quot;: &quot;6&quot;}</p>
+<p>with db_session() as db: for cur, rate in target_rates.items(): db.rates.replace_rate(date=target, currency=cur, rate=rate) for cur, rate in other_rates.items(): db.rates.replace_rate(date=other, currency=cur, rate=rate) client = web_client() response = client.get(f&quot;/rates/{target}&quot;) assert response.status_code == 200 body = response.json() assert body[&quot;date&quot;] == target assert body[&quot;requested&quot;] == target assert body[&quot;base&quot;] == &quot;EUR&quot; assert body[&quot;rates&quot;] == target_rates === END AC rates-by-date-exact ===</p>
+<p>=== AC rates-by-date-fallback ===<br>Intent: A non-publication date resolves to the latest earlier publication while echoing the requested date unchanged.<br>Requires: executable=python3; scope=test<br>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx2; scope=test</p>
+<p>from persistence.testing import db_session from app_server.testing import web_client</p>
+<p>published = &quot;1800-06-15&quot; requested = &quot;1800-06-17&quot; rates_in = {&quot;ZZA&quot;: &quot;2.5000&quot;, &quot;ZZB&quot;: &quot;10&quot;}</p>
+<p>with db_session() as db: for cur, rate in rates_in.items(): db.rates.replace_rate(date=published, currency=cur, rate=rate) client = web_client() response = client.get(f&quot;/rates/{requested}&quot;) assert response.status_code == 200 body = response.json() assert body[&quot;date&quot;] == published assert body[&quot;requested&quot;] == requested assert body[&quot;rates&quot;] == rates_in === END AC rates-by-date-fallback ===</p>
+<p>=== AC rates-by-date-not-found ===<br>Intent: A date before every stored publication answers 404.<br>Requires: executable=python3; scope=test<br>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx2; scope=test</p>
+<p>from persistence.testing import db_session from app_server.testing import web_client</p>
+<p>with db_session() as db: db.rates.replace_rate(date=&quot;1800-06-20&quot;, currency=&quot;ZZA&quot;, rate=&quot;1&quot;) client = web_client() response = client.get(&quot;/rates/1799-01-01&quot;) assert response.status_code == 404 === END AC rates-by-date-not-found ===</p>
+<p>=== AC rates-by-date-malformed ===<br>Intent: A path date that is not a real YYYY-MM-DD calendar date is rejected with 422, never 404 or 500.<br>Requires: executable=python3; scope=test<br>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx2; scope=test</p>
+<p>from app_server.testing import web_client</p>
+<p>client = web_client() for bad in (&quot;2025-13-01&quot;, &quot;2025-02-30&quot;, &quot;not-a-date&quot;, &quot;2025-1-5&quot;): response = client.get(f&quot;/rates/{bad}&quot;) assert response.status_code == 422, bad === END AC rates-by-date-malformed ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Rate values are returned as the stored text in JSON strings, never as JSON numbers.</li><li>The route does not query the database directly; it calls the effective-date service.</li><li>Application startup never initializes the schema.</li></ul></article>
+</main>
+</body>
+</html>

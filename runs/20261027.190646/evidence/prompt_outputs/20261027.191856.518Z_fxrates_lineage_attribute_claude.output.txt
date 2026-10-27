@@ -1,0 +1,26 @@
+<requirement name="ecb-history-csv-format" stories="load-parse,rate-store,load-atomic,load-summary">
+Date,USD,JPY,GBP,CHF,SEK,CAD,AUD,CNY,HRK,
+</requirement>
+<unattached story="foundation-python"/>
+<unattached story="database"/>
+<unattached story="foundation-cli"/>
+<unattached story="foundation-web"/>
+<unattached story="cli-init"/>
+<unattached story="cli-usage"/>
+<unattached story="fetch"/>
+<unattached story="cli-failures"/>
+<unattached story="health"/>
+<unattached story="currencies"/>
+<unattached story="stats"/>
+<unattached story="history"/>
+<unattached story="effective-date"/>
+<unattached story="serve"/>
+<unattached story="history-empty"/>
+<unattached story="rates-by-date"/>
+<unattached story="convert"/>
+<unattached story="rates-latest"/>
+<unattached story="history-rejects"/>
+<unattached story="convert-latest"/>
+<unattached story="convert-errors"/>
+<unattached story="live-visibility"/>
+<unattached story="verification"/>

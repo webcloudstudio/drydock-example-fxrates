@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-Fetch.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-Fetch.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-Fetch.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Fetch</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261027 V1</td></tr><tr><td>Description</td><td>Implement fxrates fetch, which downloads the ECB history zip, extracts the CSV and loads it exactly as load does, testable with a stubbed download.</td></tr><tr><td>Depends On</td><td>FEATURE-LoadSummary.md, FEATURE-EcbParse.md</td></tr><tr><td>Provides</td><td>fxrates fetch</td></tr><tr><td>Consumes</td><td>fxrates load summary output, ecb.parse_history</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p><code>fxrates fetch</code> retrieves the ECB&#x27;s published history file and loads it with the same validation, atomicity, storage and summary as <code>fxrates load</code>.</p>
+<h2>Interface</h2>
+<ul><li><code>ecb.download_history() -&gt; str</code> performs the whole download. It calls <code>urllib.request.urlopen(&quot;https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist.zip&quot;, timeout=...)</code> through the module attribute, reads the bytes inside a <code>with</code> block, opens them with <code>zipfile</code>, and returns the decoded text of the member <code>eurofxref-hist.csv</code>.</li><li>Any failure (network error, non-zip data, missing member) raises <code>OperationalError</code> (exit 1).</li><li><code>cli/commands/fetch.py</code> <code>run(args)</code> calls <code>ecb.download_history()</code> through the module attribute <code>ecb</code>, so tests can replace it, then runs the same parse, store and summary path as <code>load</code> on that text (sharing a text-level helper with <code>load</code>). It takes no arguments.</li><li>Exit codes follow <code>load</code>: 0 success, 1 download failure, 3 rejected file. Failures write nothing to stdout and one diagnostic line to stderr.</li><li>Automated tests never open a network connection: they replace <code>ecb.download_history</code>, or replace <code>urllib.request.urlopen</code>.</li></ul>
+<h2>Database Interface</h2>
+<ul><li>None — storage is reached through the shared load path.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC fetch-stubbed-download-loads ===<br>Intent: With the download replaced by a stub returning valid CSV text, fetch exits 0, prints the load summary, and stores the rates as published.<br>Requires: executable=python3; scope=test</p>
+<p>import csv import io from unittest import mock from cli.testing import cli_runner from persistence.testing import db_session</p>
+<p>d1, d2 = &quot;1800-08-01&quot;, &quot;1800-08-02&quot; header = [&quot;Date&quot;, &quot;ZZA&quot;, &quot;ZZB&quot;, &quot;&quot;] rows = [[d1, &quot;1.20&quot;, &quot;N/A&quot;, &quot;&quot;], [d2, &quot;3.5&quot;, &quot;4.25&quot;, &quot;&quot;]] buf = io.StringIO() writer = csv.writer(buf, lineterminator=&quot;\n&quot;) writer.writerow(header) for row in rows: writer.writerow(row) text = buf.getvalue()</p>
+<p>with mock.patch(&quot;ecb.download_history&quot;, return_value=text): code, out, err = cli_runner(&quot;fetch&quot;) print(out, err) assert code == 0 rate_count = sum(1 for row in rows for i in (1, 2) if row[i] != &quot;N/A&quot;) parsed = list(csv.reader(io.StringIO(out))) assert parsed == [[&quot;dates&quot;, &quot;rates&quot;], [str(len(rows)), str(rate_count)]]</p>
+<p>with db_session() as db: for i in (1, 2): back = db.rates.history(currency=header[i], start_date=d1, end_date=d2) want = sorted((row[0], row[i]) for row in rows if row[i] != &quot;N/A&quot;) assert [(r.date, r.rate) for r in back] == want === END AC fetch-stubbed-download-loads ===</p>
+<p>=== AC fetch-failed-download-exits-1 ===<br>Intent: When the download raises a network error, fetch exits 1, prints nothing to stdout, writes one stderr line, and stores nothing.<br>Requires: executable=python3; scope=test</p>
+<p>import urllib.error import urllib.request from unittest import mock from cli.testing import cli_runner from persistence.testing import db_session</p>
+<p>with db_session() as db: before = len(db.rates.list_all())</p>
+<p>with mock.patch( &quot;urllib.request.urlopen&quot;, side_effect=urllib.error.URLError(&quot;stubbed failure&quot;) ): code, out, err = cli_runner(&quot;fetch&quot;) print(out, err) assert code == 1 assert out == &quot;&quot; assert len(err.strip().splitlines()) == 1</p>
+<p>with db_session() as db: assert len(db.rates.list_all()) == before === END AC fetch-failed-download-exits-1 ===</p>
+<p>=== AC fetch-zip-extraction ===<br>Intent: With only the HTTP call replaced, fetch extracts eurofxref-hist.csv from the zip and loads it, while a zip lacking that member exits 1.<br>Requires: executable=python3; scope=test</p>
+<p>import csv import io import zipfile from unittest import mock from cli.testing import cli_runner from persistence.testing import db_session</p>
+<p>class FakeResponse: def <strong>init</strong>(self, data): self._data = data</p>
+<p>def read(self, *args): return self._data</p>
+<p>def <strong>enter</strong>(self): return self</p>
+<p>def <strong>exit</strong>(self, *exc): return False</p>
+<p>def make_zip(member, text): raw = io.BytesIO() with zipfile.ZipFile(raw, &quot;w&quot;) as zf: zf.writestr(member, text) return raw.getvalue()</p>
+<p>d = &quot;1800-08-10&quot; header = [&quot;Date&quot;, &quot;ZZA&quot;, &quot;&quot;] row = [d, &quot;6.75&quot;, &quot;&quot;] buf = io.StringIO() writer = csv.writer(buf, lineterminator=&quot;\n&quot;) writer.writerow(header) writer.writerow(row) text = buf.getvalue()</p>
+<p>good = FakeResponse(make_zip(&quot;eurofxref-hist.csv&quot;, text)) with mock.patch(&quot;urllib.request.urlopen&quot;, return_value=good): code, out, err = cli_runner(&quot;fetch&quot;) print(out, err) assert code == 0 with db_session() as db: back = db.rates.history(currency=&quot;ZZA&quot;, start_date=d, end_date=d) assert [(r.date, r.rate) for r in back] == [(d, row[1])]</p>
+<p>wrong = FakeResponse(make_zip(&quot;other.csv&quot;, text)) with mock.patch(&quot;urllib.request.urlopen&quot;, return_value=wrong): code, out, err = cli_runner(&quot;fetch&quot;) assert code == 1 assert out == &quot;&quot; === END AC fetch-zip-extraction ===</p>
+<p>=== AC fetch-rejected-file ===<br>Intent: A downloaded file with an invalid value exits 3 with empty stdout and stores nothing, as load does.<br>Requires: executable=python3; scope=test</p>
+<p>import csv import io from unittest import mock from cli.testing import cli_runner from persistence.testing import db_session</p>
+<p>d_ok, d_bad = &quot;1800-08-21&quot;, &quot;1800-08-20&quot; header = [&quot;Date&quot;, &quot;ZZA&quot;, &quot;&quot;] rows = [[d_ok, &quot;1.5&quot;, &quot;&quot;], [d_bad, &quot;oops&quot;, &quot;&quot;]] buf = io.StringIO() writer = csv.writer(buf, lineterminator=&quot;\n&quot;) writer.writerow(header) for row in rows: writer.writerow(row)</p>
+<p>with mock.patch(&quot;ecb.download_history&quot;, return_value=buf.getvalue()): code, out, err = cli_runner(&quot;fetch&quot;) print(out, err) assert code == 3 assert out == &quot;&quot;</p>
+<p>with db_session() as db: assert db.rates.history(currency=&quot;ZZA&quot;, start_date=d_bad, end_date=d_ok) == [] === END AC fetch-rejected-file ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>No automated test opens a network connection; the download is always stubbed.</li><li><code>fetch</code> loads through the same validated, atomic path as <code>load</code>.</li><li>Downloaded content is treated as untrusted input and is never executed or written outside the store.</li></ul></article>
+</main>
+</body>
+</html>

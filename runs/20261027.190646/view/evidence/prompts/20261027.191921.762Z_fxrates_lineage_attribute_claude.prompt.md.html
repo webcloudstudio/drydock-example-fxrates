@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/prompts/20261027.191921.762Z_fxrates_lineage_attribute_claude.prompt.md</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/prompts/20261027.191921.762Z_fxrates_lineage_attribute_claude.prompt.md</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/prompts/20261027.191921.762Z_fxrates_lineage_attribute_claude.prompt.md">Raw file</a></div></header>
+<article class="doc"><h1>Attribute Stories to Source Requirements</h1>
+<p>You are the lineage attribution agent. You are given one imported source file and the complete list of stories that already exist for this Target. Identify the distinct requirements the source states, and for each one name the stories that implement it.</p>
+<p>This is a matching task against a closed set. Every story you may name is listed in <code>&lt;stories&gt;</code>. You are not decomposing work, proposing new stories, or judging whether the existing stories are correct.</p>
+<h2>Method</h2>
+<ol><li>Read the source and identify each distinct requirement it states. A requirement is a thing the</li></ol>
+<p>system must do, at whatever granularity the author wrote it. One sentence may state one requirement that several stories implement — for example &quot;add a table and show it on screen&quot; is one requirement implemented by a schema story, a route story, and a view story. Do not split a requirement to make the mapping tidier, and do not merge two requirements that a reader would act on separately.</p>
+<ol><li>Give each requirement a short kebab-case name that describes it. The name is an identifier, not</li></ol>
+<p>a summary: <code>mark-book-read</code>, not <code>the-reader-can-mark-a-book-as-read</code>.</p>
+<ol><li>For each requirement, list every story that implements any part of it. A story may implement</li></ol>
+<p>more than one requirement; a requirement may need more than one story.</p>
+<ol><li>List any story that implements no requirement in the source as <code>&lt;unattached&gt;</code>. This is expected</li></ol>
+<p>and correct for foundational work — application scaffolding, configuration, shared UI framing, test harnesses — that the author never asked for by name. Do not force such a story onto an unrelated requirement.</p>
+<h2>Rules</h2>
+<ul><li>Copy story ids byte-for-byte from <code>&lt;stories&gt;</code>, preserving underscores, hyphens, and case; never invent or normalize one.</li><li>Every story appears in one or more requirement <code>stories</code> attributes, or once as <code>&lt;unattached&gt;</code>, never both.</li><li>Quote the requirement text verbatim from the source in the tag body. Do not paraphrase it.</li><li>Emit nothing but the tags below. No preamble, no commentary, no explanation.</li></ul>
+<h2>Output</h2>
+<pre><code>&lt;requirement name=&quot;add-remove-books&quot; stories=&quot;add-book,remove-book,database&quot;&gt;
+The reader can add a book with a title and author, view the books in the order added, and remove a book.
+&lt;/requirement&gt;
+&lt;requirement name=&quot;reject-empty-fields&quot; stories=&quot;validate-book&quot;&gt;
+An empty title or author is rejected with a clear error message.
+&lt;/requirement&gt;
+&lt;unattached story=&quot;architecture&quot;/&gt;
+&lt;unattached story=&quot;ui-general&quot;/&gt;</code></pre>
+<h1>Attribution job</h1>
+<p>&lt;source name=&quot;eurofxref-hist_bad.csv&quot;&gt; Date,USD,JPY, 2025-02-04,1.0345,160.12, 2025-02-03,1.0x,159.01, &lt;/source&gt;</p>
+<p>&lt;stories&gt; &lt;story id=&quot;foundation-python&quot; implements=&quot;ARCHITECTURE.md&quot;&gt;Stand up the Python project root, environment, config resolution and test runner.&lt;/story&gt; &lt;story id=&quot;database&quot; implements=&quot;DATABASE.md&quot;&gt;Declare the rates store and its repository operations; Drydock generates the persistence package.&lt;/story&gt; &lt;story id=&quot;foundation-cli&quot; implements=&quot;FEATURE-CliFoundation.md&quot;&gt;Provide the cli package, dispatcher, exit-code mapping and the fxrates executable.&lt;/story&gt; &lt;story id=&quot;foundation-web&quot; implements=&quot;FEATURE-WebFoundation.md&quot;&gt;Provide the app_server package with create_app and the web_client fixture.&lt;/story&gt; &lt;story id=&quot;cli-init&quot; implements=&quot;FEATURE-Init.md&quot;&gt;Implement fxrates init via persistence.initialize_database.&lt;/story&gt; &lt;story id=&quot;cli-usage&quot; implements=&quot;FEATURE-UsageErrors.md&quot;&gt;Report command usage errors with exit 2.&lt;/story&gt; &lt;story id=&quot;rate-store&quot; implements=&quot;FEATURE-RateStorage.md&quot;&gt;Store parsed rates, replacing any existing (date, currency) rate.&lt;/story&gt; &lt;story id=&quot;load-parse&quot; implements=&quot;FEATURE-EcbParse.md&quot;&gt;Parse and validate an ECB history CSV without writing anything.&lt;/story&gt; &lt;story id=&quot;load-atomic&quot; implements=&quot;FEATURE-LoadAtomic.md&quot;&gt;Implement fxrates load, validating the whole file before the first write.&lt;/story&gt; &lt;story id=&quot;load-summary&quot; implements=&quot;FEATURE-LoadSummary.md&quot;&gt;Print the dates,rates summary after a load.&lt;/story&gt; &lt;story id=&quot;fetch&quot; implements=&quot;FEATURE-Fetch.md&quot;&gt;Implement fxrates fetch against the ECB zip, testable with a stubbed download.&lt;/story&gt; &lt;story id=&quot;cli-failures&quot; implements=&quot;FEATURE-OperationalFailures.md&quot;&gt;Assemble and prove operational-failure handling across load and fetch.&lt;/story&gt; &lt;story id=&quot;health&quot; implements=&quot;FEATURE-Health.md&quot;&gt;Serve GET /health.&lt;/story&gt; &lt;story id=&quot;currencies&quot; implements=&quot;FEATURE-Currencies.md&quot;&gt;Serve GET /currencies.&lt;/story&gt; &lt;story id=&quot;stats&quot; implements=&quot;FEATURE-Stats.md&quot;&gt;Serve GET /stats.&lt;/story&gt; &lt;story id=&quot;history&quot; implements=&quot;FEATURE-History.md&quot;&gt;Serve GET /history/{code} with exact statistics.&lt;/story&gt; &lt;story id=&quot;effective-date&quot; implements=&quot;FEATURE-EffectiveDate.md&quot;&gt;Resolve the effective publication date and its rates.&lt;/story&gt; &lt;story id=&quot;serve&quot; implements=&quot;FEATURE-Serve.md&quot;&gt;Implement fxrates serve on 127.0.0.1 with uvicorn.&lt;/story&gt; &lt;story id=&quot;history-empty&quot; implements=&quot;FEATURE-HistoryEmpty.md&quot;&gt;Return an empty history for a known currency with no points in range.&lt;/story&gt; &lt;story id=&quot;rates-by-date&quot; implements=&quot;FEATURE-RatesByDate.md&quot;&gt;Serve GET /rates/{date}.&lt;/story&gt; &lt;story id=&quot;convert&quot; implements=&quot;FEATURE-Convert.md&quot;&gt;Serve GET /convert for an explicit date with exact decimal arithmetic.&lt;/story&gt; &lt;story id=&quot;rates-latest&quot; implements=&quot;FEATURE-RatesLatest.md&quot;&gt;Serve GET /rates/latest.&lt;/story&gt; &lt;story id=&quot;history-rejects&quot; implements=&quot;FEATURE-HistoryRejects.md&quot;&gt;Reject history requests for unknown currencies and malformed dates.&lt;/story&gt; &lt;story id=&quot;convert-latest&quot; implements=&quot;FEATURE-ConvertLatest.md&quot;&gt;Default /convert to the latest publication when date is omitted.&lt;/story&gt; &lt;story id=&quot;convert-errors&quot; implements=&quot;FEATURE-ConvertErrors.md&quot;&gt;Handle /convert error statuses.&lt;/story&gt; &lt;story id=&quot;live-visibility&quot; implements=&quot;FEATURE-LiveVisibility.md&quot;&gt;Prove a load completed while the server runs is visible to the next request.&lt;/story&gt; &lt;story id=&quot;verification&quot; implements=&quot;VERIFICATION.md&quot;&gt;Terminal gate running the supplied grader and the project test suite.&lt;/story&gt; &lt;/stories&gt;</p></article>
+</main>
+</body>
+</html>

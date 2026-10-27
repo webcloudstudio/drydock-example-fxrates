@@ -1,0 +1,805 @@
+=== BEGIN ARTIFACT FEATURE-EcbParse.md ===
+# FEATURE: ECB History Parse
+
+| Field | Value |
+|-------|-------|
+| Version | 20261027 V1 |
+| Description | Parse and fully validate an ECB euro reference rate history CSV into rate records without writing anything. |
+| Depends On | ARCHITECTURE.md, FEATURE-CliFoundation.md |
+| Provides | ecb.parse_history |
+| Consumes | cli.main |
+
+## Questions
+
+- None.
+
+## Purpose
+
+`ecb.parse_history(text)` turns the text of an ECB `eurofxref-hist.csv` file into rate records. It performs every validation the source requires and touches no database, so a caller can check a whole file before its first write.
+
+## Interface
+
+- Module `ecb` (package `ecb/`), function `parse_history(text: str) -> list`.
+- Each record is a `namedtuple` `Rate(date, currency, rate)` of three strings, so it unpacks as a plain 3-tuple. `rate` is the published text exactly as read.
+- Records are returned for every non-`N/A` value. Record order is not part of the contract.
+- On any violation the function raises `RejectedFile` (the class owned by the CLI foundation, exit code 3) and returns no records.
+
+## Rules
+
+1. The text is CSV. The header's first field is exactly `Date`, and every other field is a three-letter uppercase currency code. The ECB writes a trailing comma on every line; the resulting empty last field is ignored (one empty trailing field, in the header and in every row).
+2. Each row has the same field count as the header and begins with a date in `YYYY-MM-DD` form that is a real calendar date and does not repeat elsewhere in the file.
+3. Each value is either `N/A` (no rate; nothing is produced) or matches `[0-9]+(\.[0-9]+)?` and is nonzero (`0`, `0.0`, `0.00` are zero).
+4. A row with the wrong field count, an invalid or repeated date, or an invalid value rejects the whole file. Validation covers every row before any record is returned.
+5. Rate text is kept exactly as published (`1.10` stays `1.10`). No value is converted to a floating-point number; zero is detected with `decimal.Decimal` or by digits.
+
+## Database Interface
+
+- None — this module is pure parsing and reaches no repository.
+
+## Programmatic Acceptance
+
+=== AC ecb-parse-valid ===
+Intent: Every non-N/A value becomes one record carrying the published text unchanged, N/A values and the trailing empty field produce nothing, and trailing zeros survive.
+Requires: executable=python3; scope=test
+
+import csv
+import io
+from ecb import parse_history
+
+header = ["Date", "USD", "JPY", "HRK", ""]
+rows = [
+    ["2025-01-03", "1.0299", "161.77", "N/A", ""],
+    ["2025-01-02", "1.0321", "N/A", "N/A", ""],
+    ["2025-01-06", "1.10", "162.5", "N/A", ""],
+    ["2025-01-07", "N/A", "N/A", "N/A", ""],
+]
+buf = io.StringIO()
+writer = csv.writer(buf, lineterminator="\n")
+writer.writerow(header)
+for row in rows:
+    writer.writerow(row)
+
+records = parse_history(buf.getvalue())
+got = sorted((r[0], r[1], r[2]) for r in records)
+expected = sorted(
+    (row[0], header[i], row[i])
+    for row in rows
+    for i in range(1, len(header) - 1)
+    if row[i] != "N/A"
+)
+print(got)
+assert got == expected
+assert all(isinstance(r[2], str) for r in records)
+assert ("2025-01-06", "USD", "1.10") in got
+=== END AC ecb-parse-valid ===
+
+=== AC ecb-parse-rejects-bad-rows ===
+Intent: A wrong field count, an invalid calendar date, a malformed date, a repeated date, or an invalid or zero value each reject the whole file with RejectedFile even when other rows are valid.
+Requires: executable=python3; scope=test
+
+import csv
+import io
+from ecb import parse_history
+
+header = ["Date", "USD", "JPY", ""]
+good = ["2025-01-03", "1.0299", "161.77", ""]
+
+
+def build(head, rows):
+    buf = io.StringIO()
+    writer = csv.writer(buf, lineterminator="\n")
+    writer.writerow(head)
+    for row in rows:
+        writer.writerow(row)
+    return buf.getvalue()
+
+
+cases = {
+    "short row": [good, ["2025-01-02", "1.0", ""]],
+    "long row": [good, ["2025-01-02", "1.0", "2.0", "3.0", ""]],
+    "impossible date": [good, ["2025-02-30", "1.0", "2.0", ""]],
+    "unpadded date": [good, ["2025-1-2", "1.0", "2.0", ""]],
+    "compact date": [good, ["20250102", "1.0", "2.0", ""]],
+    "repeated date": [good, ["2025-01-03", "1.5", "2.5", ""]],
+    "letters in value": [good, ["2025-01-02", "1.0x", "2.0", ""]],
+    "zero": [good, ["2025-01-02", "0", "2.0", ""]],
+    "zero decimals": [good, ["2025-01-02", "1.0", "0.00", ""]],
+    "negative": [good, ["2025-01-02", "-1.5", "2.0", ""]],
+    "trailing dot": [good, ["2025-01-02", "1.", "2.0", ""]],
+    "leading dot": [good, ["2025-01-02", ".5", "2.0", ""]],
+    "comma decimal": [good, ["2025-01-02", "1,5", "2.0", ""]],
+    "empty value": [good, ["2025-01-02", "", "2.0", ""]],
+}
+
+for name, rows in cases.items():
+    text = build(header, rows)
+    raised = None
+    try:
+        parse_history(text)
+    except Exception as exc:
+        raised = exc
+    print(name, type(raised).__name__)
+    assert raised is not None, name
+    assert type(raised).__name__ == "RejectedFile", name
+=== END AC ecb-parse-rejects-bad-rows ===
+
+=== AC ecb-parse-rejects-bad-header ===
+Intent: A header whose first field is not Date, or that holds a code that is lowercase, two letters, or four letters, rejects the file even when its rows are well formed.
+Requires: executable=python3; scope=test
+
+import csv
+import io
+from ecb import parse_history
+
+
+def build(head, rows):
+    buf = io.StringIO()
+    writer = csv.writer(buf, lineterminator="\n")
+    writer.writerow(head)
+    for row in rows:
+        writer.writerow(row)
+    return buf.getvalue()
+
+
+row = ["2025-01-03", "1.0299", "161.77", ""]
+heads = {
+    "first field": ["Day", "USD", "JPY", ""],
+    "lowercase code": ["Date", "usd", "JPY", ""],
+    "two letters": ["Date", "US", "JPY", ""],
+    "four letters": ["Date", "USDX", "JPY", ""],
+}
+for name, head in heads.items():
+    raised = None
+    try:
+        parse_history(build(head, [row]))
+    except Exception as exc:
+        raised = exc
+    print(name, type(raised).__name__)
+    assert raised is not None, name
+    assert type(raised).__name__ == "RejectedFile", name
+=== END AC ecb-parse-rejects-bad-header ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- The parser never writes to any store and never opens a database.
+- Rates are never converted to floating point; published text is returned as read.
+- A rejected file returns no records at all, so no caller can write a partial file.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-RateStorage.md ===
+# FEATURE: Rate Storage
+
+| Field | Value |
+|-------|-------|
+| Version | 20261027 V1 |
+| Description | Store parsed rate records through the persistence library, replacing any rate already stored for the same date and currency. |
+| Depends On | DATABASE.md, ARCHITECTURE.md |
+| Provides | ratestore.store_rates |
+| Consumes | db.rates.replace_rate |
+
+## Questions
+
+- None.
+
+## Purpose
+
+`ratestore.store_rates(db, records)` writes validated rate records into the `rates` table. It is the only write path for loaded rates and uses the declared upsert so reloading is idempotent.
+
+## Interface
+
+- Module `ratestore`, function `store_rates(db, records) -> tuple[int, int]`.
+- `db` is an open persistence `Database`; `records` is any iterable of three-item sequences `(date, currency, rate)` such as `ecb.Rate` tuples.
+- Each record is written with `db.rates.replace_rate(date=..., currency=..., rate=...)`.
+- The return value is `(dates, rates)`: the number of distinct dates and the number of rates written from `records`.
+- Empty `records` writes nothing and returns `(0, 0)`.
+- The function neither opens nor closes the database and authors no SQL.
+
+## Rules
+
+1. A rate stored for a (`date`, `currency`) that already exists replaces the stored text.
+2. Writing the same records again leaves the stored rows unchanged and returns the same counts.
+3. Rate text is stored exactly as given.
+
+## Database Interface
+
+- `FEATURE-RATE-001` — write: store a rate, replacing the stored one - supplies: `date`, `currency`, `rate` - returns: `date`, `currency`, `rate`
+
+## Programmatic Acceptance
+
+=== AC ratestore-round-trip ===
+Intent: Stored records read back through the history operation with their exact published text, and the returned counts equal the distinct dates and the records written.
+Requires: executable=python3; scope=test
+
+from persistence.testing import db_session
+from ratestore import store_rates
+
+d1, d2 = "1800-05-01", "1800-05-02"
+records = [
+    (d1, "ZZA", "1.2300"),
+    (d1, "ZZB", "10"),
+    (d2, "ZZA", "1.5"),
+]
+
+with db_session() as db:
+    counts = store_rates(db, records)
+    assert tuple(counts) == (len({r[0] for r in records}), len(records))
+    for currency in ("ZZA", "ZZB"):
+        rows = db.rates.history(currency=currency, start_date=d1, end_date=d2)
+        got = [(r.date, r.rate) for r in rows]
+        want = sorted((r[0], r[2]) for r in records if r[1] == currency)
+        assert got == want
+=== END AC ratestore-round-trip ===
+
+=== AC ratestore-replace-and-idempotent ===
+Intent: Storing the same records twice leaves one row per date and currency, and storing a changed rate replaces the stored text.
+Requires: executable=python3; scope=test
+
+from persistence.testing import db_session
+from ratestore import store_rates
+
+d = "1800-05-10"
+first = [(d, "ZZA", "1.1"), (d, "ZZB", "2.2")]
+changed = [(d, "ZZA", "9.90")]
+
+with db_session() as db:
+    store_rates(db, first)
+    again = store_rates(db, first)
+    assert tuple(again) == (1, len(first))
+    rows = db.rates.history(currency="ZZA", start_date=d, end_date=d)
+    assert [(r.date, r.rate) for r in rows] == [(d, first[0][2])]
+
+    store_rates(db, changed)
+    rows = db.rates.history(currency="ZZA", start_date=d, end_date=d)
+    assert [(r.date, r.rate) for r in rows] == [(d, changed[0][2])]
+    other = db.rates.history(currency="ZZB", start_date=d, end_date=d)
+    assert [(r.date, r.rate) for r in other] == [(d, first[1][2])]
+=== END AC ratestore-replace-and-idempotent ===
+
+=== AC ratestore-empty ===
+Intent: Empty input writes nothing and reports zero dates and zero rates.
+Requires: executable=python3; scope=test
+
+from persistence.testing import db_session
+from ratestore import store_rates
+
+with db_session() as db:
+    before = len(db.rates.list_all())
+    counts = store_rates(db, [])
+    assert tuple(counts) == (0, 0)
+    assert len(db.rates.list_all()) == before
+=== END AC ratestore-empty ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Rates are written only through `db.rates.replace_rate`; no SQL and no driver import appears in this module.
+- Rate values are never converted to floating point.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-LoadAtomic.md ===
+# FEATURE: Atomic Load
+
+| Field | Value |
+|-------|-------|
+| Version | 20261027 V1 |
+| Description | Implement fxrates load, which validates the whole ECB history file before its first write and stores nothing when the file is rejected. |
+| Depends On | FEATURE-CliFoundation.md, FEATURE-Init.md, FEATURE-EcbParse.md, FEATURE-RateStorage.md |
+| Provides | fxrates load |
+| Consumes | ecb.parse_history, ratestore.store_rates, cli.main, fxrates init |
+
+## Questions
+
+- None.
+
+## Purpose
+
+`fxrates load <csv>` loads an ECB history file into the store. The whole file is checked before the first write, so a rejected file changes nothing, and a rate already stored for the same date and currency is replaced.
+
+## Interface
+
+- `cli/commands/load.py` defines `load_file(path: str) -> tuple[int, int]` and `run(args) -> int`.
+- `load_file` reads the file as UTF-8 text. A file that cannot be read raises `OperationalError` (exit 1).
+- It calls `ecb.parse_history` on the full text. An invalid file raises `RejectedFile` (exit 3) before the database is opened for writing.
+- It opens the store with `persistence.open_database(config.database_path())`, calls `ratestore.store_rates`, closes the database, and returns the `(dates, rates)` counts.
+- `run` calls `load_file` and returns 0. Printing the summary is owned by FEATURE-LoadSummary.md; this story prints nothing to stdout on success.
+- Failure output follows the dispatcher: nothing on stdout, one diagnostic line on stderr.
+
+## Rules
+
+1. Exit 0 on success, 1 when the file cannot be read, 3 when the file is rejected.
+2. A rejected file leaves the database exactly as it was, including rows for dates the file shares with the store.
+3. Loading the same file twice leaves the database unchanged.
+
+## Database Interface
+
+- None — persistence is reached through `ratestore.store_rates`.
+
+## Programmatic Acceptance
+
+=== AC load-stores-rates ===
+Intent: Loading a valid file exits 0 and stores every non-N/A rate as published text, storing nothing for N/A values.
+Requires: executable=python3; scope=test
+
+import csv
+import os
+import tempfile
+from cli.testing import cli_runner
+from persistence.testing import db_session
+
+d1, d2 = "1800-06-01", "1800-06-02"
+header = ["Date", "ZZA", "ZZB", "ZZC", ""]
+rows = [
+    [d1, "1.2300", "5", "N/A", ""],
+    [d2, "7.25", "N/A", "N/A", ""],
+]
+
+with tempfile.TemporaryDirectory() as tmp:
+    path = os.path.join(tmp, "hist.csv")
+    with open(path, "w", newline="", encoding="utf-8") as fh:
+        writer = csv.writer(fh, lineterminator="\n")
+        writer.writerow(header)
+        for row in rows:
+            writer.writerow(row)
+
+    code, out, err = cli_runner("load", path)
+    print(out, err)
+    assert code == 0
+
+    with db_session() as db:
+        for i in range(1, len(header) - 1):
+            currency = header[i]
+            rows_back = db.rates.history(currency=currency, start_date=d1, end_date=d2)
+            got = [(r.date, r.rate) for r in rows_back]
+            want = sorted((row[0], row[i]) for row in rows if row[i] != "N/A")
+            assert got == want
+=== END AC load-stores-rates ===
+
+=== AC load-replaces-and-repeats ===
+Intent: A rate already stored for a date and currency is replaced by the loaded text, and loading the same file a second time leaves the stored rows unchanged.
+Requires: executable=python3; scope=test
+
+import csv
+import os
+import tempfile
+from cli.testing import cli_runner
+from persistence.testing import db_session
+
+d = "1800-06-10"
+old = "1.0"
+header = ["Date", "ZZA", "ZZB", ""]
+row = [d, "3.14", "2.7", ""]
+
+with db_session() as db:
+    db.rates.replace_rate(date=d, currency="ZZA", rate=old)
+
+with tempfile.TemporaryDirectory() as tmp:
+    path = os.path.join(tmp, "hist.csv")
+    with open(path, "w", newline="", encoding="utf-8") as fh:
+        writer = csv.writer(fh, lineterminator="\n")
+        writer.writerow(header)
+        writer.writerow(row)
+
+    code, out, err = cli_runner("load", path)
+    assert code == 0
+    with db_session() as db:
+        snapshot = {}
+        for i in (1, 2):
+            rows_back = db.rates.history(currency=header[i], start_date=d, end_date=d)
+            snapshot[header[i]] = [(r.date, r.rate) for r in rows_back]
+            assert snapshot[header[i]] == [(d, row[i])]
+
+    code, out, err = cli_runner("load", path)
+    assert code == 0
+    with db_session() as db:
+        for i in (1, 2):
+            rows_back = db.rates.history(currency=header[i], start_date=d, end_date=d)
+            assert [(r.date, r.rate) for r in rows_back] == snapshot[header[i]]
+=== END AC load-replaces-and-repeats ===
+
+=== AC load-rejected-stores-nothing ===
+Intent: A file whose first row is valid and whose second row has an invalid value exits 3, prints nothing to stdout, writes one stderr line, and leaves earlier stored rates and the valid row's date untouched.
+Requires: executable=python3; scope=test
+
+import csv
+import os
+import tempfile
+from cli.testing import cli_runner
+from persistence.testing import db_session
+
+d_ok, d_bad = "1800-06-21", "1800-06-20"
+keep_date, keep_rate = "1800-06-22", "4.4"
+header = ["Date", "ZZA", "ZZB", ""]
+rows = [
+    [d_ok, "1.5", "2.5", ""],
+    [d_bad, "1.0x", "2.5", ""],
+]
+
+with db_session() as db:
+    db.rates.replace_rate(date=keep_date, currency="ZZA", rate=keep_rate)
+
+with tempfile.TemporaryDirectory() as tmp:
+    path = os.path.join(tmp, "bad.csv")
+    with open(path, "w", newline="", encoding="utf-8") as fh:
+        writer = csv.writer(fh, lineterminator="\n")
+        writer.writerow(header)
+        for row in rows:
+            writer.writerow(row)
+
+    code, out, err = cli_runner("load", path)
+    print(out, err)
+    assert code == 3
+    assert out == ""
+    assert len(err.strip().splitlines()) == 1
+
+    with db_session() as db:
+        for currency in ("ZZA", "ZZB"):
+            rows_back = db.rates.history(currency=currency, start_date=d_bad, end_date=d_ok)
+            assert rows_back == []
+        kept = db.rates.history(currency="ZZA", start_date=keep_date, end_date=keep_date)
+        assert [(r.date, r.rate) for r in kept] == [(keep_date, keep_rate)]
+=== END AC load-rejected-stores-nothing ===
+
+=== AC load-unreadable-file ===
+Intent: Loading a path that does not exist is an operational failure that exits 1 with empty stdout and one stderr line.
+Requires: executable=python3; scope=test
+
+import os
+import tempfile
+from cli.testing import cli_runner
+
+with tempfile.TemporaryDirectory() as tmp:
+    missing = os.path.join(tmp, "no-such-file.csv")
+    code, out, err = cli_runner("load", missing)
+    print(out, err)
+    assert code == 1
+    assert out == ""
+    assert len(err.strip().splitlines()) == 1
+=== END AC load-unreadable-file ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- The whole file is validated before the first write; a rejected file never changes the store.
+- The command never initializes the schema; only `fxrates init` does.
+- Application code opens the store only through `persistence.open_database`.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-LoadSummary.md ===
+# FEATURE: Load Summary
+
+| Field | Value |
+|-------|-------|
+| Version | 20261027 V1 |
+| Description | Print the dates,rates summary on standard output after a successful load. |
+| Depends On | FEATURE-LoadAtomic.md |
+| Provides | fxrates load summary output |
+| Consumes | fxrates load |
+
+## Questions
+
+- None.
+
+## Purpose
+
+After a successful `fxrates load`, standard output reports how many dates and rates the file contributed to the store.
+
+## Interface
+
+- `cli/commands/load.py` `run(args)` prints, after `load_file` returns `(dates, rates)`, exactly two lines: `dates,rates` and then `<dates>,<rates>`, each newline-terminated.
+- `dates` counts the dates in the file with at least one stored rate. A date whose values are all `N/A` is not counted.
+- `rates` counts the rates stored from the file. These are counts from the file, not changes: loading the same file again prints the same numbers.
+- On failure (exit 1, 2 or 3) nothing is written to standard output.
+
+## Database Interface
+
+- None — the counts come from `load_file`'s return value.
+
+## Programmatic Acceptance
+
+=== AC summary-counts ===
+Intent: The first output line is dates,rates and the second carries the number of dates with a stored rate and the number of stored rates, derived from the fixture, with an all-N/A date not counted.
+Requires: executable=python3; scope=test
+
+import csv
+import io
+import os
+import tempfile
+from cli.testing import cli_runner
+
+header = ["Date", "ZZA", "ZZB", "ZZC", ""]
+rows = [
+    ["1800-07-01", "1.1", "2.2", "N/A", ""],
+    ["1800-07-02", "3.3", "N/A", "N/A", ""],
+    ["1800-07-03", "N/A", "N/A", "N/A", ""],
+]
+values = [row[i] for row in rows for i in range(1, len(header) - 1)]
+rate_count = sum(1 for v in values if v != "N/A")
+date_count = sum(
+    1 for row in rows if any(row[i] != "N/A" for i in range(1, len(header) - 1))
+)
+
+with tempfile.TemporaryDirectory() as tmp:
+    path = os.path.join(tmp, "hist.csv")
+    with open(path, "w", newline="", encoding="utf-8") as fh:
+        writer = csv.writer(fh, lineterminator="\n")
+        writer.writerow(header)
+        for row in rows:
+            writer.writerow(row)
+
+    code, out, err = cli_runner("load", path)
+    print(out, err)
+    assert code == 0
+    assert out.endswith("\n")
+    parsed = list(csv.reader(io.StringIO(out)))
+    assert parsed == [["dates", "rates"], [str(date_count), str(rate_count)]]
+=== END AC summary-counts ===
+
+=== AC summary-repeat-load ===
+Intent: Loading the same file twice prints the same counts both times because the summary counts what the file stored, not what changed.
+Requires: executable=python3; scope=test
+
+import csv
+import io
+import os
+import tempfile
+from cli.testing import cli_runner
+
+header = ["Date", "ZZA", "ZZB", ""]
+rows = [
+    ["1800-07-11", "1.1", "2.2", ""],
+    ["1800-07-12", "3.3", "4.4", ""],
+]
+
+with tempfile.TemporaryDirectory() as tmp:
+    path = os.path.join(tmp, "hist.csv")
+    with open(path, "w", newline="", encoding="utf-8") as fh:
+        writer = csv.writer(fh, lineterminator="\n")
+        writer.writerow(header)
+        for row in rows:
+            writer.writerow(row)
+
+    code1, out1, err1 = cli_runner("load", path)
+    assert code1 == 0
+    code2, out2, err2 = cli_runner("load", path)
+    assert code2 == 0
+    assert list(csv.reader(io.StringIO(out1))) == list(csv.reader(io.StringIO(out2)))
+    parsed = list(csv.reader(io.StringIO(out2)))
+    assert parsed[1] == [str(len(rows)), str(len(rows) * (len(header) - 2))]
+=== END AC summary-repeat-load ===
+
+=== AC summary-silent-on-failure ===
+Intent: A rejected file and an unreadable file print nothing to standard output.
+Requires: executable=python3; scope=test
+
+import csv
+import os
+import tempfile
+from cli.testing import cli_runner
+
+header = ["Date", "ZZA", ""]
+bad_rows = [["1800-07-21", "1.0x", ""]]
+
+with tempfile.TemporaryDirectory() as tmp:
+    bad = os.path.join(tmp, "bad.csv")
+    with open(bad, "w", newline="", encoding="utf-8") as fh:
+        writer = csv.writer(fh, lineterminator="\n")
+        writer.writerow(header)
+        for row in bad_rows:
+            writer.writerow(row)
+
+    code, out, err = cli_runner("load", bad)
+    assert code == 3
+    assert out == ""
+
+    code, out, err = cli_runner("load", os.path.join(tmp, "missing.csv"))
+    assert code == 1
+    assert out == ""
+=== END AC summary-silent-on-failure ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- The summary is exactly the header line and the counts line; nothing else is written to standard output.
+- Diagnostics go to standard error only.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-Fetch.md ===
+# FEATURE: Fetch
+
+| Field | Value |
+|-------|-------|
+| Version | 20261027 V1 |
+| Description | Implement fxrates fetch, which downloads the ECB history zip, extracts the CSV and loads it exactly as load does, testable with a stubbed download. |
+| Depends On | FEATURE-LoadSummary.md, FEATURE-EcbParse.md |
+| Provides | fxrates fetch |
+| Consumes | fxrates load summary output, ecb.parse_history |
+
+## Questions
+
+- None.
+
+## Purpose
+
+`fxrates fetch` retrieves the ECB's published history file and loads it with the same validation, atomicity, storage and summary as `fxrates load`.
+
+## Interface
+
+- `ecb.download_history() -> str` performs the whole download. It calls `urllib.request.urlopen("https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist.zip", timeout=...)` through the module attribute, reads the bytes inside a `with` block, opens them with `zipfile`, and returns the decoded text of the member `eurofxref-hist.csv`.
+- Any failure (network error, non-zip data, missing member) raises `OperationalError` (exit 1).
+- `cli/commands/fetch.py` `run(args)` calls `ecb.download_history()` through the module attribute `ecb`, so tests can replace it, then runs the same parse, store and summary path as `load` on that text (sharing a text-level helper with `load`). It takes no arguments.
+- Exit codes follow `load`: 0 success, 1 download failure, 3 rejected file. Failures write nothing to stdout and one diagnostic line to stderr.
+- Automated tests never open a network connection: they replace `ecb.download_history`, or replace `urllib.request.urlopen`.
+
+## Database Interface
+
+- None — storage is reached through the shared load path.
+
+## Programmatic Acceptance
+
+=== AC fetch-stubbed-download-loads ===
+Intent: With the download replaced by a stub returning valid CSV text, fetch exits 0, prints the load summary, and stores the rates as published.
+Requires: executable=python3; scope=test
+
+import csv
+import io
+from unittest import mock
+from cli.testing import cli_runner
+from persistence.testing import db_session
+
+d1, d2 = "1800-08-01", "1800-08-02"
+header = ["Date", "ZZA", "ZZB", ""]
+rows = [[d1, "1.20", "N/A", ""], [d2, "3.5", "4.25", ""]]
+buf = io.StringIO()
+writer = csv.writer(buf, lineterminator="\n")
+writer.writerow(header)
+for row in rows:
+    writer.writerow(row)
+text = buf.getvalue()
+
+with mock.patch("ecb.download_history", return_value=text):
+    code, out, err = cli_runner("fetch")
+print(out, err)
+assert code == 0
+rate_count = sum(1 for row in rows for i in (1, 2) if row[i] != "N/A")
+parsed = list(csv.reader(io.StringIO(out)))
+assert parsed == [["dates", "rates"], [str(len(rows)), str(rate_count)]]
+
+with db_session() as db:
+    for i in (1, 2):
+        back = db.rates.history(currency=header[i], start_date=d1, end_date=d2)
+        want = sorted((row[0], row[i]) for row in rows if row[i] != "N/A")
+        assert [(r.date, r.rate) for r in back] == want
+=== END AC fetch-stubbed-download-loads ===
+
+=== AC fetch-failed-download-exits-1 ===
+Intent: When the download raises a network error, fetch exits 1, prints nothing to stdout, writes one stderr line, and stores nothing.
+Requires: executable=python3; scope=test
+
+import urllib.error
+import urllib.request
+from unittest import mock
+from cli.testing import cli_runner
+from persistence.testing import db_session
+
+with db_session() as db:
+    before = len(db.rates.list_all())
+
+with mock.patch(
+    "urllib.request.urlopen", side_effect=urllib.error.URLError("stubbed failure")
+):
+    code, out, err = cli_runner("fetch")
+print(out, err)
+assert code == 1
+assert out == ""
+assert len(err.strip().splitlines()) == 1
+
+with db_session() as db:
+    assert len(db.rates.list_all()) == before
+=== END AC fetch-failed-download-exits-1 ===
+
+=== AC fetch-zip-extraction ===
+Intent: With only the HTTP call replaced, fetch extracts eurofxref-hist.csv from the zip and loads it, while a zip lacking that member exits 1.
+Requires: executable=python3; scope=test
+
+import csv
+import io
+import zipfile
+from unittest import mock
+from cli.testing import cli_runner
+from persistence.testing import db_session
+
+
+class FakeResponse:
+    def __init__(self, data):
+        self._data = data
+
+    def read(self, *args):
+        return self._data
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+
+def make_zip(member, text):
+    raw = io.BytesIO()
+    with zipfile.ZipFile(raw, "w") as zf:
+        zf.writestr(member, text)
+    return raw.getvalue()
+
+
+d = "1800-08-10"
+header = ["Date", "ZZA", ""]
+row = [d, "6.75", ""]
+buf = io.StringIO()
+writer = csv.writer(buf, lineterminator="\n")
+writer.writerow(header)
+writer.writerow(row)
+text = buf.getvalue()
+
+good = FakeResponse(make_zip("eurofxref-hist.csv", text))
+with mock.patch("urllib.request.urlopen", return_value=good):
+    code, out, err = cli_runner("fetch")
+print(out, err)
+assert code == 0
+with db_session() as db:
+    back = db.rates.history(currency="ZZA", start_date=d, end_date=d)
+    assert [(r.date, r.rate) for r in back] == [(d, row[1])]
+
+wrong = FakeResponse(make_zip("other.csv", text))
+with mock.patch("urllib.request.urlopen", return_value=wrong):
+    code, out, err = cli_runner("fetch")
+assert code == 1
+assert out == ""
+=== END AC fetch-zip-extraction ===
+
+=== AC fetch-rejected-file ===
+Intent: A downloaded file with an invalid value exits 3 with empty stdout and stores nothing, as load does.
+Requires: executable=python3; scope=test
+
+import csv
+import io
+from unittest import mock
+from cli.testing import cli_runner
+from persistence.testing import db_session
+
+d_ok, d_bad = "1800-08-21", "1800-08-20"
+header = ["Date", "ZZA", ""]
+rows = [[d_ok, "1.5", ""], [d_bad, "oops", ""]]
+buf = io.StringIO()
+writer = csv.writer(buf, lineterminator="\n")
+writer.writerow(header)
+for row in rows:
+    writer.writerow(row)
+
+with mock.patch("ecb.download_history", return_value=buf.getvalue()):
+    code, out, err = cli_runner("fetch")
+print(out, err)
+assert code == 3
+assert out == ""
+
+with db_session() as db:
+    assert db.rates.history(currency="ZZA", start_date=d_bad, end_date=d_ok) == []
+=== END AC fetch-rejected-file ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- No automated test opens a network connection; the download is always stubbed.
+- `fetch` loads through the same validated, atomic path as `load`.
+- Downloaded content is treated as untrusted input and is never executed or written outside the store.
+=== END ARTIFACT ===

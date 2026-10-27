@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-WebFoundation.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-WebFoundation.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-WebFoundation.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Web Foundation</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261027 V1</td></tr><tr><td>Description</td><td>The app_server package with the create_app factory, per-request database access and the web_client fixture.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md, DATABASE.md</td></tr><tr><td>Provides</td><td>app_server.main.create_app, app_server.testing.web_client</td></tr><tr><td>Consumes</td><td>config.database_path</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Provide the FastAPI application every endpoint story registers a router with.</p>
+<h2>Interface</h2>
+<div class="scroll"><table><thead><tr><th>Symbol</th><th>Contract</th></tr></thead><tbody><tr><td><code>app_server.main.create_app() -&gt; FastAPI</code></td><td>Builds the application and includes the routers found in <code>app_server/routers</code>.</td></tr><tr><td><code>app_server.main.app</code></td><td>Module-level application for <code>uvicorn app_server.main:app</code>.</td></tr><tr><td><code>app_server.testing.web_client()</code></td><td>Returns <code>fastapi.testclient.TestClient(create_app())</code>.</td></tr><tr><td><code>app_server.deps.get_db</code></td><td>Request-scoped dependency: a generator that opens <code>persistence.open_database(config.database_path())</code> per request, yields it and closes it afterwards, so a load completed by another process is visible to the next request.</td></tr></tbody></table></div>
+<p>Application startup never opens or initializes the store.</p>
+<h2>Database Interface</h2>
+<ul><li>None — persistence is owned by DATABASE.md.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC app-factory ===<br>Intent: create_app returns a FastAPI application, a module-level app exists, and web_client returns a working test client.<br>Requires: executable=python3; scope=test<br>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx2; scope=test</p>
+<p>from fastapi import FastAPI from fastapi.testclient import TestClient</p>
+<p>from app_server.main import app, create_app from app_server.testing import web_client</p>
+<p>assert isinstance(create_app(), FastAPI) assert isinstance(app, FastAPI) client = web_client() assert isinstance(client, TestClient) assert isinstance(client.app, FastAPI) === END AC app-factory ===</p>
+<p>=== AC unknown-path-404 ===<br>Intent: A path no router owns answers 404, showing the application serves requests.<br>Requires: executable=python3; scope=test<br>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx2; scope=test</p>
+<p>from app_server.testing import web_client</p>
+<p>client = web_client() response = client.get(&quot;/zz-no-such-route-probe&quot;) assert response.status_code == 404 === END AC unknown-path-404 ===</p>
+<p>=== AC request-scoped-db ===<br>Intent: get_db yields an opened database exposing the rates table operations and closes cleanly when the request ends.<br>Requires: executable=python3; scope=test<br>Requires: python-package=fastapi; scope=test</p>
+<p>from app_server.deps import get_db from drydock_acceptance import database_environment</p>
+<p>with database_environment(url=&quot;web.db&quot;) as root: gen = get_db() db = next(gen) assert hasattr(db, &quot;rates&quot;) try: next(gen) raise AssertionError(&quot;dependency must finish after one yield&quot;) except StopIteration: pass === END AC request-scoped-db ===</p>
+<p>=== AC startup-does-not-initialize ===<br>Intent: Starting the application opens no store: with no database configured, startup leaves data/app.db uncreated.<br>Requires: executable=python3; scope=test<br>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx2; scope=test</p>
+<p>from fastapi.testclient import TestClient</p>
+<p>from app_server.main import create_app from drydock_acceptance import database_environment</p>
+<p>with database_environment() as root: with TestClient(create_app()) as client: assert client.get(&quot;/zz-no-such-route-probe&quot;).status_code == 404 assert not (root / &quot;data&quot; / &quot;app.db&quot;).exists() === END AC startup-does-not-initialize ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Application startup never initializes the schema.</li><li>The web layer reaches the store only through <code>persistence.open_database</code>; it never imports a database driver.</li><li>The server binds only to 127.0.0.1 (enforced by the serve command).</li></ul></article>
+</main>
+</body>
+</html>

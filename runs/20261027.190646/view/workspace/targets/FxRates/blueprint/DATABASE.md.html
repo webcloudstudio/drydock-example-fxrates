@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/DATABASE.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/DATABASE.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/DATABASE.md">Raw file</a></div></header>
+<article class="doc"><h1>DATABASE: FxRates</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261027 V1</td></tr><tr><td>Description</td><td>Persistence store and typed repository operations for the ECB euro reference rates held by FxRates.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md</td></tr><tr><td>Provides</td><td>db.rates.replace_rate, db.rates.list_through, db.rates.list_all, db.rates.history</td></tr><tr><td>Build Order</td><td>1</td></tr></tbody></table></div>
+<h2>Persistence Boundary</h2>
+<div class="scroll"><table><thead><tr><th>Boundary</th><th>Rule</th></tr></thead><tbody><tr><td>Raw storage access</td><td>Only the generated <code>persistence/</code> package reaches the store.</td></tr><tr><td>Caller dependency</td><td>Features depend on declared access patterns and their DTOs, not on schemas.</td></tr><tr><td>Implementation</td><td>Generated from this file at the DATABASE build step; never written by hand.</td></tr><tr><td>Rate values</td><td>Stored as the ECB&#x27;s published text and never converted to floating point. Arithmetic on them uses <code>decimal</code> in the caller.</td></tr><tr><td>Aggregation</td><td>Effective date, statistics, currency lists and history statistics are computed by callers from list operations.</td></tr></tbody></table></div>
+<h2>Access Patterns</h2>
+<h3>FEATURE-RATE-001 — Store a rate, replacing the stored one</h3>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Owner</td><td>DATABASE.md</td></tr><tr><td>Access</td><td>write</td></tr><tr><td>Repository operation</td><td><code>rates.replace_rate</code></td></tr><tr><td>Kind</td><td>upsert</td></tr><tr><td>Match</td><td><code>date</code>, <code>currency</code></td></tr><tr><td>Compatibility</td><td>unchanged</td></tr></tbody></table></div>
+<p>Input: RatesReplaceRateInput</p>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td>date</td><td>str</td><td><code>YYYY-MM-DD</code></td></tr><tr><td>currency</td><td>str</td><td>Three-letter uppercase code</td></tr><tr><td>rate</td><td>str</td><td>Published text, stored exactly</td></tr></tbody></table></div>
+<p>Output: RatesReplaceRateOutput</p>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td>date</td><td>str</td><td>Stored date</td></tr><tr><td>currency</td><td>str</td><td>Stored currency</td></tr><tr><td>rate</td><td>str</td><td>Stored rate text</td></tr></tbody></table></div>
+<h3>FEATURE-RATE-002 — List rates on or before a date</h3>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Owner</td><td>DATABASE.md</td></tr><tr><td>Access</td><td>read</td></tr><tr><td>Repository operation</td><td><code>rates.list_through</code></td></tr><tr><td>Kind</td><td>list</td></tr><tr><td>Match</td><td><code>date &lt;= through_date</code></td></tr><tr><td>Order</td><td><code>date</code> desc, <code>currency</code> asc</td></tr><tr><td>Compatibility</td><td>unchanged</td></tr></tbody></table></div>
+<p>Input: RatesListThroughInput</p>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td>through_date</td><td>str</td><td>Optional upper bound, inclusive; omitted lists every rate</td></tr></tbody></table></div>
+<p>Output: RatesListThroughOutput</p>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td>date</td><td>str</td><td>Publication date</td></tr><tr><td>currency</td><td>str</td><td>Currency code</td></tr><tr><td>rate</td><td>str</td><td>Rate text</td></tr></tbody></table></div>
+<h3>FEATURE-RATE-003 — List every stored rate</h3>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Owner</td><td>DATABASE.md</td></tr><tr><td>Access</td><td>read</td></tr><tr><td>Repository operation</td><td><code>rates.list_all</code></td></tr><tr><td>Kind</td><td>list</td></tr><tr><td>Order</td><td><code>date</code> asc, <code>currency</code> asc</td></tr><tr><td>Compatibility</td><td>unchanged</td></tr></tbody></table></div>
+<p>Input: RatesListAllInput</p>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Type</th><th>Notes</th></tr></thead><tbody></tbody></table></div>
+<p>Output: RatesListAllOutput</p>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td>date</td><td>str</td><td>Publication date</td></tr><tr><td>currency</td><td>str</td><td>Currency code</td></tr><tr><td>rate</td><td>str</td><td>Rate text</td></tr></tbody></table></div>
+<h3>FEATURE-RATE-004 — List a currency&#x27;s history over a period</h3>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Owner</td><td>DATABASE.md</td></tr><tr><td>Access</td><td>read</td></tr><tr><td>Repository operation</td><td><code>rates.history</code></td></tr><tr><td>Kind</td><td>list</td></tr><tr><td>Match</td><td><code>currency</code>, <code>date &gt;= start_date</code>, <code>date &lt;= end_date</code></td></tr><tr><td>Order</td><td><code>date</code> asc</td></tr><tr><td>Compatibility</td><td>unchanged</td></tr></tbody></table></div>
+<p>Input: RatesHistoryInput</p>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td>currency</td><td>str</td><td>Currency code</td></tr><tr><td>start_date</td><td>str</td><td>Optional lower bound, inclusive</td></tr><tr><td>end_date</td><td>str</td><td>Optional upper bound, inclusive</td></tr></tbody></table></div>
+<p>Output: RatesHistoryOutput</p>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td>date</td><td>str</td><td>Publication date</td></tr><tr><td>rate</td><td>str</td><td>Rate text</td></tr></tbody></table></div>
+<h2>Schemas</h2>
+<h2><code>rates</code></h2>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td>id</td><td>INTEGER PK</td><td>Surrogate key</td></tr><tr><td>date</td><td>TEXT NOT NULL</td><td><code>YYYY-MM-DD</code> publication date</td></tr><tr><td>currency</td><td>TEXT NOT NULL</td><td>Three-letter uppercase currency code</td></tr><tr><td>rate</td><td>TEXT NOT NULL</td><td>Rate exactly as the ECB publishes it</td></tr></tbody></table></div>
+<ul><li>UNIQUE (date, currency)</li></ul>
+<h2>Migrations</h2>
+<p>Each relational change has one staged record in <code>migrations/MIGRATION-&lt;AccessPatternId&gt;.md</code>. The record carries Alembic <code>upgrade</code>/<code>downgrade</code> snippets and progresses from <code>planned</code> to <code>built</code> only when its DATABASE build story completes. Alembic records deployment application separately.</p>
+<div class="scroll"><table><thead><tr><th>Access Pattern</th><th>Revision</th><th>State</th></tr></thead><tbody></tbody></table></div>
+<h2>Config (.env)</h2>
+<div class="scroll"><table><thead><tr><th>Key</th><th>Type</th><th>Required</th><th>Notes</th></tr></thead><tbody><tr><td>DATABASE_URL</td><td>str</td><td>No</td><td>SQLite file path, optionally prefixed <code>sqlite://</code>; first choice</td></tr><tr><td>DATABASE_PATH</td><td>str</td><td>No</td><td>SQLite file path used when DATABASE_URL is unset; default <code>data/app.db</code></td></tr></tbody></table></div>
+<h2>File Stores</h2>
+<div class="scroll"><table><thead><tr><th>Store</th><th>Root dir</th><th>Notes</th></tr></thead><tbody></tbody></table></div>
+<h2>External Services</h2>
+<div class="scroll"><table><thead><tr><th>Service</th><th>Wrapper</th><th>Notes</th></tr></thead><tbody></tbody></table></div>
+<h2>External Libraries</h2>
+<div class="scroll"><table><thead><tr><th>Library</th><th>Ownership</th><th>Distribution</th><th>Consumer Contract</th></tr></thead><tbody></tbody></table></div>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC rates-replace-rate ===<br>Intent: Upserting the same date and currency twice leaves one row holding the second published text, and the first call returns the row it stored.<br>Requires: executable=python3; scope=test</p>
+<p>from persistence.testing import db_session</p>
+<p>date = &quot;1800-01-01&quot; currency = &quot;ZZA&quot; first = &quot;1.2300&quot; second = &quot;4.5&quot;</p>
+<p>with db_session() as db: stored = db.rates.replace_rate(date=date, currency=currency, rate=first) assert stored.date == date assert stored.currency == currency assert stored.rate == first db.rates.replace_rate(date=date, currency=currency, rate=second) rows = db.rates.history(currency=currency, start_date=date, end_date=date) assert len(rows) == 1 assert rows[0].date == date assert rows[0].rate == second === END AC rates-replace-rate ===</p>
+<p>=== AC rates-list-through ===<br>Intent: list_through returns only rates on or before the bound, ordered by date descending then currency ascending, and with no bound it also includes later dates.<br>Requires: executable=python3; scope=test</p>
+<p>from persistence.testing import db_session</p>
+<p>d1, d2, d3 = &quot;1800-02-01&quot;, &quot;1800-02-02&quot;, &quot;1800-02-03&quot; items = [ (d1, &quot;ZZA&quot;, &quot;1.1&quot;), (d2, &quot;ZZB&quot;, &quot;2.2&quot;), (d2, &quot;ZZA&quot;, &quot;3.3&quot;), (d3, &quot;ZZA&quot;, &quot;4.4&quot;), ] mine = {d1, d2, d3}</p>
+<p>with db_session() as db: for date, currency, rate in items: db.rates.replace_rate(date=date, currency=currency, rate=rate)</p>
+<p>by_currency = sorted(items, key=lambda t: t[1]) ordered = sorted(by_currency, key=lambda t: t[0], reverse=True)</p>
+<p>bounded = db.rates.list_through(through_date=d2) got = [(r.date, r.currency, r.rate) for r in bounded if r.date in mine] assert got == [t for t in ordered if t[0] &lt;= d2]</p>
+<p>unbounded = db.rates.list_through() got_all = [(r.date, r.currency, r.rate) for r in unbounded if r.date in mine] assert got_all == ordered === END AC rates-list-through ===</p>
+<p>=== AC rates-list-all ===<br>Intent: list_all returns every stored rate ordered by date ascending then currency ascending, so a YYY code precedes ZZZ on one date.<br>Requires: executable=python3; scope=test</p>
+<p>from persistence.testing import db_session</p>
+<p>d1, d2 = &quot;1800-03-01&quot;, &quot;1800-03-02&quot; items = [ (d2, &quot;ZZZ&quot;, &quot;9.9&quot;), (d1, &quot;ZZZ&quot;, &quot;8.8&quot;), (d2, &quot;YYY&quot;, &quot;7.7&quot;), (d1, &quot;YYY&quot;, &quot;6.6&quot;), ] mine = {d1, d2}</p>
+<p>with db_session() as db: before = len([r for r in db.rates.list_all() if r.date in mine]) for date, currency, rate in items: db.rates.replace_rate(date=date, currency=currency, rate=rate) rows = db.rates.list_all() got = [(r.date, r.currency, r.rate) for r in rows if r.date in mine] assert len(got) == before + len(items) assert got == sorted(items, key=lambda t: (t[0], t[1])) === END AC rates-list-all ===</p>
+<p>=== AC rates-history ===<br>Intent: history returns one currency&#x27;s points ascending by date, honouring optional inclusive start and end bounds and excluding other currencies.<br>Requires: executable=python3; scope=test</p>
+<p>from persistence.testing import db_session</p>
+<p>currency = &quot;ZZH&quot; other = &quot;ZZI&quot; points = [ (&quot;1800-04-03&quot;, &quot;3.3&quot;), (&quot;1800-04-01&quot;, &quot;1.1&quot;), (&quot;1800-04-02&quot;, &quot;2.2&quot;), (&quot;1800-04-04&quot;, &quot;4.4&quot;), ] start, end = &quot;1800-04-02&quot;, &quot;1800-04-03&quot;</p>
+<p>with db_session() as db: for date, rate in points: db.rates.replace_rate(date=date, currency=currency, rate=rate) db.rates.replace_rate(date=&quot;1800-04-02&quot;, currency=other, rate=&quot;9.9&quot;)</p>
+<p>ordered = sorted(points, key=lambda t: t[0])</p>
+<p>rows = db.rates.history(currency=currency) assert [(r.date, r.rate) for r in rows] == ordered</p>
+<p>rows = db.rates.history(currency=currency, start_date=start) assert [(r.date, r.rate) for r in rows] == [p for p in ordered if p[0] &gt;= start]</p>
+<p>rows = db.rates.history(currency=currency, end_date=end) assert [(r.date, r.rate) for r in rows] == [p for p in ordered if p[0] &lt;= end]</p>
+<p>rows = db.rates.history(currency=currency, start_date=start, end_date=end) assert [(r.date, r.rate) for r in rows] == [p for p in ordered if start &lt;= p[0] &lt;= end]</p>
+<p>rows = db.rates.history(currency=&quot;ZZN&quot;) assert rows == [] === END AC rates-history ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Rates are stored as text exactly as published and are never stored or compared as floating point.</li><li>Application code never opens a database driver, authors SQL or DDL, or reads the generated schema script.</li><li>Ordinary application startup never initializes the schema; only <code>fxrates init</code> does, through <code>persistence.initialize_database(dsn)</code>.</li><li>Initialization never drops tables, deletes rows, or migrates existing table definitions.</li></ul></article>
+</main>
+</body>
+</html>

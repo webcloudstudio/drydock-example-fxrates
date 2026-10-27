@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>build/FxRates/app_server/main.py</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>build/FxRates/app_server/main.py</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../build/FxRates/app_server/main.py">Raw file</a></div></header>
+<article class="doc"><pre>&quot;&quot;&quot;Application factory. Building the app opens no store and initializes no schema.&quot;&quot;&quot;
+
+from __future__ import annotations
+
+import importlib
+import pkgutil
+
+from fastapi import APIRouter, FastAPI
+
+from app_server import routers as routers_package
+
+
+def create_app() -&gt; FastAPI:
+    &quot;&quot;&quot;Build the application and include every router found in app_server/routers.&quot;&quot;&quot;
+    app = FastAPI()
+    for module_info in pkgutil.iter_modules(routers_package.__path__):
+        module = importlib.import_module(f&quot;{routers_package.__name__}.{module_info.name}&quot;)
+        router = getattr(module, &quot;router&quot;, None)
+        if isinstance(router, APIRouter):
+            app.include_router(router)
+    return app
+
+
+app = create_app()
+</pre></article>
+</main>
+</body>
+</html>

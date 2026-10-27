@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/prompt_outputs/20261027.191437.371Z_fxrates_plan_claude.output.txt</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/prompt_outputs/20261027.191437.371Z_fxrates_plan_claude.output.txt</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/prompt_outputs/20261027.191437.371Z_fxrates_plan_claude.output.txt">Raw file</a></div></header>
+<article class="doc"><pre>=== BEGIN ARTIFACT FEATURE-EffectiveDate.md ===
+# FEATURE: Effective Date
+
+| Field | Value |
+|-------|-------|
+| Version | 20261027 V1 |
+| Description | Service function that resolves the latest publication date on or before a requested date and returns that date&#x27;s rates. |
+| Depends On | DATABASE.md, ARCHITECTURE.md |
+| Provides | rates.effective_publication |
+| Consumes | db.rates.list_through |
+
+## Questions
+
+- None.
+
+## Purpose
+
+The ECB publishes on working days only. A request for date `D` uses the latest publication date on or
+before `D`. This service is the single place that rule lives; the rates and conversion routes call it.
+
+## Interface
+
+Module `services/effective_date.py` (a top-level `services` package):
+
+`effective_publication(db, requested: str | None) -&gt; tuple[str, dict[str, str]] | None`
+
+- `requested` is an ISO `YYYY-MM-DD` string, or `None` meaning the latest publication.
+- Makes exactly one `db.rates.list_through(...)` call: with `through_date=requested` when a date is given,
+  with no bound when `None`.
+- The rows arrive ordered by date descending then currency ascending. The first row&#x27;s date is the
+  effective date. The rates are the rows carrying that date, as a mapping of currency code to stored rate text.
+- Returns `None` when no row exists on or before the requested date.
+- Dates are compared as ISO strings. Rate values are the stored text, never converted to a number.
+
+## Database Interface
+
+- `FEATURE-RATE-002` — read: list rates on or before a date - supplies: `through_date` - returns: `date`, `currency`, `rate`
+
+## Programmatic Acceptance
+
+=== AC effective-date-exact-and-between ===
+Intent: A requested date that is a publication uses itself, and a later requested date uses the latest earlier publication; only the effective date&#x27;s rates are returned as stored text.
+Requires: executable=python3; scope=test
+
+from persistence.testing import db_session
+from services.effective_date import effective_publication
+
+older = &quot;1800-05-08&quot;
+newer = &quot;1800-05-10&quot;
+later_request = &quot;1800-05-12&quot;
+older_rates = {&quot;ZZA&quot;: &quot;1.1000&quot;, &quot;ZZB&quot;: &quot;9.9&quot;}
+newer_rates = {&quot;ZZA&quot;: &quot;2.2500&quot;, &quot;ZZB&quot;: &quot;8.8&quot;, &quot;ZZC&quot;: &quot;7&quot;}
+
+with db_session() as db:
+    for cur, rate in older_rates.items():
+        db.rates.replace_rate(date=older, currency=cur, rate=rate)
+    for cur, rate in newer_rates.items():
+        db.rates.replace_rate(date=newer, currency=cur, rate=rate)
+
+    found = effective_publication(db, newer)
+    assert found is not None
+    date, rates = found
+    assert date == newer
+    assert rates == newer_rates
+
+    found = effective_publication(db, later_request)
+    assert found is not None
+    date, rates = found
+    assert date == newer
+    assert rates == newer_rates
+
+    found = effective_publication(db, &quot;1800-05-09&quot;)
+    assert found is not None
+    date, rates = found
+    assert date == older
+    assert rates == older_rates
+=== END AC effective-date-exact-and-between ===
+
+=== AC effective-date-none-before ===
+Intent: A requested date earlier than every stored publication yields None rather than an error or an empty result.
+Requires: executable=python3; scope=test
+
+from persistence.testing import db_session
+from services.effective_date import effective_publication
+
+seeded = &quot;1800-05-20&quot;
+too_early = &quot;1799-01-01&quot;
+
+with db_session() as db:
+    db.rates.replace_rate(date=seeded, currency=&quot;ZZA&quot;, rate=&quot;1.5&quot;)
+    assert effective_publication(db, too_early) is None
+=== END AC effective-date-none-before ===
+
+=== AC effective-date-latest ===
+Intent: Passing None resolves the latest publication in the store; a far-future seeded date is always the latest regardless of existing data.
+Requires: executable=python3; scope=test
+
+from persistence.testing import db_session
+from services.effective_date import effective_publication
+
+latest = &quot;9999-12-31&quot;
+rates_in = {&quot;ZZA&quot;: &quot;3.1400&quot;, &quot;ZZB&quot;: &quot;2.7&quot;}
+
+with db_session() as db:
+    for cur, rate in rates_in.items():
+        db.rates.replace_rate(date=latest, currency=cur, rate=rate)
+    found = effective_publication(db, None)
+    assert found is not None
+    date, rates = found
+    assert date == latest
+    assert rates == rates_in
+    for value in rates.values():
+        assert isinstance(value, str)
+=== END AC effective-date-latest ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Rate values stay as stored text; no float or Decimal conversion happens in this service.
+- The function reaches the store only through `db.rates.list_through`.
+- Dates are compared as ISO strings, never via floating point or locale parsing.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-RatesByDate.md ===
+# FEATURE: Rates By Date
+
+| Field | Value |
+|-------|-------|
+| Version | 20261027 V1 |
+| Description | Serve GET /rates/{date}, returning every currency&#x27;s rate on the effective publication date. |
+| Depends On | FEATURE-WebFoundation.md, FEATURE-EffectiveDate.md |
+| Provides | GET /rates/{date} |
+| Consumes | rates.effective_publication |
+
+## Questions
+
+- None.
+
+## Purpose
+
+`GET /rates/{date}` answers what the euro reference rates were on a date, falling back to the latest
+publication on or before it.
+
+## Routes
+
+| Route | Behavior |
+|-------|----------|
+| `GET /rates/{date}` | 200 with `{&quot;date&quot;: &lt;effective date&gt;, &quot;requested&quot;: &lt;date&gt;, &quot;base&quot;: &quot;EUR&quot;, &quot;rates&quot;: {&lt;code&gt;: &lt;rate&gt;, ...}}`. Rates are the stored text as JSON strings. 404 when no publication is on or before the date. 422 when the path date is malformed. |
+
+## Behavior
+
+- The router lives in `app_server/routers/rates.py` and is included by `create_app()`. It uses the
+  request-scoped database dependency from the web foundation.
+- The path date must match `YYYY-MM-DD` and be a real calendar date; otherwise respond 422 through
+  FastAPI request validation.
+- The effective date and rates come from `services.effective_date.effective_publication`.
+
+## Database Interface
+
+- None — persistence is reached through `rates.effective_publication` in FEATURE-EffectiveDate.md.
+
+## Programmatic Acceptance
+
+=== AC rates-by-date-exact ===
+Intent: A request for a publication date returns that date as both effective and requested, base EUR, and exactly that date&#x27;s rates as stored text, excluding other dates.
+Requires: executable=python3; scope=test
+Requires: python-package=fastapi; scope=test
+Requires: python-package=httpx2; scope=test
+
+from persistence.testing import db_session
+from app_server.testing import web_client
+
+target = &quot;1800-06-10&quot;
+other = &quot;1800-06-09&quot;
+target_rates = {&quot;ZZA&quot;: &quot;1.0298&quot;, &quot;ZZB&quot;: &quot;160.2300&quot;, &quot;ZZC&quot;: &quot;0.84453&quot;}
+other_rates = {&quot;ZZA&quot;: &quot;5&quot;, &quot;ZZD&quot;: &quot;6&quot;}
+
+with db_session() as db:
+    for cur, rate in target_rates.items():
+        db.rates.replace_rate(date=target, currency=cur, rate=rate)
+    for cur, rate in other_rates.items():
+        db.rates.replace_rate(date=other, currency=cur, rate=rate)
+    client = web_client()
+    response = client.get(f&quot;/rates/{target}&quot;)
+    assert response.status_code == 200
+    body = response.json()
+    assert body[&quot;date&quot;] == target
+    assert body[&quot;requested&quot;] == target
+    assert body[&quot;base&quot;] == &quot;EUR&quot;
+    assert body[&quot;rates&quot;] == target_rates
+=== END AC rates-by-date-exact ===
+
+=== AC rates-by-date-fallback ===
+Intent: A non-publication date resolves to the latest earlier publication while echoing the requested date unchanged.
+Requires: executable=python3; scope=test
+Requires: python-package=fastapi; scope=test
+Requires: python-package=httpx2; scope=test
+
+from persistence.testing import db_session
+from app_server.testing import web_client
+
+published = &quot;1800-06-15&quot;
+requested = &quot;1800-06-17&quot;
+rates_in = {&quot;ZZA&quot;: &quot;2.5000&quot;, &quot;ZZB&quot;: &quot;10&quot;}
+
+with db_session() as db:
+    for cur, rate in rates_in.items():
+        db.rates.replace_rate(date=published, currency=cur, rate=rate)
+    client = web_client()
+    response = client.get(f&quot;/rates/{requested}&quot;)
+    assert response.status_code == 200
+    body = response.json()
+    assert body[&quot;date&quot;] == published
+    assert body[&quot;requested&quot;] == requested
+    assert body[&quot;rates&quot;] == rates_in
+=== END AC rates-by-date-fallback ===
+
+=== AC rates-by-date-not-found ===
+Intent: A date before every stored publication answers 404.
+Requires: executable=python3; scope=test
+Requires: python-package=fastapi; scope=test
+Requires: python-package=httpx2; scope=test
+
+from persistence.testing import db_session
+from app_server.testing import web_client
+
+with db_session() as db:
+    db.rates.replace_rate(date=&quot;1800-06-20&quot;, currency=&quot;ZZA&quot;, rate=&quot;1&quot;)
+    client = web_client()
+    response = client.get(&quot;/rates/1799-01-01&quot;)
+    assert response.status_code == 404
+=== END AC rates-by-date-not-found ===
+
+=== AC rates-by-date-malformed ===
+Intent: A path date that is not a real YYYY-MM-DD calendar date is rejected with 422, never 404 or 500.
+Requires: executable=python3; scope=test
+Requires: python-package=fastapi; scope=test
+Requires: python-package=httpx2; scope=test
+
+from app_server.testing import web_client
+
+client = web_client()
+for bad in (&quot;2025-13-01&quot;, &quot;2025-02-30&quot;, &quot;not-a-date&quot;, &quot;2025-1-5&quot;):
+    response = client.get(f&quot;/rates/{bad}&quot;)
+    assert response.status_code == 422, bad
+=== END AC rates-by-date-malformed ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Rate values are returned as the stored text in JSON strings, never as JSON numbers.
+- The route does not query the database directly; it calls the effective-date service.
+- Application startup never initializes the schema.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-RatesLatest.md ===
+# FEATURE: Rates Latest
+
+| Field | Value |
+|-------|-------|
+| Version | 20261027 V1 |
+| Description | Serve GET /rates/latest, returning every currency&#x27;s rate on the most recent publication date. |
+| Depends On | FEATURE-RatesByDate.md, FEATURE-EffectiveDate.md |
+| Provides | GET /rates/latest |
+| Consumes | rates.effective_publication |
+
+## Questions
+
+- None.
+
+## Purpose
+
+`GET /rates/latest` returns the rates for the latest publication without the caller knowing its date.
+
+## Routes
+
+| Route | Behavior |
+|-------|----------|
+| `GET /rates/latest` | 200 with `{&quot;date&quot;: &lt;latest publication date&gt;, &quot;requested&quot;: &quot;latest&quot;, &quot;base&quot;: &quot;EUR&quot;, &quot;rates&quot;: {&lt;code&gt;: &lt;rate&gt;, ...}}`. 404 when the store holds no rates. |
+
+## Behavior
+
+- Register this route in the shared rates router in `app_server/routers/rates.py` ahead of
+  `GET /rates/{date}`, so `latest` is never parsed as a date and rejected with 422.
+- Resolve through `services.effective_date.effective_publication(db, None)`.
+
+## Database Interface
+
+- None — persistence is reached through `rates.effective_publication` in FEATURE-EffectiveDate.md.
+
+## Programmatic Acceptance
+
+=== AC rates-latest-returns-latest ===
+Intent: The latest route returns the most recent publication, with requested set to the latest token, and is not shadowed by the dated route; a far-future seeded date is always the latest.
+Requires: executable=python3; scope=test
+Requires: python-package=fastapi; scope=test
+Requires: python-package=httpx2; scope=test
+
+from persistence.testing import db_session
+from app_server.testing import web_client
+
+latest = &quot;9999-12-31&quot;
+earlier = &quot;9999-12-30&quot;
+latest_rates = {&quot;ZZA&quot;: &quot;1.2300&quot;, &quot;ZZB&quot;: &quot;45.6&quot;}
+earlier_rates = {&quot;ZZA&quot;: &quot;7&quot;, &quot;ZZC&quot;: &quot;8&quot;}
+
+with db_session() as db:
+    for cur, rate in latest_rates.items():
+        db.rates.replace_rate(date=latest, currency=cur, rate=rate)
+    for cur, rate in earlier_rates.items():
+        db.rates.replace_rate(date=earlier, currency=cur, rate=rate)
+    client = web_client()
+    response = client.get(&quot;/rates/latest&quot;)
+    assert response.status_code == 200
+    body = response.json()
+    assert body[&quot;date&quot;] == latest
+    assert body[&quot;requested&quot;] == &quot;latest&quot;
+    assert body[&quot;base&quot;] == &quot;EUR&quot;
+    assert body[&quot;rates&quot;] == latest_rates
+=== END AC rates-latest-returns-latest ===
+
+=== AC rates-latest-matches-dated ===
+Intent: The latest route and the dated route for the latest publication date return the same effective date and rates.
+Requires: executable=python3; scope=test
+Requires: python-package=fastapi; scope=test
+Requires: python-package=httpx2; scope=test
+
+from persistence.testing import db_session
+from app_server.testing import web_client
+
+latest = &quot;9999-12-31&quot;
+rates_in = {&quot;ZZA&quot;: &quot;0.9430&quot;, &quot;ZZB&quot;: &quot;11.4555&quot;}
+
+with db_session() as db:
+    for cur, rate in rates_in.items():
+        db.rates.replace_rate(date=latest, currency=cur, rate=rate)
+    client = web_client()
+    by_latest = client.get(&quot;/rates/latest&quot;)
+    assert by_latest.status_code == 200
+    by_date = client.get(f&quot;/rates/{latest}&quot;)
+    assert by_date.status_code == 200
+    a = by_latest.json()
+    b = by_date.json()
+    assert a[&quot;date&quot;] == b[&quot;date&quot;]
+    assert a[&quot;rates&quot;] == b[&quot;rates&quot;]
+    assert a[&quot;rates&quot;] == rates_in
+=== END AC rates-latest-matches-dated ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- `/rates/latest` is never answered with 422 as though `latest` were a malformed date.
+- Rate values are the stored text as JSON strings.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-Convert.md ===
+# FEATURE: Convert
+
+| Field | Value |
+|-------|-------|
+| Version | 20261027 V1 |
+| Description | Serve GET /convert for an explicit date, converting an amount between two currencies with exact decimal arithmetic. |
+| Depends On | FEATURE-WebFoundation.md, FEATURE-EffectiveDate.md |
+| Provides | GET /convert |
+| Consumes | rates.effective_publication |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Convert an amount from one currency to another using the euro reference rates on the effective date.
+
+## Routes
+
+| Route | Behavior |
+|-------|----------|
+| `GET /convert?from=&lt;code&gt;&amp;to=&lt;code&gt;&amp;amount=&lt;amount&gt;&amp;date=&lt;date&gt;` | 200 with `{&quot;date&quot;: &lt;effective date&gt;, &quot;from&quot;: &lt;code&gt;, &quot;to&quot;: &lt;code&gt;, &quot;amount&quot;: &lt;amount&gt;, &quot;rate&quot;: &lt;rate&gt;, &quot;result&quot;: &lt;result&gt;}`; every value is a JSON string. |
+
+## Behavior
+
+- The router lives in `app_server/routers/convert.py`, included by `create_app()`. Parameters are
+  `from` (Python name via alias), `to`, `amount` and `date`.
+- The effective date and rates come from `services.effective_date.effective_publication`.
+- EUR has the implicit rate `1`; any other currency takes its stored rate on the effective date.
+- All arithmetic uses `decimal.Decimal` from the stored text. Never use floats.
+- `rate` = `rate(to) / rate(from)`, rounded half to even to six decimals, written with exactly six decimals.
+- `result` = `amount * rate(to) / rate(from)`, computed from the stored rates and never from the rounded
+  `rate`, rounded half to even to two decimals, written with exactly two decimals.
+- `amount` is echoed exactly as given, as a string, and must match `[0-9]+(\.[0-9]+)?`.
+- Handling of missing publications, unknown currencies and invalid parameters is specified by
+  FEATURE-ConvertErrors.md; this story implements the successful conversion.
+
+## Database Interface
+
+- None — persistence is reached through `rates.effective_publication` in FEATURE-EffectiveDate.md.
+
+## Programmatic Acceptance
+
+=== AC convert-cross-currency-fallback-date ===
+Intent: A cross conversion on a non-publication date uses the earlier effective date and returns rate and result derived from the stored rates with half-even rounding.
+Requires: executable=python3; scope=test
+Requires: python-package=fastapi; scope=test
+Requires: python-package=httpx2; scope=test
+
+from decimal import Decimal, ROUND_HALF_EVEN
+from persistence.testing import db_session
+from app_server.testing import web_client
+
+published = &quot;1800-07-01&quot;
+requested = &quot;1800-07-05&quot;
+from_cur, to_cur = &quot;ZZA&quot;, &quot;ZZB&quot;
+from_rate, to_rate = &quot;1.0298&quot;, &quot;0.84453&quot;
+amount = &quot;100&quot;
+
+with db_session() as db:
+    db.rates.replace_rate(date=published, currency=from_cur, rate=from_rate)
+    db.rates.replace_rate(date=published, currency=to_cur, rate=to_rate)
+    client = web_client()
+    response = client.get(
+        &quot;/convert&quot;,
+        params={&quot;from&quot;: from_cur, &quot;to&quot;: to_cur, &quot;amount&quot;: amount, &quot;date&quot;: requested},
+    )
+    assert response.status_code == 200
+    body = response.json()
+
+    rf, rt, amt = Decimal(from_rate), Decimal(to_rate), Decimal(amount)
+    rate = (rt / rf).quantize(Decimal(&quot;0.000001&quot;), rounding=ROUND_HALF_EVEN)
+    result = (amt * rt / rf).quantize(Decimal(&quot;0.01&quot;), rounding=ROUND_HALF_EVEN)
+    assert body[&quot;date&quot;] == published
+    assert body[&quot;from&quot;] == from_cur
+    assert body[&quot;to&quot;] == to_cur
+    assert body[&quot;amount&quot;] == amount
+    assert body[&quot;rate&quot;] == f&quot;{rate:.6f}&quot;
+    assert body[&quot;result&quot;] == f&quot;{result:.2f}&quot;
+=== END AC convert-cross-currency-fallback-date ===
+
+=== AC convert-eur-legs ===
+Intent: EUR carries the implicit rate 1 as source and as target, and the amount is echoed exactly as given including its decimals.
+Requires: executable=python3; scope=test
+Requires: python-package=fastapi; scope=test
+Requires: python-package=httpx2; scope=test
+
+from decimal import Decimal, ROUND_HALF_EVEN
+from persistence.testing import db_session
+from app_server.testing import web_client
+
+day = &quot;1800-07-10&quot;
+cur = &quot;ZZA&quot;
+cur_rate = &quot;161.77&quot;
+amount = &quot;250.25&quot;
+
+with db_session() as db:
+    db.rates.replace_rate(date=day, currency=cur, rate=cur_rate)
+    client = web_client()
+
+    out = client.get(&quot;/convert&quot;, params={&quot;from&quot;: &quot;EUR&quot;, &quot;to&quot;: cur, &quot;amount&quot;: amount, &quot;date&quot;: day})
+    assert out.status_code == 200
+    body = out.json()
+    rate = (Decimal(cur_rate) / Decimal(1)).quantize(Decimal(&quot;0.000001&quot;), rounding=ROUND_HALF_EVEN)
+    result = (Decimal(amount) * Decimal(cur_rate) / Decimal(1)).quantize(
+        Decimal(&quot;0.01&quot;), rounding=ROUND_HALF_EVEN
+    )
+    assert body[&quot;amount&quot;] == amount
+    assert body[&quot;rate&quot;] == f&quot;{rate:.6f}&quot;
+    assert body[&quot;result&quot;] == f&quot;{result:.2f}&quot;
+
+    back = client.get(&quot;/convert&quot;, params={&quot;from&quot;: cur, &quot;to&quot;: &quot;EUR&quot;, &quot;amount&quot;: amount, &quot;date&quot;: day})
+    assert back.status_code == 200
+    body = back.json()
+    rate = (Decimal(1) / Decimal(cur_rate)).quantize(Decimal(&quot;0.000001&quot;), rounding=ROUND_HALF_EVEN)
+    result = (Decimal(amount) * Decimal(1) / Decimal(cur_rate)).quantize(
+        Decimal(&quot;0.01&quot;), rounding=ROUND_HALF_EVEN
+    )
+    assert body[&quot;rate&quot;] == f&quot;{rate:.6f}&quot;
+    assert body[&quot;result&quot;] == f&quot;{result:.2f}&quot;
+=== END AC convert-eur-legs ===
+
+=== AC convert-result-from-unrounded-rate ===
+Intent: The result is computed from the stored rates, not from the six-decimal rounded rate: with a from rate 3 and a to rate 1 the exact result differs from amount times the rounded rate.
+Requires: executable=python3; scope=test
+Requires: python-package=fastapi; scope=test
+Requires: python-package=httpx2; scope=test
+
+from decimal import Decimal, ROUND_HALF_EVEN
+from persistence.testing import db_session
+from app_server.testing import web_client
+
+day = &quot;1800-07-15&quot;
+from_cur, to_cur = &quot;ZZA&quot;, &quot;ZZB&quot;
+from_rate, to_rate = &quot;3&quot;, &quot;1&quot;
+amount = &quot;3000000&quot;
+
+with db_session() as db:
+    db.rates.replace_rate(date=day, currency=from_cur, rate=from_rate)
+    db.rates.replace_rate(date=day, currency=to_cur, rate=to_rate)
+    client = web_client()
+    response = client.get(
+        &quot;/convert&quot;,
+        params={&quot;from&quot;: from_cur, &quot;to&quot;: to_cur, &quot;amount&quot;: amount, &quot;date&quot;: day},
+    )
+    assert response.status_code == 200
+    body = response.json()
+
+    rf, rt, amt = Decimal(from_rate), Decimal(to_rate), Decimal(amount)
+    rounded_rate = (rt / rf).quantize(Decimal(&quot;0.000001&quot;), rounding=ROUND_HALF_EVEN)
+    exact = (amt * rt / rf).quantize(Decimal(&quot;0.01&quot;), rounding=ROUND_HALF_EVEN)
+    from_rounded = (amt * rounded_rate).quantize(Decimal(&quot;0.01&quot;), rounding=ROUND_HALF_EVEN)
+    assert exact != from_rounded
+    assert body[&quot;rate&quot;] == f&quot;{rounded_rate:.6f}&quot;
+    assert body[&quot;result&quot;] == f&quot;{exact:.2f}&quot;
+=== END AC convert-result-from-unrounded-rate ===
+
+=== AC convert-half-even-tie ===
+Intent: A result exactly halfway between two cents rounds half to even, so 0.125 at equal rates becomes the even neighbour rather than rounding up.
+Requires: executable=python3; scope=test
+Requires: python-package=fastapi; scope=test
+Requires: python-package=httpx2; scope=test
+
+from decimal import Decimal, ROUND_HALF_EVEN, ROUND_HALF_UP
+from persistence.testing import db_session
+from app_server.testing import web_client
+
+day = &quot;1800-07-20&quot;
+from_cur, to_cur = &quot;ZZA&quot;, &quot;ZZB&quot;
+same_rate = &quot;2&quot;
+amount = &quot;0.125&quot;
+
+with db_session() as db:
+    db.rates.replace_rate(date=day, currency=from_cur, rate=same_rate)
+    db.rates.replace_rate(date=day, currency=to_cur, rate=same_rate)
+    client = web_client()
+    response = client.get(
+        &quot;/convert&quot;,
+        params={&quot;from&quot;: from_cur, &quot;to&quot;: to_cur, &quot;amount&quot;: amount, &quot;date&quot;: day},
+    )
+    assert response.status_code == 200
+    body = response.json()
+
+    exact = Decimal(amount) * Decimal(same_rate) / Decimal(same_rate)
+    even = exact.quantize(Decimal(&quot;0.01&quot;), rounding=ROUND_HALF_EVEN)
+    up = exact.quantize(Decimal(&quot;0.01&quot;), rounding=ROUND_HALF_UP)
+    assert even != up
+    assert body[&quot;result&quot;] == f&quot;{even:.2f}&quot;
+=== END AC convert-half-even-tie ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Never use floating point for rates, amounts or results; use `decimal` on the stored text.
+- `result` is never derived from the rounded `rate`.
+- `amount` is echoed exactly as received, not normalized.
+- The route does not query the database directly; it calls the effective-date service.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-ConvertLatest.md ===
+# FEATURE: Convert Latest
+
+| Field | Value |
+|-------|-------|
+| Version | 20261027 V1 |
+| Description | Make the date parameter of GET /convert optional, defaulting to the latest publication. |
+| Depends On | FEATURE-Convert.md, FEATURE-EffectiveDate.md |
+| Provides | GET /convert latest default |
+| Consumes | GET /convert, rates.effective_publication |
+
+## Questions
+
+- None.
+
+## Purpose
+
+A caller who omits `date` gets a conversion at the most recent published rates.
+
+## Routes
+
+| Route | Behavior |
+|-------|----------|
+| `GET /convert?from=&lt;code&gt;&amp;to=&lt;code&gt;&amp;amount=&lt;amount&gt;` | As `GET /convert`, using the latest publication date; the response `date` is that publication date. |
+
+## Behavior
+
+- In `app_server/routers/convert.py`, `date` becomes optional. When absent, call
+  `services.effective_date.effective_publication(db, None)`; when present, behave exactly as before.
+- Rate, result, rounding and echo rules are unchanged from FEATURE-Convert.md.
+
+## Database Interface
+
+- None — persistence is reached through `rates.effective_publication` in FEATURE-EffectiveDate.md.
+
+## Programmatic Acceptance
+
+=== AC convert-latest-default-date ===
+Intent: Omitting date converts at the latest publication and reports that date; a far-future seeded date is always the latest, and the values derive from its stored rates with half-even rounding.
+Requires: executable=python3; scope=test
+Requires: python-package=fastapi; scope=test
+Requires: python-package=httpx2; scope=test
+
+from decimal import Decimal, ROUND_HALF_EVEN
+from persistence.testing import db_session
+from app_server.testing import web_client
+
+latest = &quot;9999-12-31&quot;
+earlier = &quot;9999-12-30&quot;
+from_cur, to_cur = &quot;ZZA&quot;, &quot;ZZB&quot;
+from_rate, to_rate = &quot;0.83608&quot;, &quot;160.99&quot;
+amount = &quot;1000&quot;
+
+with db_session() as db:
+    db.rates.replace_rate(date=latest, currency=from_cur, rate=from_rate)
+    db.rates.replace_rate(date=latest, currency=to_cur, rate=to_rate)
+    db.rates.replace_rate(date=earlier, currency=from_cur, rate=&quot;1&quot;)
+    db.rates.replace_rate(date=earlier, currency=to_cur, rate=&quot;1&quot;)
+    client = web_client()
+    response = client.get(
+        &quot;/convert&quot;,
+        params={&quot;from&quot;: from_cur, &quot;to&quot;: to_cur, &quot;amount&quot;: amount},
+    )
+    assert response.status_code == 200
+    body = response.json()
+
+    rf, rt, amt = Decimal(from_rate), Decimal(to_rate), Decimal(amount)
+    rate = (rt / rf).quantize(Decimal(&quot;0.000001&quot;), rounding=ROUND_HALF_EVEN)
+    result = (amt * rt / rf).quantize(Decimal(&quot;0.01&quot;), rounding=ROUND_HALF_EVEN)
+    assert body[&quot;date&quot;] == latest
+    assert body[&quot;amount&quot;] == amount
+    assert body[&quot;rate&quot;] == f&quot;{rate:.6f}&quot;
+    assert body[&quot;result&quot;] == f&quot;{result:.2f}&quot;
+=== END AC convert-latest-default-date ===
+
+=== AC convert-latest-explicit-date-still-honoured ===
+Intent: Supplying date still selects that date&#x27;s effective publication even when a later publication exists.
+Requires: executable=python3; scope=test
+Requires: python-package=fastapi; scope=test
+Requires: python-package=httpx2; scope=test
+
+from decimal import Decimal, ROUND_HALF_EVEN
+from persistence.testing import db_session
+from app_server.testing import web_client
+
+old_day = &quot;1800-08-01&quot;
+latest = &quot;9999-12-31&quot;
+from_cur, to_cur = &quot;ZZA&quot;, &quot;ZZB&quot;
+old_from, old_to = &quot;2&quot;, &quot;5&quot;
+amount = &quot;2.00&quot;
+
+with db_session() as db:
+    db.rates.replace_rate(date=old_day, currency=from_cur, rate=old_from)
+    db.rates.replace_rate(date=old_day, currency=to_cur, rate=old_to)
+    db.rates.replace_rate(date=latest, currency=from_cur, rate=&quot;1&quot;)
+    db.rates.replace_rate(date=latest, currency=to_cur, rate=&quot;1&quot;)
+    client = web_client()
+    response = client.get(
+        &quot;/convert&quot;,
+        params={&quot;from&quot;: from_cur, &quot;to&quot;: to_cur, &quot;amount&quot;: amount, &quot;date&quot;: old_day},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    expected = (Decimal(amount) * Decimal(old_to) / Decimal(old_from)).quantize(
+        Decimal(&quot;0.01&quot;), rounding=ROUND_HALF_EVEN
+    )
+    assert body[&quot;date&quot;] == old_day
+    assert body[&quot;result&quot;] == f&quot;{expected:.2f}&quot;
+=== END AC convert-latest-explicit-date-still-honoured ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Omitting `date` never changes the rounding, echo or string-typing rules of `GET /convert`.
+- The latest date is read from the store on each request, never cached.
+=== END ARTIFACT ===</pre></article>
+</main>
+</body>
+</html>

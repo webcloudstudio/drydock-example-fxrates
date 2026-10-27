@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-Currencies.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-Currencies.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-Currencies.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Currencies</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261027 V1</td></tr><tr><td>Description</td><td>Serves GET /currencies listing every currency with at least one stored rate in ascending order.</td></tr><tr><td>Depends On</td><td>FEATURE-WebFoundation.md, DATABASE.md</td></tr><tr><td>Provides</td><td>GET /currencies</td></tr><tr><td>Consumes</td><td>db.rates.list_all</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Lists the currencies the store can answer for, with EUR as the stated base.</p>
+<h2>Routes</h2>
+<div class="scroll"><table><thead><tr><th>Route</th><th>Method</th><th>Status</th><th>Body</th></tr></thead><tbody><tr><td><code>/currencies</code></td><td>GET</td><td>200</td><td><code>{&quot;base&quot;: &quot;EUR&quot;, &quot;currencies&quot;: [&lt;code&gt;, ...]}</code></td></tr></tbody></table></div>
+<p><code>currencies</code> holds every currency with at least one stored rate, each once, in ascending code order. EUR appears only if a rate is stored for it.</p>
+<h2>Database Interface</h2>
+<ul><li><code>FEATURE-RATE-003</code> — read: list every stored rate - supplies: — - returns: <code>currency</code></li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC currencies-ascending-distinct ===<br>Intent: Seeded currencies inserted out of order on several dates appear exactly once each in the ascending list, and the list equals the sorted distinct currencies read from the store.<br>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx2; scope=test</p>
+<p>from app_server.testing import web_client from persistence.testing import db_session</p>
+<p>seeded = [&quot;ZZC&quot;, &quot;ZZA&quot;, &quot;ZZB&quot;] dates = [&quot;1800-08-01&quot;, &quot;1800-08-02&quot;]</p>
+<p>client = web_client() with db_session() as db: for d in dates: for c in seeded: db.rates.replace_rate(date=d, currency=c, rate=&quot;3.5&quot;) expected = sorted({r.currency for r in db.rates.list_all()}) response = client.get(&quot;/currencies&quot;) assert response.status_code == 200 body = response.json()</p>
+<p>assert body[&quot;base&quot;] == &quot;EUR&quot; assert body[&quot;currencies&quot;] == expected for c in seeded: assert body[&quot;currencies&quot;].count(c) == 1 === END AC currencies-ascending-distinct ===</p>
+<p>=== AC currencies-shape ===<br>Intent: The body has exactly the keys base and currencies, and currencies is a list of strings.<br>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx2; scope=test</p>
+<p>from app_server.testing import web_client from persistence.testing import db_session</p>
+<p>client = web_client() with db_session() as db: db.rates.replace_rate(date=&quot;1800-09-01&quot;, currency=&quot;ZZA&quot;, rate=&quot;1.0&quot;) response = client.get(&quot;/currencies&quot;) assert response.status_code == 200 body = response.json()</p>
+<p>assert set(body.keys()) == {&quot;base&quot;, &quot;currencies&quot;} assert isinstance(body[&quot;currencies&quot;], list) assert all(isinstance(c, str) for c in body[&quot;currencies&quot;]) assert body[&quot;currencies&quot;] == sorted(body[&quot;currencies&quot;]) === END AC currencies-shape ===</p>
+<p>=== AC currencies-new-currency-appears ===<br>Intent: A currency with no stored rate is absent, and it appears after a rate for it is stored.<br>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx2; scope=test</p>
+<p>from app_server.testing import web_client from persistence.testing import db_session</p>
+<p>currency = &quot;ZZQ&quot;</p>
+<p>client = web_client() with db_session() as db: before = client.get(&quot;/currencies&quot;) assert before.status_code == 200 assert currency not in before.json()[&quot;currencies&quot;] db.rates.replace_rate(date=&quot;1800-10-01&quot;, currency=currency, rate=&quot;4.0&quot;) after = client.get(&quot;/currencies&quot;) assert after.status_code == 200 assert currency in after.json()[&quot;currencies&quot;] === END AC currencies-new-currency-appears ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>The list is computed from stored rows on each request, never hardcoded.</li><li>A currency whose only rates are <code>N/A</code> is never stored and so never listed.</li></ul></article>
+</main>
+</body>
+</html>

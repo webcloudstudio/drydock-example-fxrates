@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-LoadSummary.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-LoadSummary.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-LoadSummary.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Load Summary</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261027 V1</td></tr><tr><td>Description</td><td>Print the dates,rates summary on standard output after a successful load.</td></tr><tr><td>Depends On</td><td>FEATURE-LoadAtomic.md</td></tr><tr><td>Provides</td><td>fxrates load summary output</td></tr><tr><td>Consumes</td><td>fxrates load</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>After a successful <code>fxrates load</code>, standard output reports how many dates and rates the file contributed to the store.</p>
+<h2>Interface</h2>
+<ul><li><code>cli/commands/load.py</code> <code>run(args)</code> prints, after <code>load_file</code> returns <code>(dates, rates)</code>, exactly two lines: <code>dates,rates</code> and then <code>&lt;dates&gt;,&lt;rates&gt;</code>, each newline-terminated.</li><li><code>dates</code> counts the dates in the file with at least one stored rate. A date whose values are all <code>N/A</code> is not counted.</li><li><code>rates</code> counts the rates stored from the file. These are counts from the file, not changes: loading the same file again prints the same numbers.</li><li>On failure (exit 1, 2 or 3) nothing is written to standard output.</li></ul>
+<h2>Database Interface</h2>
+<ul><li>None — the counts come from <code>load_file</code>&#x27;s return value.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC summary-counts ===<br>Intent: The first output line is dates,rates and the second carries the number of dates with a stored rate and the number of stored rates, derived from the fixture, with an all-N/A date not counted.<br>Requires: executable=python3; scope=test</p>
+<p>import csv import io import os import tempfile from cli.testing import cli_runner</p>
+<p>header = [&quot;Date&quot;, &quot;ZZA&quot;, &quot;ZZB&quot;, &quot;ZZC&quot;, &quot;&quot;] rows = [ [&quot;1800-07-01&quot;, &quot;1.1&quot;, &quot;2.2&quot;, &quot;N/A&quot;, &quot;&quot;], [&quot;1800-07-02&quot;, &quot;3.3&quot;, &quot;N/A&quot;, &quot;N/A&quot;, &quot;&quot;], [&quot;1800-07-03&quot;, &quot;N/A&quot;, &quot;N/A&quot;, &quot;N/A&quot;, &quot;&quot;], ] values = [row[i] for row in rows for i in range(1, len(header) - 1)] rate_count = sum(1 for v in values if v != &quot;N/A&quot;) date_count = sum( 1 for row in rows if any(row[i] != &quot;N/A&quot; for i in range(1, len(header) - 1)) )</p>
+<p>with tempfile.TemporaryDirectory() as tmp: path = os.path.join(tmp, &quot;hist.csv&quot;) with open(path, &quot;w&quot;, newline=&quot;&quot;, encoding=&quot;utf-8&quot;) as fh: writer = csv.writer(fh, lineterminator=&quot;\n&quot;) writer.writerow(header) for row in rows: writer.writerow(row)</p>
+<p>code, out, err = cli_runner(&quot;load&quot;, path) print(out, err) assert code == 0 assert out.endswith(&quot;\n&quot;) parsed = list(csv.reader(io.StringIO(out))) assert parsed == [[&quot;dates&quot;, &quot;rates&quot;], [str(date_count), str(rate_count)]] === END AC summary-counts ===</p>
+<p>=== AC summary-repeat-load ===<br>Intent: Loading the same file twice prints the same counts both times because the summary counts what the file stored, not what changed.<br>Requires: executable=python3; scope=test</p>
+<p>import csv import io import os import tempfile from cli.testing import cli_runner</p>
+<p>header = [&quot;Date&quot;, &quot;ZZA&quot;, &quot;ZZB&quot;, &quot;&quot;] rows = [ [&quot;1800-07-11&quot;, &quot;1.1&quot;, &quot;2.2&quot;, &quot;&quot;], [&quot;1800-07-12&quot;, &quot;3.3&quot;, &quot;4.4&quot;, &quot;&quot;], ]</p>
+<p>with tempfile.TemporaryDirectory() as tmp: path = os.path.join(tmp, &quot;hist.csv&quot;) with open(path, &quot;w&quot;, newline=&quot;&quot;, encoding=&quot;utf-8&quot;) as fh: writer = csv.writer(fh, lineterminator=&quot;\n&quot;) writer.writerow(header) for row in rows: writer.writerow(row)</p>
+<p>code1, out1, err1 = cli_runner(&quot;load&quot;, path) assert code1 == 0 code2, out2, err2 = cli_runner(&quot;load&quot;, path) assert code2 == 0 assert list(csv.reader(io.StringIO(out1))) == list(csv.reader(io.StringIO(out2))) parsed = list(csv.reader(io.StringIO(out2))) assert parsed[1] == [str(len(rows)), str(len(rows) * (len(header) - 2))] === END AC summary-repeat-load ===</p>
+<p>=== AC summary-silent-on-failure ===<br>Intent: A rejected file and an unreadable file print nothing to standard output.<br>Requires: executable=python3; scope=test</p>
+<p>import csv import os import tempfile from cli.testing import cli_runner</p>
+<p>header = [&quot;Date&quot;, &quot;ZZA&quot;, &quot;&quot;] bad_rows = [[&quot;1800-07-21&quot;, &quot;1.0x&quot;, &quot;&quot;]]</p>
+<p>with tempfile.TemporaryDirectory() as tmp: bad = os.path.join(tmp, &quot;bad.csv&quot;) with open(bad, &quot;w&quot;, newline=&quot;&quot;, encoding=&quot;utf-8&quot;) as fh: writer = csv.writer(fh, lineterminator=&quot;\n&quot;) writer.writerow(header) for row in bad_rows: writer.writerow(row)</p>
+<p>code, out, err = cli_runner(&quot;load&quot;, bad) assert code == 3 assert out == &quot;&quot;</p>
+<p>code, out, err = cli_runner(&quot;load&quot;, os.path.join(tmp, &quot;missing.csv&quot;)) assert code == 1 assert out == &quot;&quot; === END AC summary-silent-on-failure ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>The summary is exactly the header line and the counts line; nothing else is written to standard output.</li><li>Diagnostics go to standard error only.</li></ul></article>
+</main>
+</body>
+</html>

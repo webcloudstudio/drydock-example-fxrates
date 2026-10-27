@@ -1,0 +1,7 @@
+{"label": "INITIALIZED", "result": "pass", "at": "2026-10-27T19:06:48.583+00:00", "detail": "", "command": "drydock init FxRates", "attempts": 1}
+{"label": "IMPORTED", "result": "pass", "at": "2026-10-27T19:06:53.521+00:00", "detail": "", "command": "drydock import FxRates", "attempts": 1}
+{"label": "ANALYZED", "result": "pass", "at": "2026-10-27T19:07:19.516+00:00", "detail": "", "command": "drydock analyze FxRates", "attempts": 1}
+{"label": "PLAN CREATED", "result": "pass", "at": "2026-10-27T19:20:46.491+00:00", "detail": "", "command": "drydock plan FxRates", "attempts": 1}
+{"label": "BUILDING", "result": "pass", "at": "2026-10-27T19:22:00.033+00:00", "detail": "", "command": "drydock build FxRates", "attempts": 1}
+{"label": "BUILT", "result": "fail", "at": "2026-10-27T19:36:34.267+00:00", "detail": "4 step(s) failed", "command": "drydock build FxRates", "attempts": 1}
+{"state": "BUILT", "result": "fail", "at": "2026-10-27T19:36:34.267+00:00", "attempts": 1}

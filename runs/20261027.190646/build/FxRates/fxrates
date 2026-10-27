@@ -1,0 +1,10 @@
+#!/bin/sh
+# Application entry point. Activates .venv when present and hands the arguments to cli.main.
+# The working directory is kept so relative database paths resolve where the caller runs.
+ROOT="$(cd "$(dirname "$0")" && pwd)"
+if [ -f "$ROOT/.venv/bin/activate" ]; then
+    . "$ROOT/.venv/bin/activate"
+fi
+PYTHONPATH="$ROOT${PYTHONPATH:+:$PYTHONPATH}"
+export PYTHONPATH
+exec python -m cli "$@"

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-Stats.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-Stats.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-Stats.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Stats</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261027 V1</td></tr><tr><td>Description</td><td>Serves GET /stats with the count of dates and rates and the first and last publication dates.</td></tr><tr><td>Depends On</td><td>FEATURE-WebFoundation.md, DATABASE.md</td></tr><tr><td>Provides</td><td>GET /stats</td></tr><tr><td>Consumes</td><td>db.rates.list_all</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Reports the size and span of the stored history, computed by the service from <code>db.rates.list_all</code>.</p>
+<h2>Routes</h2>
+<div class="scroll"><table><thead><tr><th>Route</th><th>Method</th><th>Status</th><th>Body</th></tr></thead><tbody><tr><td><code>/stats</code></td><td>GET</td><td>200</td><td><code>{&quot;dates&quot;: &lt;n&gt;, &quot;rates&quot;: &lt;n&gt;, &quot;first&quot;: &lt;date&gt;, &quot;last&quot;: &lt;date&gt;}</code></td></tr></tbody></table></div>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Rule</th></tr></thead><tbody><tr><td><code>dates</code></td><td>Number of distinct dates with at least one stored rate.</td></tr><tr><td><code>rates</code></td><td>Number of stored rates.</td></tr><tr><td><code>first</code></td><td>Smallest stored date, <code>null</code> when the table is empty.</td></tr><tr><td><code>last</code></td><td>Largest stored date, <code>null</code> when the table is empty.</td></tr></tbody></table></div>
+<h2>Database Interface</h2>
+<ul><li><code>FEATURE-RATE-003</code> — read: list every stored rate - supplies: — - returns: <code>date</code>, <code>currency</code>, <code>rate</code></li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC stats-counts-grow ===<br>Intent: After seeding three new dates with two currencies each, the dates count grows by three and the rates count by six relative to the counts read before setup.<br>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx2; scope=test</p>
+<p>from app_server.testing import web_client from persistence.testing import db_session</p>
+<p>dates = [&quot;1800-05-01&quot;, &quot;1800-05-02&quot;, &quot;1800-05-03&quot;] currencies = [&quot;ZZA&quot;, &quot;ZZB&quot;]</p>
+<p>client = web_client() response = client.get(&quot;/stats&quot;) assert response.status_code == 200 before = response.json()</p>
+<p>with db_session() as db: for d in dates: for c in currencies: db.rates.replace_rate(date=d, currency=c, rate=&quot;1.5&quot;) response = client.get(&quot;/stats&quot;) assert response.status_code == 200 after = response.json()</p>
+<p>assert after[&quot;dates&quot;] == before[&quot;dates&quot;] + len(dates) assert after[&quot;rates&quot;] == before[&quot;rates&quot;] + len(dates) * len(currencies) === END AC stats-counts-grow ===</p>
+<p>=== AC stats-shape-and-span ===<br>Intent: The body has exactly the four declared keys, integer counts, and first and last that bound the seeded dates and equal the smallest and largest stored dates.<br>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx2; scope=test</p>
+<p>from app_server.testing import web_client from persistence.testing import db_session</p>
+<p>seeded = [&quot;1800-06-02&quot;, &quot;1800-06-01&quot;]</p>
+<p>client = web_client() with db_session() as db: for d in seeded: db.rates.replace_rate(date=d, currency=&quot;ZZA&quot;, rate=&quot;2.5&quot;) stored_dates = sorted({r.date for r in db.rates.list_all()}) response = client.get(&quot;/stats&quot;) assert response.status_code == 200 body = response.json()</p>
+<p>assert set(body.keys()) == {&quot;dates&quot;, &quot;rates&quot;, &quot;first&quot;, &quot;last&quot;} assert isinstance(body[&quot;dates&quot;], int) assert isinstance(body[&quot;rates&quot;], int) assert body[&quot;dates&quot;] == len(stored_dates) assert body[&quot;first&quot;] == stored_dates[0] assert body[&quot;last&quot;] == stored_dates[-1] assert body[&quot;first&quot;] &lt;= min(seeded) assert body[&quot;last&quot;] &gt;= max(seeded) === END AC stats-shape-and-span ===</p>
+<p>=== AC stats-replace-not-double-counted ===<br>Intent: Storing the same date and currency twice adds one rate and one date, not two.<br>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx2; scope=test</p>
+<p>from app_server.testing import web_client from persistence.testing import db_session</p>
+<p>date = &quot;1800-07-01&quot; currency = &quot;ZZA&quot;</p>
+<p>client = web_client() before = client.get(&quot;/stats&quot;).json() with db_session() as db: db.rates.replace_rate(date=date, currency=currency, rate=&quot;1.1&quot;) db.rates.replace_rate(date=date, currency=currency, rate=&quot;2.2&quot;) response = client.get(&quot;/stats&quot;) assert response.status_code == 200 after = response.json()</p>
+<p>assert after[&quot;dates&quot;] == before[&quot;dates&quot;] + 1 assert after[&quot;rates&quot;] == before[&quot;rates&quot;] + 1 === END AC stats-replace-not-double-counted ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Counts and spans are computed from stored rows on each request, never hardcoded or cached.</li><li>Acceptance compares counts read before setup and never asserts absolute table counts.</li><li><code>first</code> and <code>last</code> are <code>null</code> when the table is empty.</li></ul></article>
+</main>
+</body>
+</html>

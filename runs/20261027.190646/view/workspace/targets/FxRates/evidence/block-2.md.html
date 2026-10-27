@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/evidence/block-2.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/evidence/block-2.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/evidence/block-2.md">Raw file</a></div></header>
+<article class="doc"><h1>Evidence: Block 2 · Foundational (block-2)</h1>
+<ul><li>block type: block</li><li>date: 2026-10-27</li><li>resulting state: closed/verified</li><li>story points (combined assembled cost): 18040</li><li>execution id: -</li></ul>
+<h2>Stories built</h2>
+<ul><li>Declare the rates store and its repository operations; Drydock generates the persistence package. (database) [story]</li></ul>
+<h2>Acceptance tooling authorization</h2>
+<ul><li>DATABASE.md#rates-replace-rate: executable=python3; scope=test; authorization=existing Target environment</li><li>DATABASE.md#rates-list-through: executable=python3; scope=test; authorization=existing Target environment</li><li>DATABASE.md#rates-list-all: executable=python3; scope=test; authorization=existing Target environment</li><li>DATABASE.md#rates-history: executable=python3; scope=test; authorization=existing Target environment</li></ul>
+<h2>Stacked context</h2>
+<ul><li>stack: python_compact.md (SP 1002)</li><li>compass: COMPASS.md (SP 1152)</li><li>implements: DATABASE.md (SP 3607)</li><li>stack: common_compact.md (SP 1653)</li><li>stack: persistence.md (SP 6912)</li><li>stack: sqlite.md (SP 3500)</li></ul>
+<h2>Pre-build acceptance observation</h2>
+<ul><li>RED: rates-replace-rate (DATABASE.md)</li></ul>
+<p>intent: Upserting the same date and currency twice leaves one row holding the second published text, and the first call returns the row it stored. error: foundation not built: <code>persistence</code> is the package the database foundation (postgres.md, sqlite.md) builds, and the build directory has no <code>persistence/</code>. The criterion exercises the built application, so it was not run.</p>
+<ul><li>RED: rates-list-through (DATABASE.md)</li></ul>
+<p>intent: list_through returns only rates on or before the bound, ordered by date descending then currency ascending, and with no bound it also includes later dates. error: foundation not built: <code>persistence</code> is the package the database foundation (postgres.md, sqlite.md) builds, and the build directory has no <code>persistence/</code>. The criterion exercises the built application, so it was not run.</p>
+<ul><li>RED: rates-list-all (DATABASE.md)</li></ul>
+<p>intent: list_all returns every stored rate ordered by date ascending then currency ascending, so a YYY code precedes ZZZ on one date. error: foundation not built: <code>persistence</code> is the package the database foundation (postgres.md, sqlite.md) builds, and the build directory has no <code>persistence/</code>. The criterion exercises the built application, so it was not run.</p>
+<ul><li>RED: rates-history (DATABASE.md)</li></ul>
+<p>intent: history returns one currency&#x27;s points ascending by date, honouring optional inclusive start and end bounds and excluding other currencies. error: foundation not built: <code>persistence</code> is the package the database foundation (postgres.md, sqlite.md) builds, and the build directory has no <code>persistence/</code>. The criterion exercises the built application, so it was not run.</p>
+<h2>Post-build programmatic acceptance</h2>
+<ul><li>PASS: rates-replace-rate (DATABASE.md)</li></ul>
+<p>intent: Upserting the same date and currency twice leaves one row holding the second published text, and the first call returns the row it stored. target interpreter: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261027.190646/build/FxRates/.venv/bin/python provisioning: not requested return code: 0</p>
+<ul><li>PASS: rates-list-through (DATABASE.md)</li></ul>
+<p>intent: list_through returns only rates on or before the bound, ordered by date descending then currency ascending, and with no bound it also includes later dates. target interpreter: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261027.190646/build/FxRates/.venv/bin/python provisioning: not requested return code: 0</p>
+<ul><li>PASS: rates-list-all (DATABASE.md)</li></ul>
+<p>intent: list_all returns every stored rate ordered by date ascending then currency ascending, so a YYY code precedes ZZZ on one date. target interpreter: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261027.190646/build/FxRates/.venv/bin/python provisioning: not requested return code: 0</p>
+<ul><li>PASS: rates-history (DATABASE.md)</li></ul>
+<p>intent: history returns one currency&#x27;s points ascending by date, honouring optional inclusive start and end bounds and excluding other currencies. target interpreter: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261027.190646/build/FxRates/.venv/bin/python provisioning: not requested return code: 0</p>
+<h2>Build summary</h2>
+<p>(no summary returned)</p></article>
+</main>
+</body>
+</html>

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>inputs/DECISIONS.json</title>
+<link rel="stylesheet" href="../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>inputs/DECISIONS.json</h1><div class="filenav"><a href="../../index.html">&larr; Report</a><a href="../../inputs/DECISIONS.json">Raw file</a></div></header>
+<article class="doc"><pre>[
+  {
+    &quot;id&quot;: &quot;Q-001&quot;,
+    &quot;type&quot;: &quot;choice&quot;,
+    &quot;severity&quot;: &quot;material&quot;,
+    &quot;origin&quot;: &quot;plan&quot;,
+    &quot;blueprint&quot;: &quot;DATABASE.md&quot;,
+    &quot;story&quot;: &quot;database&quot;,
+    &quot;status&quot;: &quot;recommended&quot;,
+    &quot;archived&quot;: false,
+    &quot;title&quot;: &quot;Aggregates computed in the service&quot;,
+    &quot;description&quot;: &quot;The repository offers only get/list/create/update/upsert/delete and the source allows one table. Stats, currencies, effective date and history statistics are computed in the service from list operations.&quot;,
+    &quot;options&quot;: [
+      {
+        &quot;value&quot;: &quot;service-side&quot;,
+        &quot;label&quot;: &quot;Single rates table, list operations, aggregate in service&quot;
+      },
+      {
+        &quot;value&quot;: &quot;extra-table&quot;,
+        &quot;label&quot;: &quot;Add a publications table&quot;
+      }
+    ],
+    &quot;system_choice&quot;: &quot;service-side&quot;
+  },
+  {
+    &quot;id&quot;: &quot;Q-002&quot;,
+    &quot;type&quot;: &quot;text&quot;,
+    &quot;severity&quot;: &quot;low&quot;,
+    &quot;origin&quot;: &quot;plan&quot;,
+    &quot;blueprint&quot;: &quot;FEATURE-RatesLatest.md&quot;,
+    &quot;story&quot;: &quot;rates-latest&quot;,
+    &quot;status&quot;: &quot;recommended&quot;,
+    &quot;archived&quot;: false,
+    &quot;title&quot;: &quot;Route precedence for /rates/latest&quot;,
+    &quot;description&quot;: &quot;/rates/latest is registered before /rates/{date} so it is not rejected as a malformed date.&quot;,
+    &quot;options&quot;: [],
+    &quot;system_choice&quot;: &quot;Register the latest route first in the shared rates router.&quot;
+  },
+  {
+    &quot;id&quot;: &quot;Q-003&quot;,
+    &quot;type&quot;: &quot;text&quot;,
+    &quot;severity&quot;: &quot;low&quot;,
+    &quot;origin&quot;: &quot;plan&quot;,
+    &quot;blueprint&quot;: &quot;FEATURE-UsageErrors.md&quot;,
+    &quot;story&quot;: &quot;cli-usage&quot;,
+    &quot;status&quot;: &quot;recommended&quot;,
+    &quot;archived&quot;: false,
+    &quot;title&quot;: &quot;Invocation with no command&quot;,
+    &quot;description&quot;: &quot;The source does not state the status for running fxrates with no arguments; the harness check U1 expects 2.&quot;,
+    &quot;options&quot;: [],
+    &quot;system_choice&quot;: &quot;No command is a usage error: exit 2, one stderr line, empty stdout.&quot;
+  },
+  {
+    &quot;id&quot;: &quot;Q-004&quot;,
+    &quot;type&quot;: &quot;text&quot;,
+    &quot;severity&quot;: &quot;low&quot;,
+    &quot;origin&quot;: &quot;plan&quot;,
+    &quot;blueprint&quot;: &quot;FEATURE-ConvertErrors.md&quot;,
+    &quot;story&quot;: &quot;convert-errors&quot;,
+    &quot;status&quot;: &quot;recommended&quot;,
+    &quot;archived&quot;: false,
+    &quot;title&quot;: &quot;EUR to EUR with no publication&quot;,
+    &quot;description&quot;: &quot;EUR needs no stored rate, but the effective date must still exist.&quot;,
+    &quot;options&quot;: [],
+    &quot;system_choice&quot;: &quot;Return 404 when no publication is on or before the date, even when both currencies are EUR.&quot;
+  },
+  {
+    &quot;id&quot;: &quot;Q-005&quot;,
+    &quot;type&quot;: &quot;text&quot;,
+    &quot;severity&quot;: &quot;low&quot;,
+    &quot;origin&quot;: &quot;plan&quot;,
+    &quot;blueprint&quot;: &quot;FEATURE-Serve.md&quot;,
+    &quot;story&quot;: &quot;serve&quot;,
+    &quot;status&quot;: &quot;recommended&quot;,
+    &quot;archived&quot;: false,
+    &quot;title&quot;: &quot;Exit status on SIGTERM&quot;,
+    &quot;description&quot;: &quot;The source requires a clean stop on SIGTERM without naming the exit status.&quot;,
+    &quot;options&quot;: [],
+    &quot;system_choice&quot;: &quot;Exit 0 after uvicorn shuts down gracefully.&quot;
+  },
+  {
+    &quot;id&quot;: &quot;build-architecture.md-four-slash-sqlite-url-form-is-undefined&quot;,
+    &quot;type&quot;: &quot;text&quot;,
+    &quot;severity&quot;: &quot;low&quot;,
+    &quot;origin&quot;: &quot;build&quot;,
+    &quot;blueprint&quot;: &quot;ARCHITECTURE.md&quot;,
+    &quot;story&quot;: null,
+    &quot;status&quot;: &quot;recommended&quot;,
+    &quot;archived&quot;: false,
+    &quot;title&quot;: &quot;Four-slash sqlite URL form is undefined&quot;,
+    &quot;description&quot;: &quot;DATABASE_URL=sqlite:////abs/path strips to //abs/path, which Path keeps as a double-slash path. The spec defines only a file path with an optional sqlite:// prefix, so I tested the sqlite:///abs form. Should the four-slash form be normalized to an absolute path?&quot;,
+    &quot;options&quot;: [],
+    &quot;system_choice&quot;: &quot;DATABASE_URL=sqlite:////abs/path strips to //abs/path, which Path keeps as a double-slash path. The spec defines only a file path with an optional sqlite:// prefix, so I tested the sqlite:///abs form. Should the four-slash form be normalized to an absolute path?&quot;
+  },
+  {
+    &quot;id&quot;: &quot;build-architecture.md-httpx2-declared-as-specified&quot;,
+    &quot;type&quot;: &quot;text&quot;,
+    &quot;severity&quot;: &quot;low&quot;,
+    &quot;origin&quot;: &quot;build&quot;,
+    &quot;blueprint&quot;: &quot;ARCHITECTURE.md&quot;,
+    &quot;story&quot;: null,
+    &quot;status&quot;: &quot;recommended&quot;,
+    &quot;archived&quot;: false,
+    &quot;title&quot;: &quot;httpx2 declared as specified&quot;,
+    &quot;description&quot;: &quot;httpx2 was verified on PyPI (pydantic/httpx2, first release 2026-05-11, 22 releases) and added as specified. FastAPI TestClient needs the httpx package, which is not added in this block. It must be added when the API tests are built.&quot;,
+    &quot;options&quot;: [],
+    &quot;system_choice&quot;: &quot;httpx2 was verified on PyPI (pydantic/httpx2, first release 2026-05-11, 22 releases) and added as specified. FastAPI TestClient needs the httpx package, which is not added in this block. It must be added when the API tests are built.&quot;
+  },
+  {
+    &quot;id&quot;: &quot;build-architecture.md-sqlite://-alone-is-treated-as-an-empty-database_url&quot;,
+    &quot;type&quot;: &quot;text&quot;,
+    &quot;severity&quot;: &quot;low&quot;,
+    &quot;origin&quot;: &quot;build&quot;,
+    &quot;blueprint&quot;: &quot;ARCHITECTURE.md&quot;,
+    &quot;story&quot;: null,
+    &quot;status&quot;: &quot;recommended&quot;,
+    &quot;archived&quot;: false,
+    &quot;title&quot;: &quot;sqlite:// alone is treated as an empty DATABASE_URL&quot;,
+    &quot;description&quot;: &quot;After stripping the sqlite:// prefix, an empty remainder is skipped and resolution falls through to DATABASE_PATH. The spec does not state this case. Is that acceptable?&quot;,
+    &quot;options&quot;: [],
+    &quot;system_choice&quot;: &quot;After stripping the sqlite:// prefix, an empty remainder is skipped and resolution falls through to DATABASE_PATH. The spec does not state this case. Is that acceptable?&quot;
+  },
+  {
+    &quot;id&quot;: &quot;build-feature-clifoundation.md-fxrates-launcher-working-directory&quot;,
+    &quot;type&quot;: &quot;text&quot;,
+    &quot;severity&quot;: &quot;low&quot;,
+    &quot;origin&quot;: &quot;build&quot;,
+    &quot;blueprint&quot;: &quot;FEATURE-CliFoundation.md&quot;,
+    &quot;story&quot;: null,
+    &quot;status&quot;: &quot;recommended&quot;,
+    &quot;archived&quot;: false,
+    &quot;title&quot;: &quot;fxrates launcher working directory&quot;,
+    &quot;description&quot;: &quot;The launcher runs python -m cli in the caller&#x27;s working directory instead of changing to the application root, so the relative data/app.db default resolves where the user runs it. It only adds the root to PYTHONPATH. Is that acceptable, or should it cd to the root?&quot;,
+    &quot;options&quot;: [],
+    &quot;system_choice&quot;: &quot;The launcher runs python -m cli in the caller&#x27;s working directory instead of changing to the application root, so the relative data/app.db default resolves where the user runs it. It only adds the root to PYTHONPATH. Is that acceptable, or should it cd to the root?&quot;
+  },
+  {
+    &quot;id&quot;: &quot;build-schema-derived-indexes&quot;,
+    &quot;type&quot;: &quot;text&quot;,
+    &quot;severity&quot;: &quot;informational&quot;,
+    &quot;origin&quot;: &quot;build&quot;,
+    &quot;blueprint&quot;: &quot;DATABASE.md&quot;,
+    &quot;story&quot;: null,
+    &quot;status&quot;: &quot;recommended&quot;,
+    &quot;archived&quot;: false,
+    &quot;title&quot;: &quot;Indexes derived from the persistence declaration&quot;,
+    &quot;description&quot;: &quot;The rendered schema indexes rates(date); rates(currency, date). Each is implied by the declaration \u2014 a foreign key is looked up by its child column, and a read pattern&#x27;s Input fields are the predicate it filters on. Declare an `- INDEX (...)` bullet in DATABASE.md for any index this does not cover.&quot;,
+    &quot;options&quot;: [],
+    &quot;system_choice&quot;: &quot;rates(date); rates(currency, date)&quot;
+  },
+  {
+    &quot;id&quot;: &quot;weak-acceptance-FEATURE-LiveVisibility.md-live-load-visible-in-rates&quot;,
+    &quot;type&quot;: &quot;text&quot;,
+    &quot;severity&quot;: &quot;material&quot;,
+    &quot;origin&quot;: &quot;plan&quot;,
+    &quot;blueprint&quot;: &quot;FEATURE-LiveVisibility.md&quot;,
+    &quot;story&quot;: &quot;live-visibility&quot;,
+    &quot;status&quot;: &quot;recommended&quot;,
+    &quot;archived&quot;: false,
+    &quot;title&quot;: &quot;Acceptance criterion live-load-visible-in-rates proves nothing&quot;,
+    &quot;description&quot;: &quot;FEATURE-LiveVisibility.md [live-load-visible-in-rates]: accepts [200, 404]: 404 means the endpoint is absent, so this passes against an application that implements nothing. Assert 404 alone for a negative probe, or assert the status the implementation answers with. (assert before.status_code in (200, 404))\n\nA criterion states one expectation. Pin the status the implementation answers with \u2014 a stub that answers is a real contract and a real test \u2014 or assert the not-found status alone as a deliberate negative probe. A criterion that needs a row to exist creates it through the public interface first rather than admitting the status that says it never existed.&quot;,
+    &quot;options&quot;: [],
+    &quot;system_choice&quot;: &quot;&quot;
+  }
+]
+</pre></article>
+</main>
+</body>
+</html>

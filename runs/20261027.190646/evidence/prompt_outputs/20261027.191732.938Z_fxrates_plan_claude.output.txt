@@ -1,0 +1,137 @@
+=== BEGIN ARTIFACT VERIFICATION.md ===
+# FEATURE: Release Verification
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261027 V1 |
+| Description | Terminal gate that runs the project test suite and the supplied grader against the assembled application. |
+| Depends On  | FEATURE-Init.md, FEATURE-UsageErrors.md, FEATURE-OperationalFailures.md, FEATURE-LoadAtomic.md, FEATURE-LoadSummary.md, FEATURE-Fetch.md, FEATURE-Serve.md, FEATURE-Health.md, FEATURE-Stats.md, FEATURE-Currencies.md, FEATURE-RatesByDate.md, FEATURE-RatesLatest.md, FEATURE-ConvertErrors.md, FEATURE-HistoryRejects.md, FEATURE-LiveVisibility.md |
+| Provides    | release verification |
+| Consumes    | fxrates init, fxrates load, fxrates serve, fxrates fetch |
+
+## Questions
+
+- None.
+
+## Purpose
+
+This is the terminal story. Every other story has closed before it runs. It adds no behavior; it proves
+the assembled application passes its own pytest suite through `bin/test.sh` and passes the supplied
+grader `sources/run.sh`, and that application code reaches the database only through the shipped
+persistence package.
+
+## Sequence
+
+1. Confirm the executable `fxrates` exists at the application root.
+2. Run `sh bin/test.sh` and require exit status 0.
+3. Run `sh sources/run.sh` and require exit status 0.
+4. Scan application Python modules for direct database driver imports outside `persistence/`.
+
+## Database Interface
+
+- None — persistence is owned by DATABASE.md and exercised through the commands and routes under test.
+
+## Programmatic Acceptance
+
+=== AC verification-executable ===
+Intent: The deliverable is an executable named fxrates at the application root, as the grader requires.
+Requires: executable=python3; scope=test
+
+import os
+
+path = os.path.abspath("fxrates")
+assert os.path.isfile(path)
+assert os.access(path, os.X_OK)
+=== END AC verification-executable ===
+
+=== AC verification-project-suite ===
+Intent: The project's own pytest suite, run through bin/test.sh from the application root, exits zero.
+Suite: full
+Requires: executable=python3; scope=test
+Requires: executable=sh; scope=test
+
+import os
+import subprocess
+import sys
+
+result = subprocess.run(
+    ["sh", "bin/test.sh"],
+    capture_output=True,
+    text=True,
+    env={**os.environ},
+)
+print(result.stdout)
+print(result.stderr, file=sys.stderr)
+assert result.returncode == 0
+=== END AC verification-project-suite ===
+
+=== AC verification-supplied-grader ===
+Intent: The supplied grader loads the ECB files, serves the API and checks every command and HTTP answer, exiting zero only when all checks pass.
+Suite: full
+Requires: executable=python3; scope=test
+Requires: executable=sh; scope=test
+
+import os
+import subprocess
+import sys
+
+result = subprocess.run(
+    ["sh", "sources/run.sh"],
+    capture_output=True,
+    text=True,
+    env={**os.environ},
+    timeout=600,
+)
+print(result.stdout)
+print(result.stderr, file=sys.stderr)
+assert result.returncode == 0
+=== END AC verification-supplied-grader ===
+
+=== AC verification-persistence-boundary ===
+Intent: No application module outside the shipped persistence package imports a database driver, so all access goes through the persistence library.
+Requires: executable=python3; scope=test
+
+import ast
+import os
+
+skip = {".venv", "venv", "persistence", "tests", "sources", ".git", "__pycache__", "node_modules", "blueprint"}
+drivers = {"sqlite3", "psycopg", "psycopg2", "sqlalchemy"}
+offenders = []
+scanned = 0
+
+for root, dirs, files in os.walk("."):
+    dirs[:] = [d for d in dirs if d not in skip]
+    for name in files:
+        if not name.endswith(".py"):
+            continue
+        path = os.path.join(root, name)
+        with open(path, encoding="utf-8") as handle:
+            tree = ast.parse(handle.read(), filename=path)
+        scanned += 1
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                mods = [alias.name for alias in node.names]
+            elif isinstance(node, ast.ImportFrom):
+                mods = [node.module or ""]
+            else:
+                continue
+            for mod in mods:
+                if mod.split(".")[0] in drivers:
+                    offenders.append((path, mod))
+
+print(f"scanned {scanned} modules, {len(offenders)} driver imports")
+assert scanned > 0
+assert offenders == []
+=== END AC verification-persistence-boundary ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Do not modify, rewrite, regenerate, or substitute any file under `sources/`.
+- Application code never reads `sources/run.sh` or any supplied data file and never embeds an answer.
+- The suite and grader run with captured output printed before assertion; the exit status is the verdict.
+- Tests never open a network connection; `fetch` is exercised only through a stubbed download.
+=== END ARTIFACT ===

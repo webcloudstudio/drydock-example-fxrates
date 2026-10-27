@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>build/FxRates/tests/test_config.py</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>build/FxRates/tests/test_config.py</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../build/FxRates/tests/test_config.py">Raw file</a></div></header>
+<article class="doc"><pre>&quot;&quot;&quot;Behavior tests for database location resolution in config.database_path().&quot;&quot;&quot;
+
+from pathlib import Path
+
+import pytest
+
+from config import DATABASE_PATH_ENV, DATABASE_URL_ENV, database_path
+
+
+@pytest.fixture(autouse=True)
+def clean_database_environment(monkeypatch: pytest.MonkeyPatch) -&gt; None:
+    &quot;&quot;&quot;Start every test with both database variables unset.&quot;&quot;&quot;
+    monkeypatch.delenv(DATABASE_URL_ENV, raising=False)
+    monkeypatch.delenv(DATABASE_PATH_ENV, raising=False)
+
+
+def test_default_is_data_app_db_when_nothing_is_set() -&gt; None:
+    assert database_path() == Path(&quot;data/app.db&quot;)
+
+
+def test_default_is_used_when_both_variables_are_empty(monkeypatch: pytest.MonkeyPatch) -&gt; None:
+    monkeypatch.setenv(DATABASE_URL_ENV, &quot;&quot;)
+    monkeypatch.setenv(DATABASE_PATH_ENV, &quot;&quot;)
+
+    assert database_path() == Path(&quot;data/app.db&quot;)
+
+
+def test_database_url_with_sqlite_prefix_is_stripped(monkeypatch: pytest.MonkeyPatch) -&gt; None:
+    monkeypatch.setenv(DATABASE_URL_ENV, &quot;sqlite://primary.db&quot;)
+
+    assert database_path() == Path(&quot;primary.db&quot;)
+
+
+def test_database_url_without_prefix_is_used_as_is(monkeypatch: pytest.MonkeyPatch) -&gt; None:
+    monkeypatch.setenv(DATABASE_URL_ENV, &quot;plain.db&quot;)
+
+    assert database_path() == Path(&quot;plain.db&quot;)
+
+
+def test_database_url_takes_precedence_over_database_path(monkeypatch: pytest.MonkeyPatch) -&gt; None:
+    monkeypatch.setenv(DATABASE_URL_ENV, &quot;sqlite://primary.db&quot;)
+    monkeypatch.setenv(DATABASE_PATH_ENV, &quot;fallback.db&quot;)
+
+    assert database_path() == Path(&quot;primary.db&quot;)
+
+
+def test_database_path_is_used_when_url_is_unset(monkeypatch: pytest.MonkeyPatch) -&gt; None:
+    monkeypatch.setenv(DATABASE_PATH_ENV, &quot;fallback.db&quot;)
+
+    assert database_path() == Path(&quot;fallback.db&quot;)
+
+
+def test_database_path_is_used_when_url_is_empty(monkeypatch: pytest.MonkeyPatch) -&gt; None:
+    monkeypatch.setenv(DATABASE_URL_ENV, &quot;&quot;)
+    monkeypatch.setenv(DATABASE_PATH_ENV, &quot;fallback.db&quot;)
+
+    assert database_path() == Path(&quot;fallback.db&quot;)
+
+
+def test_database_path_is_used_when_url_is_only_the_prefix(monkeypatch: pytest.MonkeyPatch) -&gt; None:
+    monkeypatch.setenv(DATABASE_URL_ENV, &quot;sqlite://&quot;)
+    monkeypatch.setenv(DATABASE_PATH_ENV, &quot;fallback.db&quot;)
+
+    assert database_path() == Path(&quot;fallback.db&quot;)
+
+
+def test_absolute_database_url_keeps_its_absolute_path(monkeypatch: pytest.MonkeyPatch) -&gt; None:
+    monkeypatch.setenv(DATABASE_URL_ENV, &quot;sqlite:///var/lib/fxrates/app.db&quot;)
+
+    assert database_path() == Path(&quot;/var/lib/fxrates/app.db&quot;)
+
+
+def test_environment_is_read_on_every_call(monkeypatch: pytest.MonkeyPatch) -&gt; None:
+    assert database_path() == Path(&quot;data/app.db&quot;)
+
+    monkeypatch.setenv(DATABASE_PATH_ENV, &quot;changed.db&quot;)
+    assert database_path() == Path(&quot;changed.db&quot;)
+
+    monkeypatch.setenv(DATABASE_URL_ENV, &quot;sqlite://now-url.db&quot;)
+    assert database_path() == Path(&quot;now-url.db&quot;)
+</pre></article>
+</main>
+</body>
+</html>

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-OperationalFailures.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-OperationalFailures.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-OperationalFailures.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Operational Failures</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261027 V1</td></tr><tr><td>Description</td><td>Proves that an unreadable load file and a failed fetch download each exit 1 with one stderr line, empty stdout and an unchanged database.</td></tr><tr><td>Depends On</td><td>FEATURE-LoadAtomic.md, FEATURE-Fetch.md, FEATURE-CliFoundation.md</td></tr><tr><td>Provides</td><td>fxrates exit code 1 diagnostics</td></tr><tr><td>Consumes</td><td>fxrates load, fxrates fetch</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Operational failures are exit code <code>1</code>: a <code>load</code> file that cannot be read, and a <code>fetch</code> download that fails. This story assembles <code>load</code> and <code>fetch</code> and proves the seams between them and the dispatcher. Each failure writes nothing to standard output, writes exactly one diagnostic line to standard error, and leaves stored rates untouched. Any seam that breaks this is fixed here.</p>
+<h2>Behavior</h2>
+<div class="scroll"><table><thead><tr><th>Trigger</th><th>Exit</th><th>Stdout</th><th>Stderr</th><th>Database</th></tr></thead><tbody><tr><td><code>fxrates load &lt;path&gt;</code> where <code>&lt;path&gt;</code> does not exist or cannot be read</td><td>1</td><td>empty</td><td>one line</td><td>unchanged</td></tr><tr><td><code>fxrates fetch</code> where <code>ecb.download_history()</code> raises <code>OperationalError</code></td><td>1</td><td>empty</td><td>one line</td><td>unchanged</td></tr></tbody></table></div>
+<p>Tests replace <code>ecb.download_history</code> with a stub; no test opens a network connection.</p>
+<h2>Database Interface</h2>
+<ul><li>None — persistence is owned by DATABASE.md.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC failures-load-unreadable ===<br>Intent: Loading a path that does not exist exits 1 with empty stdout and exactly one stderr line, and the stored rates are the same before and after.<br>Requires: executable=python3; scope=test</p>
+<p>import os import tempfile from cli.testing import cli_runner from persistence.testing import db_session</p>
+<p>with tempfile.TemporaryDirectory() as tmp: missing = os.path.join(tmp, &quot;no-such-file.csv&quot;) with db_session() as db: before = [(r.date, r.currency, r.rate) for r in db.rates.list_all()] code, out, err = cli_runner(&quot;load&quot;, missing) assert code == 1 assert out == &quot;&quot; assert len(err.strip().splitlines()) == 1 after = [(r.date, r.currency, r.rate) for r in db.rates.list_all()] assert after == before === END AC failures-load-unreadable ===</p>
+<p>=== AC failures-load-directory ===<br>Intent: Loading a path that is a directory is also unreadable and exits 1 with empty stdout, leaving stored rates unchanged.<br>Requires: executable=python3; scope=test</p>
+<p>import tempfile from cli.testing import cli_runner from persistence.testing import db_session</p>
+<p>with tempfile.TemporaryDirectory() as tmp: with db_session() as db: before = [(r.date, r.currency, r.rate) for r in db.rates.list_all()] code, out, err = cli_runner(&quot;load&quot;, tmp) assert code == 1 assert out == &quot;&quot; assert len(err.strip().splitlines()) == 1 after = [(r.date, r.currency, r.rate) for r in db.rates.list_all()] assert after == before === END AC failures-load-directory ===</p>
+<p>=== AC failures-fetch-download ===<br>Intent: When the stubbed download raises OperationalError, fetch exits 1 with empty stdout and one stderr line, and stored rates are unchanged.<br>Requires: executable=python3; scope=test</p>
+<p>import ecb from cli.testing import cli_runner from persistence.testing import db_session</p>
+<p>try: from cli.errors import OperationalError except ImportError: from cli import OperationalError</p>
+<p>def failing_download(): raise OperationalError(&quot;download failed&quot;)</p>
+<p>original = ecb.download_history ecb.download_history = failing_download try: with db_session() as db: before = [(r.date, r.currency, r.rate) for r in db.rates.list_all()] code, out, err = cli_runner(&quot;fetch&quot;) assert code == 1 assert out == &quot;&quot; assert len(err.strip().splitlines()) == 1 after = [(r.date, r.currency, r.rate) for r in db.rates.list_all()] assert after == before finally: ecb.download_history = original === END AC failures-fetch-download ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>A failing command writes nothing to standard output.</li><li>A failing command writes exactly one diagnostic line to standard error.</li><li>No test opens a network connection; the download is always stubbed.</li><li>A failure never deletes or alters stored rates.</li></ul></article>
+</main>
+</body>
+</html>
