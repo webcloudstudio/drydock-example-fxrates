@@ -1,0 +1,19 @@
+<requirement name="validate-and-load-history" stories="load">
+Validate and load ECB CSV history files atomically.
+</requirement>
+<unattached story="architecture"/>
+<unattached story="database"/>
+<unattached story="app_server"/>
+<unattached story="cli"/>
+<unattached story="init"/>
+<unattached story="api_currencies"/>
+<unattached story="api_latest"/>
+<unattached story="api_stats"/>
+<unattached story="api_rates"/>
+<unattached story="history"/>
+<unattached story="convert"/>
+<unattached story="api_health"/>
+<unattached story="cli_errors"/>
+<unattached story="fetch"/>
+<unattached story="tests"/>
+<unattached story="grader"/>

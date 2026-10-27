@@ -1,0 +1,22 @@
+Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
+Drydock status
+
+  Target          /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.202600/workspace/targets/FxRates
+  Name            drydock FxRates Uat Case
+  Description     Drydock uat - FxRates is the web-service kit and the first to exercise FastAPI. The source is an
+                  original brief for a currency rates service: a command line loads the European Central Bank euro…
+  Phase           Loop
+  State           17 closed/implemented
+  Metadata        built · complete
+  Sources         5 imported · 17 authored blueprint files
+  Analysis        Ready · 13 stories · 0 questions · 0 blockers
+  Blueprint       ✓  0 errors · 0 warnings
+  Plan            17 closed/implemented
+  Frontier        (none)
+  Workflow        5 steps
+                  Initialize         complete at 2026-10-26T20:26:02.954+00:00
+                  Import             complete at 2026-10-26T20:26:09.492+00:00
+                  Analyze            complete at 2026-10-26T20:26:42.528+00:00
+                  Plan               complete at 2026-10-26T20:31:19.150+00:00
+                  Build              complete at 2026-10-26T21:16:10.483+00:00
+  Next step       drydock refit FxRates BOTH <Scope> <Change>

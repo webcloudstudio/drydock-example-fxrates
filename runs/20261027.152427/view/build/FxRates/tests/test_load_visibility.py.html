@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>build/FxRates/tests/test_load_visibility.py</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>build/FxRates/tests/test_load_visibility.py</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../build/FxRates/tests/test_load_visibility.py">Raw file</a></div></header>
+<article class="doc"><pre>&quot;&quot;&quot;Load visibility: a completed load is seen by the next API request; a rejected load changes nothing.
+
+The command and the web client share one acceptance transaction, so a rate the command writes is
+read back by the next request through the same store. Each test empties the store first and rolls
+back at the end.
+&quot;&quot;&quot;
+
+from __future__ import annotations
+
+import csv
+import io
+from collections.abc import Iterator
+from pathlib import Path
+
+import pytest
+
+from cli.testing import cli_runner
+from persistence import db as persistence_db
+from persistence.testing import db_session
+
+
+@pytest.fixture(autouse=True)
+def rolled_back_transaction() -&gt; Iterator[None]:
+    &quot;&quot;&quot;Share one connection between the command, the route and the test, then roll everything back.&quot;&quot;&quot;
+    persistence_db.begin_acceptance_transaction()
+    try:
+        yield
+    finally:
+        persistence_db.end_acceptance_transaction()
+
+
+def write_history(path: Path, header: list[str], rows: list[list[str]]) -&gt; Path:
+    &quot;&quot;&quot;Write a file the way the ECB does: every line ends with a trailing comma.&quot;&quot;&quot;
+    buf = io.StringIO()
+    writer = csv.writer(buf, lineterminator=&quot;\n&quot;)
+    writer.writerow(header + [&quot;&quot;])
+    for row in rows:
+        writer.writerow(row + [&quot;&quot;])
+    path.write_text(buf.getvalue(), encoding=&quot;utf-8&quot;)
+    return path
+
+
+def empty_store(db) -&gt; None:
+    &quot;&quot;&quot;Remove every stored rate inside the acceptance transaction.&quot;&quot;&quot;
+    db.rates.delete_from_date(from_date=&quot;0000-01-01&quot;)
+
+
+def test_completed_load_is_visible_to_the_next_stats_request(web_client, tmp_path: Path) -&gt; None:
+    d = &quot;1900-12-30&quot;
+    path = write_history(tmp_path / &quot;load.csv&quot;, [&quot;Date&quot;, &quot;ZZA&quot;, &quot;ZZB&quot;], [[d, &quot;1.5&quot;, &quot;2.25&quot;]])
+    with db_session() as db:
+        empty_store(db)
+        before = web_client.get(&quot;/stats&quot;).json()
+
+        code, out, err = cli_runner(&quot;load&quot;, str(path))
+        after = web_client.get(&quot;/stats&quot;).json()
+
+    assert code == 0
+    assert after == {&quot;dates&quot;: 1, &quot;rates&quot;: 2, &quot;first&quot;: d, &quot;last&quot;: d}
+    assert after[&quot;dates&quot;] == before[&quot;dates&quot;] + 1
+    assert after[&quot;rates&quot;] == before[&quot;rates&quot;] + 2
+    assert after[&quot;last&quot;] == d
+
+
+def test_completed_load_is_visible_to_the_next_latest_request(web_client, tmp_path: Path) -&gt; None:
+    d = &quot;1900-12-31&quot;
+    path = write_history(tmp_path / &quot;latest.csv&quot;, [&quot;Date&quot;, &quot;ZZA&quot;], [[d, &quot;3.5&quot;]])
+    with db_session() as db:
+        empty_store(db)
+
+        code, _, _ = cli_runner(&quot;load&quot;, str(path))
+        response = web_client.get(&quot;/rates/latest&quot;)
+
+    assert code == 0
+    assert response.status_code == 200
+    assert response.json()[&quot;date&quot;] == d
+    assert response.json()[&quot;rates&quot;] == {&quot;ZZA&quot;: &quot;3.5&quot;}
+
+
+def test_rejected_load_leaves_stats_unchanged(web_client, tmp_path: Path) -&gt; None:
+    good = &quot;1900-11-01&quot;
+    bad = &quot;1900-11-02&quot;
+    path = write_history(
+        tmp_path / &quot;bad.csv&quot;,
+        [&quot;Date&quot;, &quot;ZZA&quot;],
+        [[bad, &quot;1.5&quot;], [good, &quot;1.5x&quot;]],
+    )
+    with db_session() as db:
+        empty_store(db)
+        db.rates.replace_rate(date=&quot;1900-10-30&quot;, currency=&quot;ZZA&quot;, rate=&quot;1&quot;)
+        before = web_client.get(&quot;/stats&quot;).json()
+
+        code, out, err = cli_runner(&quot;load&quot;, str(path))
+        after = web_client.get(&quot;/stats&quot;).json()
+        written = db.rates.list_for_date(date=bad)
+
+    assert code == 3
+    assert out == &quot;&quot;
+    assert after == before
+    assert written == []
+
+
+def test_loading_the_same_file_twice_leaves_stats_unchanged(web_client, tmp_path: Path) -&gt; None:
+    path = write_history(tmp_path / &quot;again.csv&quot;, [&quot;Date&quot;, &quot;ZZA&quot;], [[&quot;1900-10-07&quot;, &quot;7.5&quot;]])
+    with db_session() as db:
+        empty_store(db)
+
+        assert cli_runner(&quot;load&quot;, str(path))[0] == 0
+        first = web_client.get(&quot;/stats&quot;).json()
+        assert cli_runner(&quot;load&quot;, str(path))[0] == 0
+        second = web_client.get(&quot;/stats&quot;).json()
+
+    assert second == first
+</pre></article>
+</main>
+</body>
+</html>

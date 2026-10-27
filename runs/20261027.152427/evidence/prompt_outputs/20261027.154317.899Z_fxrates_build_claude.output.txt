@@ -1,0 +1,64 @@
+I'll start by inspecting the build directory and its current state.The `cli` and `app_server` directories don't exist yet. Next I'll read the existing tests, launcher, and persistence layer.The persistence layer is in place, and `fxrates_app` is the package from block 1. The two feature specs name the packages `cli` and `app_server`, so I'll create those. Before writing code I'll check the venv's dependencies and the current test baseline.Baseline is green: 8 tests pass on the venv, which has fastapi 0.162, starlette 1.10, and httpx2 2.16 installed. The work is the `cli` package, the `fxrates` launcher, the `app_server` package, shared fixtures, and tests for each acceptance assertion.
+
+One design choice: `app_server/main.py` will reference `routes.router` through the module, not a bound name, so tests can swap the registry without touching the shared one.Next I'll add the two pytest fixtures to the existing `conftest.py`. I'm reading it through the Read tool first so the edit is allowed.Now the tests. Each one acts on the system and checks a return value, status code, parsed body, or exit status. None of them match on output text.Next I'll set the launcher's executable bit, then run the full suite and check the launcher directly.The suite passes: 33 tests, exit 0. Next I'll run the project's declared verification command, `sh bin/test.sh`. I'll also run the three behavioral acceptance assertions from the specs as standalone scripts, kept outside the project directory.The first run failed because `-I` ignores `PYTHONPATH`, which is my harness error, not a code error. I'll put the project root on `sys.path` explicitly and rerun.All three acceptance scripts pass, and the declared `sh bin/test.sh` exits 0. Nothing is committed, as the build instructions require.
+
+<reusable-compact filename="DATABASE.md">
+Store: SQLite or PostgreSQL via `open_database(dsn)`; only the generated `persistence` package reaches the store. Calls are `db.rates.<op>(...)`; rows expose `.date`, `.currency`, `.rate` (text, never float).
+
+Table `rates`: `id` INTEGER PK; `date` TEXT NOT NULL (YYYY-MM-DD); `currency` TEXT NOT NULL (3-letter uppercase); `rate` TEXT NOT NULL (as published). UNIQUE(date, currency).
+
+Operations:
+- `rates.replace_rate(date: str, currency: str, rate: str)` → row(date, currency, rate). Upsert on (date, currency).
+- `rates.list_for_date(date: str)` → rows(date, currency, rate), exact date, order currency asc.
+- `rates.list_on_or_before(as_of: str | None = None)` → rows(date), date <= as_of inclusive, order date desc. First row is the effective date; no rows means none.
+- `rates.list_all_keys(since: str | None = None)` → rows(date, currency), date >= since, order date asc.
+- `rates.list_currencies(since: str | None = None)` → rows(currency), date >= since, order currency asc; one row per stored rate, so dedupe in the service.
+- `rates.list_currency_history(currency: str | None, start_date: str | None, end_date: str | None)` → rows(date, currency, rate), inclusive bounds, order date asc. Empty with only `currency` means no stored rate.
+- `rates.delete_from_date(from_date: str)` → int removed count, date >= from_date. `init` passes `0000-01-01`.
+
+Config: DATABASE_URL (takes precedence, optional sqlite:// prefix), DATABASE_PATH (default data/app.db).
+Testing: `persistence.testing.db_session()` yields a rolled-back session over the provisioned store.
+Services derive counts, first/last dates, and distinct currencies from list results; no aggregate operations exist.
+</reusable-compact>
+
+RESULT: SUCCESS
+
+FILES CHANGED:
+- cli/__init__.py
+- cli/__main__.py
+- cli/dispatcher.py
+- cli/testing.py
+- fxrates
+- app_server/__init__.py
+- app_server/main.py
+- app_server/routes.py
+- app_server/testing.py
+- tests/conftest.py
+- tests/test_cli.py
+- tests/test_launcher.py
+- tests/test_web.py
+- tests/test_boundaries.py
+
+SUMMARY:
+Built both block-3 stories, cli-foundation and web-foundation.
+
+- **cli**: `main(argv) -> int` dispatches `argv[0]` to a registered handler and returns its exit code. An empty argv or an unknown command returns 2 with a diagnostic on stderr. `register_command` replaces an existing name. `cli/testing.py` provides `cli_runner`, and `cli/__main__.py` makes `python -m cli` work. The `fxrates` launcher is POSIX sh with the executable bit set. It activates `.venv` when present and runs `python -m cli "$@"`.
+- **app_server**: `create_app()` returns a new FastAPI instance that includes `app_server.routes.router`. The module-level `app` is created from it. `web_client()` returns `TestClient(create_app())`. The pytest `cli_runner` and `web_client` fixtures in `tests/conftest.py` delegate to these callables.
+
+Checks run:
+- `sh bin/test.sh`: exit 0, 33 passed (8 pre-existing, 25 new).
+- The three behavioral acceptance assertions (`cli-main-returns-int`, `cli-dispatch-registered`, `web-create-app`, `web-client-fixture`, `web-router-registry`) executed as standalone scripts against the project root: all pass.
+- `./fxrates` run directly: exit 2 with no arguments, exit 2 for an unknown command. Neither is 126 or 127.
+- `cli-executable-runs` is covered by `tests/test_launcher.py`.
+
+Not run: `sh sources/run.sh`. It is the terminal story and not in this block's scope.
+
+Decisions for the user to review (Low severity):
+- The dispatcher lives in `cli/dispatcher.py`. I did not add a `parser.py`, since no story here needs argparse yet.
+- `fxrates` runs `cd` to the application root before invoking Python. This keeps `python -m cli` importable and makes the default `data/app.db` resolve correctly, but it means relative file paths passed by callers resolve against the root. Later command stories should be aware of this.
+
+Caveat for later blocks: `create_app()` copies the routes that exist on `routes.router` at the moment it is called. Routes that feature stories add to the registry after `app_server.main` has been imported will not appear on the module-level `app`. Stories should either import `app_server.routes` before `app_server.main`, or `create_app` should be changed to defer inclusion.
+
+<blueprint-decisions>
+[{"spec":"FEATURE-CliFoundation.md","severity":"Low","subject":"Launcher working directory","decision":"The fxrates launcher changes into the application root before running python -m cli, matching bin/test.sh and keeping the default data/app.db path stable. Relative file paths passed by callers therefore resolve against the root. Acceptable, or should the launcher preserve the caller's cwd?"}]
+</blueprint-decisions>

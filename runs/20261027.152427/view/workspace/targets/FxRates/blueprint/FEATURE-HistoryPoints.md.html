@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-HistoryPoints.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-HistoryPoints.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-HistoryPoints.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: History Points</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261027 V1</td></tr><tr><td>Description</td><td>GET /history/{code} lists a currency&#x27;s stored rates in ascending date order between optional inclusive bounds.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md, DATABASE.md, FEATURE-RatesByDate.md, FEATURE-WebFoundation.md</td></tr><tr><td>Provides</td><td>GET /history/{code}</td></tr><tr><td>Consumes</td><td>fxrates_app.rates.effective_date, rates repository operations, app_server.create_app</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Serve a currency&#x27;s history over a period. The response is a JSON object with <code>currency</code>, <code>base</code> (always <code>EUR</code>), <code>count</code>, <code>min</code>, <code>max</code>, <code>mean</code>, and <code>points</code>. This story delivers <code>currency</code>, <code>base</code>, and <code>points</code>; the statistics fields are specified by <code>FEATURE-HistoryStats.md</code> and implemented over the same route.</p>
+<h2>Route</h2>
+<p><code>GET /history/{code}</code> with optional query parameters <code>start</code> and <code>end</code>, each a calendar date <code>YYYY-MM-DD</code>.</p>
+<h2>Behavior</h2>
+<ul><li><code>points</code> holds one <code>{&quot;date&quot;: &lt;date&gt;, &quot;rate&quot;: &lt;stored text&gt;}</code> object per publication date of the</li></ul>
+<p>currency from <code>start</code> through <code>end</code> inclusive, in ascending date order.</p>
+<ul><li>Both bounds are optional. Without <code>start</code> the history begins at the earliest stored date; without</li></ul>
+<p><code>end</code> it runs to the latest.</p>
+<ul><li>Each <code>rate</code> is the stored text as a JSON string, exactly as the ECB published it (<code>0.943</code> stays</li></ul>
+<p><code>0.943</code>). No arithmetic or float conversion is applied to a point.</p>
+<ul><li>When <code>start</code> is later than <code>end</code>, the response is 200 with an empty <code>points</code> list.</li><li>A currency code is matched as given; the response <code>currency</code> echoes it.</li><li>A history is read through the persistence library by one call per request, so a load completed</li></ul>
+<p>before the request is visible to it.</p>
+<h2>Database Interface</h2>
+<ul><li><code>FEATURE-RATE-006</code> — read: list a currency&#x27;s rates over a period - supplies: <code>currency</code>, <code>start_date</code>, <code>end_date</code> - returns: <code>date</code>, <code>currency</code>, <code>rate</code></li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC history-points-range ===<br>Intent: Points between inclusive bounds come back ascending with the stored rate text, derived from the seeded inputs by sorting on date.<br>Requires: executable=python3; scope=test<br>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx2; scope=test</p>
+<p>from app_server.testing import web_client from persistence.testing import db_session</p>
+<p>code = &quot;ZZH&quot; rates = { &quot;1900-08-03&quot;: &quot;1.50&quot;, &quot;1900-08-01&quot;: &quot;1.0316&quot;, &quot;1900-08-02&quot;: &quot;2&quot;, &quot;1900-08-04&quot;: &quot;0.943&quot;, } start = &quot;1900-08-02&quot; end = &quot;1900-08-03&quot;</p>
+<p>with db_session() as db: for d, r in rates.items(): db.rates.replace_rate(date=d, currency=code, rate=r) client = web_client() resp = client.get(f&quot;/history/{code}&quot;, params={&quot;start&quot;: start, &quot;end&quot;: end}) assert resp.status_code == 200 body = resp.json() expected = [{&quot;date&quot;: d, &quot;rate&quot;: rates[d]} for d in sorted(rates) if start &lt;= d &lt;= end] assert body[&quot;points&quot;] == expected assert body[&quot;currency&quot;] == code assert body[&quot;count&quot;] == len(expected) === END AC history-points-range ===</p>
+<p>=== AC history-points-optional-bounds ===<br>Intent: Each bound is optional on its own; omitting both returns every stored point, and text such as 0.943 is returned exactly as stored.<br>Requires: executable=python3; scope=test<br>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx2; scope=test</p>
+<p>from app_server.testing import web_client from persistence.testing import db_session</p>
+<p>code = &quot;ZZH&quot; rates = { &quot;1900-09-04&quot;: &quot;0.943&quot;, &quot;1900-09-02&quot;: &quot;1.50&quot;, &quot;1900-09-03&quot;: &quot;1.0316&quot;, &quot;1900-09-01&quot;: &quot;7&quot;, } cut = &quot;1900-09-03&quot;</p>
+<p>with db_session() as db: for d, r in rates.items(): db.rates.replace_rate(date=d, currency=code, rate=r) client = web_client()</p>
+<p>resp = client.get(f&quot;/history/{code}&quot;) assert resp.status_code == 200 assert resp.json()[&quot;points&quot;] == [{&quot;date&quot;: d, &quot;rate&quot;: rates[d]} for d in sorted(rates)]</p>
+<p>resp = client.get(f&quot;/history/{code}&quot;, params={&quot;start&quot;: cut}) assert resp.status_code == 200 assert resp.json()[&quot;points&quot;] == [ {&quot;date&quot;: d, &quot;rate&quot;: rates[d]} for d in sorted(rates) if d &gt;= cut ]</p>
+<p>resp = client.get(f&quot;/history/{code}&quot;, params={&quot;end&quot;: cut}) assert resp.status_code == 200 assert resp.json()[&quot;points&quot;] == [ {&quot;date&quot;: d, &quot;rate&quot;: rates[d]} for d in sorted(rates) if d &lt;= cut ] === END AC history-points-optional-bounds ===</p>
+<p>=== AC history-points-start-after-end ===<br>Intent: A start later than end is not an error; the response is 200 with no points even though the currency has stored rates.<br>Requires: executable=python3; scope=test<br>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx2; scope=test</p>
+<p>from app_server.testing import web_client from persistence.testing import db_session</p>
+<p>code = &quot;ZZH&quot; dates = [&quot;1900-10-01&quot;, &quot;1900-10-02&quot;, &quot;1900-10-03&quot;] start = &quot;1900-10-03&quot; end = &quot;1900-10-01&quot;</p>
+<p>with db_session() as db: for d in dates: db.rates.replace_rate(date=d, currency=code, rate=&quot;3&quot;) client = web_client() resp = client.get(f&quot;/history/{code}&quot;, params={&quot;start&quot;: start, &quot;end&quot;: end}) assert resp.status_code == 200 body = resp.json() assert body[&quot;points&quot;] == [] assert body[&quot;count&quot;] == 0 === END AC history-points-start-after-end ===</p>
+<p>=== AC history-points-round-trip ===<br>Intent: A replaced rate is what the next request returns, proving history is read from the store on each request and holds one point per date.<br>Requires: executable=python3; scope=test<br>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx2; scope=test</p>
+<p>from app_server.testing import web_client from persistence.testing import db_session</p>
+<p>code = &quot;ZZH&quot; d = &quot;1900-11-01&quot; first = &quot;1.25&quot; second = &quot;1.75&quot;</p>
+<p>with db_session() as db: db.rates.replace_rate(date=d, currency=code, rate=first) client = web_client() resp = client.get(f&quot;/history/{code}&quot;) assert resp.status_code == 200 assert resp.json()[&quot;points&quot;] == [{&quot;date&quot;: d, &quot;rate&quot;: first}]</p>
+<p>db.rates.replace_rate(date=d, currency=code, rate=second) resp = client.get(f&quot;/history/{code}&quot;) assert resp.status_code == 200 assert resp.json()[&quot;points&quot;] == [{&quot;date&quot;: d, &quot;rate&quot;: second}] === END AC history-points-round-trip ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Rates are returned as stored text and never converted to floating point.</li><li>No rate, date, or count is hardcoded; every value comes from a repository query.</li><li>Application code reaches the store only through the shipped persistence library.</li></ul></article>
+</main>
+</body>
+</html>

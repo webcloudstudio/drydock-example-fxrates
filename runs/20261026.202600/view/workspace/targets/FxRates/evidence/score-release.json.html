@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/evidence/score-release.json</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/evidence/score-release.json</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/evidence/score-release.json">Raw file</a></div></header>
+<article class="doc"><pre>{
+  &quot;schema_version&quot;: 5,
+  &quot;recorded_at&quot;: &quot;2026-10-26T21:20:35+00:00&quot;,
+  &quot;target&quot;: &quot;FxRates&quot;,
+  &quot;verdict&quot;: &quot;PASSED&quot;,
+  &quot;verdict_line&quot;: &quot;FxRates: PASSED \u2014 10 of 10&quot;,
+  &quot;statement&quot;: &quot;FxRates: PASSED \u2014 10 of 10\n\n  st-001  MET       [\&quot;sh\&quot;, \&quot;sources/run.sh\&quot;] exited 0; sources/run.sh: outcome PASS, return code 0, 35 passed and 0 failed\n  st-002  MET       bin/test.sh:1 uses #!/bin/sh; offline command: sh bin/test.sh exited 0; 29 passed\n  st-003  MET       services/rates.py: load_file parses rows before writing and stores values through upsert; persistence/schema.py: rates.upsert matches on date and currency; probe: replacement preserved &#x27;2.00&#x27; and other rates; invalid input left stored rows unchanged; sources/run.sh: A4 passed with expected exit 3\n  st-004  MET       app_server/main.py: health returns {&#x27;status&#x27;:&#x27;ok&#x27;}; probe: GET /health returned 200 with {&#x27;status&#x27;: &#x27;ok&#x27;}\n  st-005  MET       sources/run.sh: H5 and L4 passed for dates after a publication; sources/run.sh: H6 and H16 passed with 404 when no earlier publication exists; app_server/main.py: effective uses publications_through\n  st-006  MET       sources/run.sh: H9\u2013H12 and H17\u2013H18 passed; app_server/main.py: conversion and history calculations use Decimal and ROUND_HALF_EVEN\n  st-007  MET       sources/run.sh: H7, H13\u2013H15, H16, and H21 passed with their expected statuses; app_server/main.py: request validation raises HTTPException with the specified statuses\n  st-008  MET       services/rates.py: database access uses open_database(database_dsn()); config/__init__.py: database_dsn selects DATABASE_URL; persistence/schema.py: rates.upsert accepts and returns rate as str; services/rates.py: load_file passes the published rate string to upsert; application modules contain no direct database driver access\n  st-009  MET       [\&quot;unshare\&quot;, \&quot;-rn\&quot;, \&quot;sh\&quot;, \&quot;bin/test.sh\&quot;] exited 0; offline command: unshare -rn sh bin/test.sh exited 0; 29 passed\n  st-010  MET       tests/test_fetch.py: success test patches urllib.request.urlopen and asserts loaded rates; tests/test_fetch.py: failure test patches urlopen to raise OSError and asserts exit code 1; offline command: test suite passed&quot;,
+  &quot;complete&quot;: true,
+  &quot;governed_gate&quot;: {
+    &quot;name&quot;: &quot;full&quot;,
+    &quot;outcome&quot;: &quot;PASS&quot;,
+    &quot;argv&quot;: [
+      &quot;sh&quot;,
+      &quot;sources/run.sh&quot;
+    ],
+    &quot;return_code&quot;: 0,
+    &quot;duration_ms&quot;: 15294,
+    &quot;detail&quot;: &quot;&quot;,
+    &quot;timed_out&quot;: false,
+    &quot;build_identity&quot;: &quot;da3792328f9bda96&quot;,
+    &quot;stdout&quot;: &quot;PASS A1: fxrates init\nPASS A2: fxrates load /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.202600/build/FxRates/sources/eurofxref-hist_2025-01.csv\nPASS A3: fxrates load /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.202600/build/FxRates/sources/eurofxref-hist_2025-01.csv\nPASS A4: fxrates load /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.202600/build/FxRates/sources/eurofxref-hist_bad.csv\nPASS A5: fxrates load /tmp/tmp.iAQprI0aji/no-such-file.csv\nPASS U1: fxrates \nPASS U2: fxrates frobnicate\nPASS U3: fxrates load\nPASS U4: fxrates serve --port notaport\nPASS H1: GET /health\nPASS H2: GET /stats\nPASS H3: GET /currencies\nPASS H4: GET /rates/2025-01-17\nPASS H5: GET /rates/2025-01-18\nPASS H6: GET /rates/2024-12-31\nPASS H7: GET /rates/2025-13-01\nPASS H8: GET /rates/latest\nPASS H9: GET /convert?from=USD&amp;to=GBP&amp;amount=100&amp;date=2025-01-17\nPASS H10: GET /convert?from=EUR&amp;to=JPY&amp;amount=250.25&amp;date=2025-01-05\nPASS H11: GET /convert?from=GBP&amp;to=EUR&amp;amount=1000\nPASS H12: GET /convert?from=SEK&amp;to=CNY&amp;amount=12345.67&amp;date=2025-01-20\nPASS H13: GET /convert?from=USD&amp;to=XXX&amp;amount=1\nPASS H14: GET /convert?from=USD&amp;to=GBP\nPASS H15: GET /convert?from=USD&amp;to=GBP&amp;amount=abc\nPASS H16: GET /convert?from=USD&amp;to=GBP&amp;amount=10&amp;date=2024-12-01\nPASS H17: GET /history/USD?start=2025-01-20&amp;end=2025-01-24\nPASS H18: GET /history/CHF?start=2025-01-27\nPASS H19: GET /history/HRK\nPASS H20: GET /history/USD?start=2025-02-01\nPASS H21: GET /history/GBP?start=2025-01-31-x\nPASS L1: fxrates load /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.202600/build/FxRates/sources/eurofxref-hist_2025-02-03_04.csv\nPASS L2: GET /stats\nPASS L3: GET /rates/latest\nPASS L4: GET /rates/2025-02-01\nPASS L5: GET /history/AUD?start=2025-01-30\nFxRates: 35 passed, 0 failed (of 35)\n&quot;,
+    &quot;stderr&quot;: &quot;&quot;
+  },
+  &quot;criteria&quot;: [
+    {
+      &quot;criterion_id&quot;: &quot;st-001&quot;,
+      &quot;verdict&quot;: &quot;MET&quot;,
+      &quot;rationale&quot;: &quot;The supplied grader exited zero against this tree.&quot;,
+      &quot;evidence&quot;: [
+        &quot;[\&quot;sh\&quot;, \&quot;sources/run.sh\&quot;] exited 0&quot;,
+        &quot;sources/run.sh: outcome PASS, return code 0, 35 passed and 0 failed&quot;
+      ]
+    },
+    {
+      &quot;criterion_id&quot;: &quot;st-002&quot;,
+      &quot;verdict&quot;: &quot;MET&quot;,
+      &quot;rationale&quot;: &quot;The shipped POSIX shell test runner exists and the offline test run exited zero.&quot;,
+      &quot;evidence&quot;: [
+        &quot;bin/test.sh:1 uses #!/bin/sh&quot;,
+        &quot;offline command: sh bin/test.sh exited 0; 29 passed&quot;
+      ]
+    },
+    {
+      &quot;criterion_id&quot;: &quot;st-003&quot;,
+      &quot;verdict&quot;: &quot;MET&quot;,
+      &quot;rationale&quot;: &quot;A probe confirmed rates are stored as published text, matching date and currency entries are replaced, and an invalid row leaves storage unchanged; the grader also confirmed invalid loads exit 3.&quot;,
+      &quot;evidence&quot;: [
+        &quot;services/rates.py: load_file parses rows before writing and stores values through upsert&quot;,
+        &quot;persistence/schema.py: rates.upsert matches on date and currency&quot;,
+        &quot;probe: replacement preserved &#x27;2.00&#x27; and other rates; invalid input left stored rows unchanged&quot;,
+        &quot;sources/run.sh: A4 passed with expected exit 3&quot;
+      ]
+    },
+    {
+      &quot;criterion_id&quot;: &quot;st-004&quot;,
+      &quot;verdict&quot;: &quot;MET&quot;,
+      &quot;rationale&quot;: &quot;The service health endpoint returned status 200 and the required JSON body.&quot;,
+      &quot;evidence&quot;: [
+        &quot;app_server/main.py: health returns {&#x27;status&#x27;:&#x27;ok&#x27;}&quot;,
+        &quot;probe: GET /health returned 200 with {&#x27;status&#x27;: &#x27;ok&#x27;}&quot;
+      ]
+    },
+    {
+      &quot;criterion_id&quot;: &quot;st-005&quot;,
+      &quot;verdict&quot;: &quot;MET&quot;,
+      &quot;rationale&quot;: &quot;The grader confirmed effective-date lookups return the latest available publication on or before the requested date and return 404 when none exists.&quot;,
+      &quot;evidence&quot;: [
+        &quot;sources/run.sh: H5 and L4 passed for dates after a publication&quot;,
+        &quot;sources/run.sh: H6 and H16 passed with 404 when no earlier publication exists&quot;,
+        &quot;app_server/main.py: effective uses publications_through&quot;
+      ]
+    },
+    {
+      &quot;criterion_id&quot;: &quot;st-006&quot;,
+      &quot;verdict&quot;: &quot;MET&quot;,
+      &quot;rationale&quot;: &quot;The grader&#x27;s known conversion and history answers passed, and the application uses Decimal with half-even rounding.&quot;,
+      &quot;evidence&quot;: [
+        &quot;sources/run.sh: H9\u2013H12 and H17\u2013H18 passed&quot;,
+        &quot;app_server/main.py: conversion and history calculations use Decimal and ROUND_HALF_EVEN&quot;
+      ]
+    },
+    {
+      &quot;criterion_id&quot;: &quot;st-007&quot;,
+      &quot;verdict&quot;: &quot;MET&quot;,
+      &quot;rationale&quot;: &quot;The grader confirmed malformed dates, amounts, and missing parameters receive 422, while unknown currencies receive 404.&quot;,
+      &quot;evidence&quot;: [
+        &quot;sources/run.sh: H7, H13\u2013H15, H16, and H21 passed with their expected statuses&quot;,
+        &quot;app_server/main.py: request validation raises HTTPException with the specified statuses&quot;
+      ]
+    },
+    {
+      &quot;criterion_id&quot;: &quot;st-008&quot;,
+      &quot;verdict&quot;: &quot;MET&quot;,
+      &quot;rationale&quot;: &quot;Application database access goes through the shipped persistence API selected from DATABASE_URL, and rates are declared and passed as text values.&quot;,
+      &quot;evidence&quot;: [
+        &quot;services/rates.py: database access uses open_database(database_dsn())&quot;,
+        &quot;config/__init__.py: database_dsn selects DATABASE_URL&quot;,
+        &quot;persistence/schema.py: rates.upsert accepts and returns rate as str&quot;,
+        &quot;services/rates.py: load_file passes the published rate string to upsert&quot;,
+        &quot;application modules contain no direct database driver access&quot;
+      ]
+    },
+    {
+      &quot;criterion_id&quot;: &quot;st-009&quot;,
+      &quot;verdict&quot;: &quot;MET&quot;,
+      &quot;rationale&quot;: &quot;The test runner exited zero with network access denied.&quot;,
+      &quot;evidence&quot;: [
+        &quot;[\&quot;unshare\&quot;, \&quot;-rn\&quot;, \&quot;sh\&quot;, \&quot;bin/test.sh\&quot;] exited 0&quot;,
+        &quot;offline command: unshare -rn sh bin/test.sh exited 0; 29 passed&quot;
+      ]
+    },
+    {
+      &quot;criterion_id&quot;: &quot;st-010&quot;,
+      &quot;verdict&quot;: &quot;MET&quot;,
+      &quot;rationale&quot;: &quot;Automated tests stub the download and cover both a successful fetch and a failed download that exits 1.&quot;,
+      &quot;evidence&quot;: [
+        &quot;tests/test_fetch.py: success test patches urllib.request.urlopen and asserts loaded rates&quot;,
+        &quot;tests/test_fetch.py: failure test patches urlopen to raise OSError and asserts exit code 1&quot;,
+        &quot;offline command: test suite passed&quot;
+      ]
+    }
+  ],
+  &quot;guardrail_ids&quot;: [],
+  &quot;observations&quot;: [
+    {
+      &quot;criterion_id&quot;: &quot;st-001&quot;,
+      &quot;kind&quot;: &quot;command&quot;,
+      &quot;source&quot;: &quot;[\&quot;sh\&quot;, \&quot;sources/run.sh\&quot;]&quot;,
+      &quot;return_code&quot;: 0,
+      &quot;pinned&quot;: &quot;MET&quot;,
+      &quot;detail&quot;: &quot;[\&quot;sh\&quot;, \&quot;sources/run.sh\&quot;] exited 0&quot;,
+      &quot;output&quot;: &quot;PASS H8: GET /rates/latest\nPASS H9: GET /convert?from=USD&amp;to=GBP&amp;amount=100&amp;date=2025-01-17\nPASS H10: GET /convert?from=EUR&amp;to=JPY&amp;amount=250.25&amp;date=2025-01-05\nPASS H11: GET /convert?from=GBP&amp;to=EUR&amp;amount=1000\nPASS H12: GET /convert?from=SEK&amp;to=CNY&amp;amount=12345.67&amp;date=2025-01-20\nPASS H13: GET /convert?from=USD&amp;to=XXX&amp;amount=1\nPASS H14: GET /convert?from=USD&amp;to=GBP\nPASS H15: GET /convert?from=USD&amp;to=GBP&amp;amount=abc\nPASS H16: GET /convert?from=USD&amp;to=GBP&amp;amount=10&amp;date=2024-12-01\nPASS H17: GET /history/USD?start=2025-01-20&amp;end=2025-01-24\nPASS H18: GET /history/CHF?start=2025-01-27\nPASS H19: GET /history/HRK\nPASS H20: GET /history/USD?start=2025-02-01\nPASS H21: GET /history/GBP?start=2025-01-31-x\nPASS L1: fxrates load /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.202600/build/FxRates/sources/eurofxref-hist_2025-02-03_04.csv\nPASS L2: GET /stats\nPASS L3: GET /rates/latest\nPASS L4: GET /rates/2025-02-01\nPASS L5: GET /history/AUD?start=2025-01-30\nFxRates: 35 passed, 0 failed (of 35)&quot;
+    },
+    {
+      &quot;criterion_id&quot;: &quot;st-009&quot;,
+      &quot;kind&quot;: &quot;command&quot;,
+      &quot;source&quot;: &quot;[\&quot;unshare\&quot;, \&quot;-rn\&quot;, \&quot;sh\&quot;, \&quot;bin/test.sh\&quot;]&quot;,
+      &quot;return_code&quot;: 0,
+      &quot;pinned&quot;: &quot;MET&quot;,
+      &quot;detail&quot;: &quot;[\&quot;unshare\&quot;, \&quot;-rn\&quot;, \&quot;sh\&quot;, \&quot;bin/test.sh\&quot;] exited 0&quot;,
+      &quot;output&quot;: &quot;timestamp=2026-10-26T17:19:40-0400\narguments=\nworking_directory=/mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.202600/build/FxRates\n.............................                                            [100%]\n29 passed in 11.01s\ncompleted=2026-10-26T17:20:00-0400&quot;
+    }
+  ],
+  &quot;blockers&quot;: [],
+  &quot;attestations&quot;: [],
+  &quot;kit_faults&quot;: [],
+  &quot;warnings&quot;: [],
+  &quot;improvements&quot;: [],
+  &quot;identities&quot;: {
+    &quot;code&quot;: &quot;494b780a67797d7ec96e9f518656dbf04b3ff110&quot;,
+    &quot;sea_trials&quot;: &quot;61c37099f28b462d12a5c4a7ea343875b807b18eda1e9a3f58491d80fe623f52&quot;,
+    &quot;blueprint&quot;: {
+      &quot;ARCHITECTURE.md&quot;: &quot;c0c8a5e7a3d5142d1daf0fd898de36ed4f766fb554c0250f80d781debf599a34&quot;,
+      &quot;ARCHITECTURE_compact.md&quot;: &quot;a55095e166d9426a66bfd0cc18adde3a5bcf3c85b8d805af749f639644c3e89a&quot;,
+      &quot;DATABASE.md&quot;: &quot;54097832936d2ba5b7c2f8d44ed278d915a1ad842f4bab76d284889f3ecf4a66&quot;,
+      &quot;DATABASE_compact.md&quot;: &quot;bd6238392920be87b9b37e9827c7a62cc488be83ac4246f4cfd380bc943dd8eb&quot;,
+      &quot;FEATURE-AppServer.md&quot;: &quot;fbdc61874bdb9ee50e00dfae58c4f5e73202961fb387c4c6484da293971a836b&quot;,
+      &quot;FEATURE-CLI-Errors.md&quot;: &quot;36b1e90f5dbf6e2bd984d59b7910f6d5ab391f1469342a9001bf5e5e109bec47&quot;,
+      &quot;FEATURE-CLI.md&quot;: &quot;ab0f6165e634f8198f84c8d7cf09bf80ebe0ecedfa404b9848829ebb484ecdde&quot;,
+      &quot;FEATURE-Convert.md&quot;: &quot;b9a9524694e7045850a60e91d48fa111517855dc7e2a8c9b017079225455f1d1&quot;,
+      &quot;FEATURE-Currencies.md&quot;: &quot;b9f0917e6f35f82637e8e7df00664a575b2faeb98e747ace81f178d25c02ef2b&quot;,
+      &quot;FEATURE-Fetch.md&quot;: &quot;c61633194be5b502c39ad08f4f02c7084a3999aad519fd26f06728d3ce8f22a0&quot;,
+      &quot;FEATURE-Grader.md&quot;: &quot;6de5d46f6d49b6d255ee23a8ed6d28c3c681e4b5163e4009cc9ce4ae7903dd63&quot;,
+      &quot;FEATURE-Health.md&quot;: &quot;da50c121428250068966dd0d0ff3cc6af37d87d0be357d07857d2ee617230719&quot;,
+      &quot;FEATURE-History.md&quot;: &quot;6fe2d3dfd1c35dc551888a7ec4870ae23f8f85333e9b69cb5fadf6b3f6c48b62&quot;,
+      &quot;FEATURE-Init.md&quot;: &quot;c882b36c452bb2cf6bc42f4dc5b3acf1400643986ae2c66f9d6aca65733b40fe&quot;,
+      &quot;FEATURE-LatestRates.md&quot;: &quot;c0f5d5f04880783dcf6ea173afb9ba2110e0c1d5e8d58f29fe7f2f5f32f2116a&quot;,
+      &quot;FEATURE-Load.md&quot;: &quot;a841aebcf20cf719019ab128b9e45c751a66da5b926ddc628eb5bb273c442121&quot;,
+      &quot;FEATURE-Rates.md&quot;: &quot;3e083320f6358aca460d8cfed70bc1490501ec9c34fe962294099de5f0bf495a&quot;,
+      &quot;FEATURE-Stats.md&quot;: &quot;846bb52c706a8ddfc844e4de2d5764820663eef35e91b6c82f70c7a5bb219e89&quot;,
+      &quot;FEATURE-Tests.md&quot;: &quot;3644a3f97befdce7b51f58938d2f334618e6939c71c2e02973e887cca930ac75&quot;
+    }
+  },
+  &quot;execution_id&quot;: &quot;20261026.212001.116Z-456c9f3d&quot;
+}
+</pre></article>
+</main>
+</body>
+</html>

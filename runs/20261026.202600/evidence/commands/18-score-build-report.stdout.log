@@ -1,0 +1,41 @@
+Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
+
+Build report: FxRates
+  evidence: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.202600/workspace/targets/FxRates/evidence
+  usage:    /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.202600/workspace/logs/llm.jsonl
+
+  Blueprint acceptance (last `score ac`): PASS 29  FAIL 3  UNVERIFIED 0  PREPASSED 1  (33 AC)
+
+  Block                     Build AC  Calls     Cached  Uncached    Hit  Output     Time
+  ──────────────────────────────────────────────────────────────────────────────────────
+  ✓ Block 1 · Foundational       1/1      1    128,128    12,106  91.4%   1,733      23s
+  ✓ Block 2 · Foundational       7/7      1  1,066,112    51,308  95.4%   7,013   3m 02s
+  ✓ Block 3 · Service          21/21      3  1,126,528   105,117  91.5%   9,495   4m 07s
+  ✓ Block 4 · Service            2/2      1    146,560    56,253  72.3%   2,273      49s
+  ✓ Block 5 · Service            1/1      3    485,760    93,373  83.9%   6,416   2m 57s
+  ✓ Block 6 · Service            1/1      2    439,680    63,739  87.3%   2,711   1m 33s
+  ──────────────────────────────────────────────────────────────────────────────────────
+  TOTAL                        33/33     11  3,392,768   381,896  89.9%  29,641  12m 54s
+
+  Blocks: 6/6 verified · 3 on first call · 3 repaired
+  Model:  gpt-6-luna
+  Tokens: 3,392,768 cached · 381,896 uncached · 29,641 out
+
+  Repairs
+    Block 3 · Service [block-3]
+      initial build  incomplete 18/21 AC · 324,996 in · 87.3% hit · 1m 05s
+                     not yet passing: init-clears-store, history-range-and-statistics, history-empty-range-and-errors
+      repair 1       incomplete 20/21 AC · 506,218 in · 96.5% hit · 1m 59s
+                     not yet passing: init-clears-store
+      repair 2       built      21/21 AC · 400,431 in · 88.5% hit · 1m 02s
+    Block 5 · Service [block-5]
+      initial build  incomplete 0/1 AC · 28/29 cases · 249,109 in · 80.1% hit · 56s
+                     not yet passing: test-suite-passes
+      repair 1       incomplete 1/1 AC · 165,302 in · 89.7% hit · 1m 20s
+                     not yet passing: latest-rates-empty
+      repair 2       built      1/1 AC · 164,722 in · 83.7% hit · 41s
+    Block 6 · Service [block-6]
+      initial build  incomplete 1/1 AC · 35/35 cases · 296,392 in · 90.7% hit · 56s
+                     not yet passing: init-clears-store, stats-empty-store
+      repair 1       built      1/1 AC · 35/35 cases · 207,027 in · 82.5% hit · 36s
+

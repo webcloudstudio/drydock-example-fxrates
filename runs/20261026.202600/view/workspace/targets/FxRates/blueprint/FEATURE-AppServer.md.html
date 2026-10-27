@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-AppServer.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-AppServer.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-AppServer.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Application Server Foundation</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261026 V1</td></tr><tr><td>Description</td><td>Establishes the FastAPI application factory and its in-process test client.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Provide the shared FastAPI application entry point used by <code>uvicorn app_server.main:app</code> and by in-process acceptance checks.</p>
+<h2>Interface</h2>
+<ul><li><code>app_server.main.create_app()</code> returns a FastAPI application.</li><li><code>app_server.main.app</code> is the module-level application used by uvicorn.</li><li><code>app_server.testing.web_client()</code> returns a <code>fastapi.testclient.TestClient</code> for a newly created application.</li></ul>
+<p>This foundation registers no feature endpoints. Endpoint behavior belongs to the stories that provide those routes.</p>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC app-server-factory ===<br>Intent: The application factory and published test client are importable and construct the declared FastAPI interfaces.<br>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx2; scope=test</p>
+<p>from fastapi import FastAPI from fastapi.testclient import TestClient from app_server.main import app, create_app from app_server.testing import web_client</p>
+<p>created = create_app() client = web_client() assert isinstance(created, FastAPI) assert isinstance(app, FastAPI) assert isinstance(client, TestClient) assert isinstance(client.app, FastAPI) === END AC app-server-factory ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Do not implement or claim endpoints owned by later feature stories in this foundation.</li><li>Expose <code>create_app()</code> and the module-level <code>app</code> from <code>app_server.main</code>.</li><li>The published <code>web_client()</code> callable returns a TestClient built from <code>create_app()</code>.</li></ul></article>
+</main>
+</body>
+</html>

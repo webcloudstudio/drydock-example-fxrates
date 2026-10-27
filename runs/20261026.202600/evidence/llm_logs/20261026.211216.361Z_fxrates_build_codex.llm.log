@@ -1,0 +1,3 @@
+  Completed CODEX/gpt-6-luna (build)  rc=0
+    elapsed=36.8s   cached=170,880 (83% hit)   uncached=36,147   out=1,429   tps=38.8
+  tokens: cached=170,880 (83% hit) · uncached=36,147 · out=1,429

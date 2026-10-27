@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/prompt_outputs/20261026.202750.775Z_fxrates_plan_codex.output.txt</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/prompt_outputs/20261026.202750.775Z_fxrates_plan_codex.output.txt</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/prompt_outputs/20261026.202750.775Z_fxrates_plan_codex.output.txt">Raw file</a></div></header>
+<article class="doc"><pre>=== BEGIN ARTIFACT ARCHITECTURE.md ===
+# ARCHITECTURE: FxRates Application
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | Defines the application modules and ownership boundaries for the FxRates command line and API. |
+
+## Questions
+
+- None.
+
+## Module Boundaries
+
+| Module | Owns | Allowed dependencies |
+|--------|------|---------------------|
+| `cli` | The `fxrates` executable, argument handling, command dispatch, and diagnostics. | Feature services, configuration |
+| `app_server` | The FastAPI application factory and HTTP route registration. | Feature services, configuration |
+| `services` | ECB CSV validation and loading, fetching, store initialization, rate queries, and exact decimal calculations. | `persistence`, configuration, standard library |
+| `persistence` | The generated relational layer and shipped database library. | Database engine and schema |
+| `config` | Resolving the database location from `DATABASE_URL`, then `DATABASE_PATH`, then `data/app.db`. | Standard library |
+
+HTTP handlers call services. CLI commands call services. Services call the generated persistence operations through the shipped persistence library. Only the persistence boundary reaches the database. No application module opens a database driver directly.
+
+The load workflow validates the complete input file before its first write. The fetch workflow extracts the archive&#x27;s CSV and passes it through the same validation and loading behavior. Rate calculations use `decimal.Decimal`; published values remain text in storage and API responses.
+
+## Technology Stack
+
+| Technology | Use |
+|------------|-----|
+| Python 3.11 or newer | Application, CLI, services, and tests |
+| FastAPI | JSON HTTP API |
+| uvicorn | Serving the API on `127.0.0.1` |
+| SQLite | Local rates store, accessed through the shipped persistence library |
+| pytest | Offline automated tests |
+| FastAPI `TestClient` | In-process API checks |
+
+## Programmatic Acceptance
+
+=== AC architecture-service-boundary ===
+Intent: The application provides an importable services boundary for shared CLI and API behavior.
+
+import importlib.util
+
+services_spec = importlib.util.find_spec(&quot;services&quot;)
+assert services_spec is not None
+=== END AC architecture-service-boundary ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Application code reaches SQLite only through the shipped persistence library and generated relational layer.
+- Preserve rates as ECB-published text; use `decimal.Decimal` for arithmetic and never floating point.
+- Keep file validation ahead of the first database write.
+- Resolve database configuration in this order: `DATABASE_URL`, `DATABASE_PATH`, then `data/app.db`.
+
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-AppServer.md ===
+# FEATURE: Application Server Foundation
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | Establishes the FastAPI application factory and its in-process test client. |
+| Depends On  | ARCHITECTURE.md |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Provide the shared FastAPI application entry point used by `uvicorn app_server.main:app` and by in-process acceptance checks.
+
+## Interface
+
+- `app_server.main.create_app()` returns a FastAPI application.
+- `app_server.main.app` is the module-level application used by uvicorn.
+- `app_server.testing.web_client()` returns a `fastapi.testclient.TestClient` for a newly created application.
+
+This foundation registers no feature endpoints. Endpoint behavior belongs to the stories that provide those routes.
+
+## Programmatic Acceptance
+
+=== AC app-server-factory ===
+Intent: The application factory and published test client are importable and construct the declared FastAPI interfaces.
+Requires: python-package=fastapi; scope=test
+Requires: python-package=httpx2; scope=test
+
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+from app_server.main import app, create_app
+from app_server.testing import web_client
+
+created = create_app()
+client = web_client()
+assert isinstance(created, FastAPI)
+assert isinstance(app, FastAPI)
+assert isinstance(client, TestClient)
+assert isinstance(client.app, FastAPI)
+=== END AC app-server-factory ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Do not implement or claim endpoints owned by later feature stories in this foundation.
+- Expose `create_app()` and the module-level `app` from `app_server.main`.
+- The published `web_client()` callable returns a TestClient built from `create_app()`.
+
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-CLI.md ===
+# FEATURE: CLI Foundation
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | Establishes the root executable and the published in-process CLI entry point. |
+| Depends On  | ARCHITECTURE.md |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Provide the application-root executable `./fxrates`, the `cli.main(argv: list[str] | None = None) -&gt; int` entry point, and the `cli.testing.cli_runner(*args)` helper. Feature stories own command behavior and its implementation.
+
+## Interface
+
+- `./fxrates &lt;command&gt;` invokes `cli.main`.
+- `cli.testing.cli_runner(*args)` returns `(exit_code, stdout, stderr)` without spawning a process.
+- Diagnostics are written to standard error.
+
+## Programmatic Acceptance
+
+=== AC cli-foundation-interfaces ===
+Intent: The CLI entry point and in-process runner expose the published callable interfaces.
+from cli import main
+from cli.testing import cli_runner
+import inspect
+
+assert callable(main)
+assert inspect.signature(main).parameters[&quot;argv&quot;].default is None
+result = cli_runner()
+assert isinstance(result, tuple)
+assert len(result) == 3
+assert isinstance(result[0], int)
+assert isinstance(result[1], str)
+assert isinstance(result[2], str)
+=== END AC cli-foundation-interfaces ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Place an executable named `fxrates` at the application root.
+- Keep command diagnostics on standard error.
+- Command-specific behavior and error statuses are implemented by their owning stories.
+
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-Load.md ===
+# FEATURE: ECB CSV Loading
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | Validates and loads ECB history CSV files atomically while preserving published rate text. |
+| Depends On  | FEATURE-CLI.md, DATABASE.md |
+
+## Questions
+
+- None.
+
+## Purpose
+
+`./fxrates load &lt;csv&gt;` reads an ECB history file, validates the entire file before its first database write, then stores every rate other than `N/A`. A valid rate replaces the stored value for the same publication date and currency. On success, print CSV output with header `dates,rates` and one data row containing the number of dates with at least one rate and the number of rates stored from this file.
+
+## CSV Rules
+
+- The first header field is `Date`; subsequent fields are three-letter uppercase currency codes. Ignore the final empty field produced by the ECB trailing comma.
+- Each row has a real, non-repeated `YYYY-MM-DD` date and exactly one value per currency, excluding the ignored trailing field.
+- `N/A` denotes no rate and creates no stored row. Other values match `[0-9]+(\.[0-9]+)?` and are nonzero.
+- A malformed header or row, wrong field count, invalid or repeated date, or invalid rate rejects the file. Reject it before writing any row.
+- A file read failure is an operational failure. A rejected file and an operational failure produce no standard output; diagnostics go to standard error.
+
+## Database Interface
+
+- `FEATURE-RATE-001` — write: store or replace a published rate - supplies: `date`, `currency`, `rate` - returns: `date`, `currency`, `rate`
+
+## Programmatic Acceptance
+
+=== AC load-valid-file ===
+Intent: Loading the supplied January history succeeds and reports the fixture-derived date and rate counts.
+import csv
+from cli.testing import cli_runner
+
+path = &quot;sources/eurofxref-hist_2025-01.csv&quot;
+code, stdout, stderr = cli_runner(&quot;load&quot;, path)
+rows = list(csv.reader(stdout.splitlines()))
+assert code == 0
+assert rows[0] == [&quot;dates&quot;, &quot;rates&quot;]
+assert rows[1] == [str(22), str(22 * 8)]
+=== END AC load-valid-file ===
+
+=== AC load-rejects-atomically ===
+Intent: A rejected CSV file leaves the rates it would otherwise have changed untouched.
+from cli.testing import cli_runner
+from persistence.testing import db_session
+
+date = &quot;2025-02-04&quot;
+currency = &quot;USD&quot;
+rate = &quot;9.876&quot;
+
+with db_session() as db:
+    seeded = db.rates.upsert(date=date, currency=currency, rate=rate)
+    assert seeded.rate == rate
+    code, stdout, stderr = cli_runner(&quot;load&quot;, &quot;sources/eurofxref-hist_bad.csv&quot;)
+    stored = db.rates.by_date(date=date)
+    assert code == 3
+    assert stdout == &quot;&quot;
+    assert any(row.currency == currency and row.rate == rate for row in stored)
+=== END AC load-rejects-atomically ===
+
+=== AC load-replaces-published-text ===
+Intent: Loading a valid file stores its rate text exactly and replaces a matching stored rate.
+from cli.testing import cli_runner
+from persistence.testing import db_session
+
+date = &quot;2025-01-31&quot;
+currency = &quot;USD&quot;
+published = &quot;1.0393&quot;
+prior = &quot;9.876&quot;
+
+with db_session() as db:
+    seeded = db.rates.upsert(date=date, currency=currency, rate=prior)
+    assert seeded.rate == prior
+    code, stdout, stderr = cli_runner(&quot;load&quot;, &quot;sources/eurofxref-hist_2025-01.csv&quot;)
+    stored = db.rates.by_date(date=date)
+    found = next(row for row in stored if row.currency == currency)
+    assert code == 0
+    assert found.rate == published
+=== END AC load-replaces-published-text ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Check the entire file before its first write; a rejected file changes nothing.
+- Store published rate strings unchanged, omit `N/A`, and replace matching `(date, currency)` rows.
+- Access persistence only through the shipped library and generated relational layer.
+
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-Fetch.md ===
+# FEATURE: ECB History Fetch
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | Downloads and extracts the ECB history archive before loading its CSV through the shared loader. |
+| Depends On  | FEATURE-Load.md |
+
+## Questions
+
+- None.
+
+## Purpose
+
+`./fxrates fetch` downloads `https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist.zip`, extracts `eurofxref-hist.csv`, and passes that file through the same validation, persistence, and reporting workflow as `./fxrates load`.
+
+A download failure returns status 1, writes no standard output, and emits a diagnostic to standard error. Automated tests replace the download with a stub and do not access the network.
+
+## Programmatic Acceptance
+
+=== AC fetch-stubbed-success ===
+Intent: Fetch loads the CSV from a stubbed ECB archive and reports its fixture-derived counts.
+Requires: python-package=fastapi; scope=test
+Requires: python-package=httpx2; scope=test
+
+import csv
+import io
+import urllib.request
+import zipfile
+from unittest.mock import patch
+from cli.testing import cli_runner
+from persistence.testing import db_session
+
+buffer = io.BytesIO()
+with zipfile.ZipFile(buffer, &quot;w&quot;) as archive:
+    archive.writestr(&quot;eurofxref-hist.csv&quot;, &quot;Date,USD,\n2099-06-01,1.25,\n&quot;)
+payload = buffer.getvalue()
+
+class Response:
+    def read(self):
+        return payload
+    def __enter__(self):
+        return self
+    def __exit__(self, *args):
+        return None
+
+with patch(&quot;urllib.request.urlopen&quot;, return_value=Response()):
+    code, stdout, stderr = cli_runner(&quot;fetch&quot;)
+
+rows = list(csv.reader(stdout.splitlines()))
+with db_session() as db:
+    stored = db.rates.by_date(date=&quot;2099-06-01&quot;)
+assert code == 0
+assert rows[0] == [&quot;dates&quot;, &quot;rates&quot;]
+assert rows[1] == [&quot;1&quot;, &quot;1&quot;]
+assert len(stored) == 1
+assert stored[0].currency == &quot;USD&quot;
+assert stored[0].rate == &quot;1.25&quot;
+=== END AC fetch-stubbed-success ===
+
+=== AC fetch-stubbed-failure ===
+Intent: A failed stubbed download returns the operational failure status without standard output.
+from unittest.mock import patch
+from cli.testing import cli_runner
+
+with patch(&quot;urllib.request.urlopen&quot;, side_effect=OSError(&quot;offline&quot;)):
+    code, stdout, stderr = cli_runner(&quot;fetch&quot;)
+
+assert code == 1
+assert stdout == &quot;&quot;
+=== END AC fetch-stubbed-failure ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Extract the `eurofxref-hist.csv` member and use the shared loader&#x27;s validation and reporting behavior.
+- Never make network requests in automated tests; replace the download operation with a stub.
+- On download failure, return status 1 and write no standard output.
+
+=== END ARTIFACT ===</pre></article>
+</main>
+</body>
+</html>

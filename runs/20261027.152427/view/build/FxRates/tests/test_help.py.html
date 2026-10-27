@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>build/FxRates/tests/test_help.py</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>build/FxRates/tests/test_help.py</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../build/FxRates/tests/test_help.py">Raw file</a></div></header>
+<article class="doc"><pre>&quot;&quot;&quot;`&lt;command&gt; --help`: usage and a one-line summary on stdout, exit 0, nothing touched.
+
+Each command runs in-process through `cli_runner`. Stored state is read back through `db.rates`.
+The seeded test rate is in one acceptance transaction that rolls back at the end.
+&quot;&quot;&quot;
+
+from __future__ import annotations
+
+from collections.abc import Iterator
+from unittest import mock
+
+import pytest
+
+from persistence import db as persistence_db
+from persistence.testing import db_session
+
+COMMANDS = [&quot;init&quot;, &quot;load&quot;, &quot;fetch&quot;, &quot;serve&quot;]
+
+
+@pytest.fixture(autouse=True)
+def rolled_back_transaction() -&gt; Iterator[None]:
+    &quot;&quot;&quot;Share one connection between the command and the test, then roll everything back.&quot;&quot;&quot;
+    persistence_db.begin_acceptance_transaction()
+    try:
+        yield
+    finally:
+        persistence_db.end_acceptance_transaction()
+
+
+@pytest.mark.parametrize(&quot;command&quot;, COMMANDS)
+def test_help_exits_zero_with_usage_on_stdout_and_nothing_on_stderr(cli_runner, command: str) -&gt; None:
+    code, out, err = cli_runner(command, &quot;--help&quot;)
+
+    assert code == 0
+    assert out.strip() != &quot;&quot;
+    assert err == &quot;&quot;
+    assert command in out
+
+
+@pytest.mark.parametrize(&quot;command&quot;, COMMANDS)
+def test_help_prints_a_usage_line_then_a_one_line_summary(cli_runner, command: str) -&gt; None:
+    _, out, _ = cli_runner(command, &quot;--help&quot;)
+
+    lines = [line for line in out.splitlines() if line.strip()]
+    assert len(lines) == 2
+    assert lines[0].startswith(f&quot;usage: fxrates {command}&quot;)
+    assert lines[1].startswith(&quot;summary:&quot;)
+
+
+def test_load_help_needs_no_file_argument(cli_runner) -&gt; None:
+    code, out, _ = cli_runner(&quot;load&quot;, &quot;--help&quot;)
+
+    assert code == 0
+    assert out.splitlines()[0] == &quot;usage: fxrates load &lt;file&gt;&quot;
+
+
+def test_init_help_does_not_reset_the_store(cli_runner) -&gt; None:
+    currency = &quot;ZZH&quot;
+    date = &quot;2999-09-01&quot;
+    text = &quot;6.5&quot;
+    with db_session() as db:
+        db.rates.replace_rate(date=date, currency=currency, rate=text)
+
+        code, _, _ = cli_runner(&quot;init&quot;, &quot;--help&quot;)
+
+        assert code == 0
+        rows = db.rates.list_currency_history(currency=currency, start_date=date, end_date=date)
+        assert [r.rate for r in rows] == [text]
+
+
+def test_fetch_help_does_not_download(cli_runner) -&gt; None:
+    with mock.patch(&quot;fxrates_app.fetch.download_archive&quot;) as download:
+        code, _, _ = cli_runner(&quot;fetch&quot;, &quot;--help&quot;)
+
+    assert code == 0
+    download.assert_not_called()
+
+
+def test_help_applied_twice_prints_the_same_text(cli_runner) -&gt; None:
+    first = cli_runner(&quot;serve&quot;, &quot;--help&quot;)
+    second = cli_runner(&quot;serve&quot;, &quot;--help&quot;)
+
+    assert first == second
+</pre></article>
+</main>
+</body>
+</html>

@@ -1,3 +1,0 @@
-CAUSE: `DATABASE` produced no persistence artifacts, so block-1 acceptance could not verify the app or database interface.
-DO: Inspect `persistence/` and rebuild the `DATABASE` step to generate its artifacts.
-DO: Run `drydock build FxRates --step block-1`.

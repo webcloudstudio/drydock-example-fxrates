@@ -1,0 +1,106 @@
+<requirement name="build-service" stories="foundation-python,web-foundation,cli-foundation">
+Implement in Python 3.11 or newer with FastAPI, served by uvicorn, over SQLite. Tests run under pytest, using FastAPI's `TestClient` for the API. The product is an executable named `fxrates` at the application root.
+</requirement>
+<requirement name="scoring-harness" stories="accept-001-grader">
+`sources/run.sh` is the scoring entry point. It is supplied, not authored, and is staged verbatim
+into the application root with the data files. `drydock uat` runs `sh sources/run.sh` from the
+completed application root and takes its exit code and output as the score.
+</requirement>
+<requirement name="database-selection" stories="cli-003-database-selection">
+`DATABASE_URL` names the SQLite database file, optionally prefixed `sqlite://`. When it is unset,
+`DATABASE_PATH` is used, then `data/app.db`.
+</requirement>
+<requirement name="persistence-layer" stories="database">
+All database access goes through the shipped
+persistence library and the relational layer generated from `DATABASE.md`. Application code never
+opens a database driver directly.
+</requirement>
+<requirement name="rates-table" stories="database,load-002-store">
+A rate is stored exactly as the ECB publishes it, as text. `0.943` stays `0.943`, never `0.9430`
+and never a float.
+</requirement>
+<requirement name="init-command" stories="cli-002-init">
+| `fxrates init` | Drops the `rates` table if present and creates it empty. | Nothing. |
+</requirement>
+<requirement name="load-command" stories="load-002-store">
+| `fxrates load <csv>` | Loads an ECB history file (rules below). | `dates,rates`, then the number of dates and of rates stored from the file. |
+</requirement>
+<requirement name="fetch-command" stories="load-005-fetch">
+| `fxrates fetch` | Downloads `https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist.zip`, extracts `eurofxref-hist.csv`, and loads it as `load` does. | As `load`. |
+</requirement>
+<requirement name="serve-command" stories="rates-001-serve-health">
+| `fxrates serve [--port <n>]` | Serves the HTTP API on `127.0.0.1:<n>` with uvicorn until stopped. Default port `8000`. | Nothing required. |
+</requirement>
+<requirement name="validate-history-file" stories="load-001-validate">
+**A rejected file changes nothing.** The whole file is checked before the first write. A row
+   with the wrong field count, an invalid or repeated date, or an invalid value rejects the file.
+</requirement>
+<requirement name="replace-existing-rates" stories="load-002-store">
+A rate for a (`date`, `currency`) that is already stored replaces it, so loading the same file
+   twice leaves the database unchanged.
+</requirement>
+<requirement name="load-counts" stories="load-002-store">
+The reported `dates` counts the dates with at least one stored rate, and `rates` counts the
+   rates stored.
+</requirement>
+<requirement name="failing-command-output" stories="cli-001-usage-errors,load-003-unreadable">
+A failing command writes nothing to standard output and one diagnostic line to standard error.
+</requirement>
+<requirement name="exit-codes" stories="cli-001-usage-errors,load-003-unreadable,load-001-validate,load-005-fetch">
+**Exit codes.** `0` success. `1` operational failure: the file cannot be read, or a `fetch`
+download fails. `2` usage error: unknown command, wrong argument count, `--port` not an integer.
+`3` rejected file.
+</requirement>
+<requirement name="health-endpoint" stories="rates-001-serve-health">
+| `GET /health` | `{"status": "ok"}` |
+</requirement>
+<requirement name="stats-endpoint" stories="rates-002-stats">
+| `GET /stats` | `{"dates": <n>, "rates": <n>, "first": <date>, "last": <date>}`. `first` and `last` are `null` when the table is empty. |
+</requirement>
+<requirement name="currencies-endpoint" stories="rates-003-currencies">
+| `GET /currencies` | `{"base": "EUR", "currencies": [<code>, ...]}`: every currency with at least one stored rate, ascending. |
+</requirement>
+<requirement name="rates-by-date" stories="rates-004-rates-by-date">
+| `GET /rates/{date}` | `{"date": <effective date>, "requested": <date>, "base": "EUR", "rates": {<code>: <rate>, ...}}`: every currency with a rate on the effective date. |
+</requirement>
+<requirement name="rates-latest" stories="rates-005-latest">
+| `GET /rates/latest` | As `/rates/{date}` for the latest publication date, with `"requested": "latest"`. |
+</requirement>
+<requirement name="effective-date" stories="rates-004-rates-by-date,convert-001-convert">
+The ECB publishes on working days only. A request for date `D` uses the latest
+publication date on or before `D`. If none exists, the response is `404`.
+</requirement>
+<requirement name="convert-endpoint" stories="convert-001-convert">
+| `GET /convert?from=<code>&to=<code>&amount=<amount>[&date=<date>]` | `{"date": <effective date>, "from": <code>, "to": <code>, "amount": <amount>, "rate": <rate>, "result": <result>}`. Without `date`, the latest publication date is used. |
+</requirement>
+<requirement name="history-endpoint" stories="hist-001-points,hist-002-summary">
+| `GET /history/{code}[?start=<date>][&end=<date>]` | `{"currency": <code>, "base": "EUR", "count": <n>, "min": <rate>, "max": <rate>, "mean": <mean>, "points": [{"date": <date>, "rate": <rate>}, ...]}` for the publication dates from `start` through `end` inclusive, ascending. Both bounds are optional. With no points, `count` is `0`, `min`, `max`, and `mean` are `null`, and `points` is `[]`. |
+</requirement>
+<requirement name="value-formats" stories="convert-001-convert,hist-002-summary,hist-001-points,rates-004-rates-by-date,rates-005-latest">
+- `<rate>` in `/rates`, `min`, `max`, and `points` is the stored text, as a JSON string.
+- `/convert` `amount` matches `[0-9]+(\.[0-9]+)?` and is echoed as given, as a JSON string.
+- `/convert` `rate` is `rate(to) / rate(from)`, computed exactly and rounded half to even to six
+  decimal places, written with exactly six decimals, as a JSON string: `"161.770000"`.
+- `/convert` `result` is `amount × rate(to) / rate(from)`, computed exactly from the stored rates
+  (not from the rounded `rate`) and rounded half to even to two decimal places, written with
+  exactly two decimals, as a JSON string: `"82.01"`.
+- `/history` `min` and `max` are the stored text of the smallest and largest rate by value.
+  `mean` is the exact mean rounded half to even to six decimal places, written with exactly six
+  decimals, as a JSON string.
+</requirement>
+<requirement name="not-found-errors" stories="rates-004-rates-by-date,rates-005-latest,convert-002-convert-errors,hist-003-errors">
+| `404` | No publication on or before the requested date; a `/convert` currency other than EUR with no rate on the effective date; a `/history` currency with no stored rate at all (including `EUR`). |
+</requirement>
+<requirement name="validation-errors" stories="convert-002-convert-errors,hist-003-errors,rates-004-rates-by-date">
+| `422` | A malformed date in the path or query, a malformed `amount`, or a missing required query parameter. FastAPI's request validation produces this status. |
+</requirement>
+<requirement name="load-visible-to-server" stories="load-004-visible-to-server">
+A load that completes while the server is running is visible to the next request.
+</requirement>
+<requirement name="offline-test-script" stories="cli-005-offline-tests">
+The completed application provides a POSIX-compatible `bin/test.sh` that runs its own pytest suite
+from the application root and exits zero only when every test passes. The suite covers each
+command, each load rule, each endpoint, the effective-date rule, rounding, and each error status,
+against a real temporary database, with `fetch` stubbed.
+</requirement>
+<unattached story="cli-004-help"/>

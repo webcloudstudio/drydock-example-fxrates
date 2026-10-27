@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/DATABASE_compact.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/DATABASE_compact.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/DATABASE_compact.md">Raw file</a></div></header>
+<article class="doc"><p>&lt;!-- Compacted from DATABASE.md sha256=7a1850b2e94d8b305d500ff56581a92e07daf9a544b96984e9fed361da8f0b74 on 2026-10-27 by drydock build agent --&gt;</p>
+<p>Store: SQLite or PostgreSQL via <code>open_database(dsn)</code>; only the generated <code>persistence</code> package reaches the store. Calls are <code>db.rates.&lt;op&gt;(...)</code>; rows expose <code>.date</code>, <code>.currency</code>, <code>.rate</code> (text, never float).</p>
+<p>Table <code>rates</code>: <code>id</code> INTEGER PK; <code>date</code> TEXT NOT NULL (YYYY-MM-DD); <code>currency</code> TEXT NOT NULL (3-letter uppercase); <code>rate</code> TEXT NOT NULL (as published). UNIQUE(date, currency).</p>
+<p>Operations:</p>
+<ul><li><code>rates.replace_rate(date: str, currency: str, rate: str)</code> → row(date, currency, rate). Upsert on (date, currency).</li><li><code>rates.list_for_date(date: str)</code> → rows(date, currency, rate), exact date, order currency asc.</li><li><code>rates.list_on_or_before(as_of: str | None = None)</code> → rows(date), date &lt;= as_of inclusive, order date desc. First row is the effective date; no rows means none.</li><li><code>rates.list_all_keys(since: str | None = None)</code> → rows(date, currency), date &gt;= since, order date asc.</li><li><code>rates.list_currencies(since: str | None = None)</code> → rows(currency), date &gt;= since, order currency asc; one row per stored rate, so dedupe in the service.</li><li><code>rates.list_currency_history(currency: str | None, start_date: str | None, end_date: str | None)</code> → rows(date, currency, rate), inclusive bounds, order date asc. Empty with only <code>currency</code> means no stored rate.</li><li><code>rates.delete_from_date(from_date: str)</code> → int removed count, date &gt;= from_date. <code>init</code> passes <code>0000-01-01</code>.</li></ul>
+<p>Config: DATABASE_URL (takes precedence, optional sqlite:// prefix), DATABASE_PATH (default data/app.db).<br>Testing: <code>persistence.testing.db_session()</code> yields a rolled-back session over the provisioned store. Services derive counts, first/last dates, and distinct currencies from list results; no aggregate operations exist.</p></article>
+</main>
+</body>
+</html>

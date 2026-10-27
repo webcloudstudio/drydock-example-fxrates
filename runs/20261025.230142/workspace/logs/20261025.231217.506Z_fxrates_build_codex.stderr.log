@@ -1,4 +1,0 @@
-2026-10-25T23:12:45.399643Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261025.230142/build/FxRates/pyproject.toml:
-dev = [
-    "pytest>=9.1.1",
-]

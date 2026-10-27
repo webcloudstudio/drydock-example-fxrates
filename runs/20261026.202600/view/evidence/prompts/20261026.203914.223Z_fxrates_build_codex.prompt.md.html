@@ -1,0 +1,1577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/prompts/20261026.203914.223Z_fxrates_build_codex.prompt.md</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/prompts/20261026.203914.223Z_fxrates_build_codex.prompt.md</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/prompts/20261026.203914.223Z_fxrates_build_codex.prompt.md">Raw file</a></div></header>
+<article class="doc"><h1>System Instructions</h1>
+<p>This prompt is divided into three sections:</p>
+<ol><li><strong>System Instructions</strong> (this section) — structural orientation only. Do not treat this</li></ol>
+<p>section as task input.</p>
+<ol><li><strong>Input Context</strong> — begins with the heading <code># Input Context</code>. All blocks are wrapped in</li></ol>
+<p><code>&lt;pblock&gt;</code> tags. Two block types:</p>
+<ul><li>File blocks: <code>&lt;pblock filename=&quot;&lt;name&gt;&quot; role=&quot;&lt;role&gt;&quot; guidance=&quot;...&quot;&gt;</code> — optional</li></ul>
+<p><code>guidance</code> attribute carries context-specific instructions; content is in a fenced block.</p>
+<ul><li>Metadata/section blocks: <code>&lt;pblock label=&quot;&lt;label&gt;&quot; kind=&quot;&lt;kind&gt;&quot;&gt;</code> — job parameters,</li></ul>
+<p>rules, instructions, or group headers.</p>
+<ol><li><strong>Agent Task</strong> — begins with the heading <code># Agent Task</code>. Defines your persona, constraints,</li></ol>
+<p>and required outputs. Read all input context before acting on this section.</p>
+<h1>Input Context</h1>
+<p>&lt;pblock label=&quot;Build block job&quot; kind=&quot;job&quot;&gt;</p>
+<h2>Build block job</h2>
+<ul><li>TARGET: FxRates</li><li>BUILD_DIRECTORY: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.202600/build/FxRates</li><li>WORKING_DIRECTORY: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.202600/build/FxRates</li><li>BUILD_BLOCK: Block 3 · Service (block-3)</li><li>STORIES: Validate and load ECB CSV history files atomically. (load), Initialize an empty rates store. (init), List currencies that have stored rates. (api_currencies), Retrieve rates from the latest publication. (api_latest), Report stored rate statistics. (api_stats), Retrieve rates by effective date. (api_rates), Retrieve currency history and summary statistics. (history), Convert amounts between currencies. (convert), Serve the health endpoint. (api_health), Report CLI usage and operational errors. (cli_errors)</li><li>DATE: 2026-10-26</li><li>BUILD_SCOPE: exactly one MANIFEST.md build block</li></ul>
+<p>&lt;/pblock&gt;</p>
+<p>&lt;pblock label=&quot;Stories in this block&quot; kind=&quot;section&quot;&gt;</p>
+<h2>Stories in this block</h2>
+<ul><li>Validate and load ECB CSV history files atomically. (load) [story]</li><li>Initialize an empty rates store. (init) [story]</li><li>List currencies that have stored rates. (api_currencies) [story]</li><li>Retrieve rates from the latest publication. (api_latest) [story]</li><li>Report stored rate statistics. (api_stats) [story]</li><li>Retrieve rates by effective date. (api_rates) [story]</li><li>Retrieve currency history and summary statistics. (history) [story]</li><li>Convert amounts between currencies. (convert) [story]</li><li>Serve the health endpoint. (api_health) [story]</li><li>Report CLI usage and operational errors. (cli_errors) [story]</li></ul>
+<p>&lt;/pblock&gt;</p>
+<p>&lt;pblock label=&quot;Files on disk&quot; kind=&quot;section&quot;&gt;</p>
+<h2>Files on disk in the build directory</h2>
+<ul><li>sources/eurofxref-hist_2025-01.csv</li><li>sources/eurofxref-hist_2025-02-03_04.csv</li><li>sources/eurofxref-hist_bad.csv</li><li>sources/run.sh</li></ul>
+<p>These are the only imported files present on disk. Every other file named in this prompt is supplied as prompt context and is not on disk; read it here and do not report it as a missing input.</p>
+<p>&lt;/pblock&gt;</p>
+<h2>COMPASS - Target Orientation</h2>
+<p>&lt;pblock filename=&quot;COMPASS.md&quot; role=&quot;compass&quot; path=&quot;/mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.202600/workspace/targets/FxRates/COMPASS.md&quot; guidance=&quot;Important: This is the core project intent, constraints, and guardrails. It should have presecedence in conflicts.&quot;&gt;</p>
+<pre><code># COMPASS: FxRates
+
+## Compass
+
+Build a currency rates service, an executable named `fxrates` at the application root, as
+described in `sources/INSTRUCTIONS.md`. A command line loads the ECB euro reference rate history
+into SQLite, and a FastAPI JSON API serves the rates on a date, conversions between any two
+currencies, and a currency&#x27;s history with minimum, maximum, and mean.
+
+Correctness is measured by `sources/run.sh`: it loads the supplied ECB files, starts the server on
+a free local port, and makes 35 checks of command output and HTTP status and JSON body. The goal is
+every check passing.
+
+## Constraints
+
+- Implement in Python 3.11 or newer with FastAPI and uvicorn over SQLite.
+- Provide an executable named `fxrates` at the application root, invoked as `./fxrates &lt;command&gt;`.
+  `fxrates serve` runs the server in the foreground and stops cleanly on SIGTERM.
+- Read the database location from `DATABASE_URL`, then `DATABASE_PATH`, then `data/app.db`.
+- Store rates as the ECB&#x27;s published text; compute with `decimal`, never with floating point.
+- Check a file in full before its first write.
+- Tests stub the ECB download; no test opens a network connection.
+- Diagnostics go to standard error and are never compared.
+
+## Guardrails
+
+- Do not modify, rewrite, regenerate, or substitute any file under `sources/`.
+- Do not read `sources/run.sh` or any supplied data file from application code. Data reaches the
+  database only through `fxrates load` or `fxrates fetch`.
+- Do not hardcode a rate, a date, a count, or a computed value. Every value comes from a query.
+- Do not open a database driver outside the shipped persistence library.
+
+## Verification Protocol
+
+| Story kind | Command | Asserts |
+|---|---|---|
+| Every behavioral story | `sh bin/test.sh` | exit `0` |
+| Terminal story (once, last) | `sh sources/run.sh` | exit `0` |
+
+&lt;!-- drydock:build-write-guardrail:start --&gt;
+## Build Write Guardrail
+
+- Authorized build directory: `/mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.202600/build/FxRates`
+- Authorized Target directory: `/mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.202600/workspace/targets/FxRates`
+- Build agents have permission to create, modify, and remove files required by the active build block inside these authorized directories.
+- No path outside these authorized directories may be modified.
+- Protected Drydock artifacts:
+  - `/mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.202600/workspace/targets/FxRates/blueprint/`
+  - `/mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.202600/workspace/targets/FxRates/MANIFEST.md`
+  - `/mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.202600/workspace/targets/FxRates/COMPASS.md`
+  - `/mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.202600/workspace/targets/FxRates/QuarterDeck/`
+  - `/mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.202600/workspace/targets/FxRates/evidence/`
+&lt;!-- drydock:build-write-guardrail:end --&gt;</code></pre>
+<p>&lt;/pblock&gt;</p>
+<h2>STACK - Technology HOW</h2>
+<p>&lt;pblock filename=&quot;python_compact.md&quot; role=&quot;stack&quot; path=&quot;/mnt/c/Users/barlo/projects/drydock/Rigging/languages/python/python_compact.md&quot;&gt;</p>
+<pre><code>&lt;!-- Compacted from Rigging/languages/python/python.md sha256=fe344456a351e3237cfe3bae2408a69758d401430b935f60c15f91b9a97e8016 on 2026-10-18 by Rigging maintenance --&gt;
+
+## Foundation Contract
+
+- source_root: ./
+- test_command: pytest -q
+- environment: `.venv`, created by `uv venv` and activated by launchers in `bin/`
+- dependencies: `pyproject.toml` and committed `uv.lock`
+
+The language foundation owns the project root, environment, dependency manifest, and test runner.
+Later foundations add their packages to this tree without replacing those contracts.
+
+### How do we execute and measure Acceptance Criteria in this language?
+
+An Acceptance Criterion (AC) is an executable check of Blueprint-required behavior. Use the
+existing Programmatic Acceptance format: a Python script with assertions against the built
+product. Drydock executes each criterion through `languages/python/acceptance/runner.py`; `pytest -q`
+runs the project test suite. Retain the criterion ID, observed values, stdout/stderr and result;
+an assertion failure fails the check. The harness reports failure operands and available case
+counts. Code coverage and persistence interactions require explicit instrumentation; record
+available observations as key/value data associated with the criterion. Missing observations
+are unknown, not proof that code or an interaction was unused.
+
+### How does this language provide the shared persistence contract?
+
+Use `stack/persistence.md`. Drydock copies `Rigging/languages/python/persistence/{db,sqlite,postgres}.py` and generates
+`persistence/{schema,__init__,testing}.py` plus `schema.sql` from `DATABASE.md`. Call
+`open_database(dsn)` and `db.&lt;table&gt;.&lt;operation&gt;(...)`; use `persistence.testing.db_session()`
+for criteria. SQLite uses the standard library; PostgreSQL needs `psycopg[binary]` in the project
+dependencies. Both engines ship together and the DSN selects the engine. Library verification
+lives in `tests/test_shipped_database.py`; a Target still verifies its own schema and operations.
+
+## Consumer Rules
+
+- Python &gt;=3.11; use modern type hints on public interfaces and named cross-package data shapes.
+- Centralize typed runtime settings; use Blueprint names and defaults. Keep secrets out of Git and logs.
+- Keep behavior in importable modules; launchers activate `.venv` and invoke modules.
+- Use pytest with isolated external state; all test gates run `pytest -q`.</code></pre>
+<p>&lt;/pblock&gt;</p>
+<p>&lt;pblock filename=&quot;common_compact.md&quot; role=&quot;stack&quot; path=&quot;/mnt/c/Users/barlo/projects/drydock/Rigging/stack/common_compact.md&quot;&gt;</p>
+<pre><code>&lt;!-- Compacted from /mnt/c/Users/barlo/projects/drydock/Rigging/stack/common.md sha256=2d665e4a232b3ef5b681149974e74928c8f5abb9adaac02604cc6b5987ac0f85 on 2026-10-24 by drydock rigging compact — regenerate with: drydock rigging compact --include-file {rel_source} --&gt;
+
+# Common Best Practices — Contract Surface
+
+## Project Layout
+
+### Rule: project-directory-layout
+
+Every project must use the standard root layout and may add stack-specific directories.
+
+Constraints: Include `bin/`, `data/` with `logs/` and `backups/`, `docs/`, `tests/`, optional `PROJECT/`, `.env`, `.env.example`, `.gitignore`, `CLAUDE.md`, and `Links.md`; keep runtime data under `data/`.
+
+## Shell Scripts
+
+### Rule: user-facing-operation-scripts
+
+User-facing operations must be implemented as Bash scripts in `bin/`.
+
+Constraints: Scripts must use standardized headers, `set -euo pipefail`, resolve project-relative paths, create `data/logs/`, log execution details, run from the project root, tee output to console and a timestamped log, and record completion.
+
+### Rule: command-center-discovery-header
+
+A discoverable script must begin with a Command Center header.
+
+| Field | Required | Values |
+|---|---:|---|
+| `# CommandCenter Operation` | Yes | Literal |
+| `# Name:` | Yes | Free text |
+| `# Type:` | No | `daemon` or `batch`; defaults to `batch` |
+| `# Port:` | No | Integer; daemon port |
+
+Constraints: Scripts without `# CommandCenter Operation` remain valid but are not discoverable by Command Center.
+
+### Rule: standard-scripts
+
+Projects should provide applicable operation scripts with these names and purposes.
+
+| Script | Type | Purpose |
+|---|---|---|
+| `bin/start.sh` | daemon | Start the development server |
+| `bin/stop.sh` | batch | Stop the development server |
+| `bin/test.sh` | batch | Run tests |
+| `bin/build.sh` | batch | Build or compile |
+| `bin/deploy.sh` | batch | Deploy to production |
+| `bin/backup.sh` | batch | Back up data or databases |
+
+### Rule: script-logging
+
+Operation scripts must capture stdout and stderr in `data/logs/`.
+
+Constraints: Log filenames must follow `&lt;script&gt;_&lt;YYYY-MM-DD_HHMMSS&gt;.log`; initial log lines must record timestamp, arguments, and working directory.
+
+## Links
+
+### Rule: links-file
+
+Every project must provide a root-level `Links.md` containing one two-column Markdown table.
+
+| Column | Requirement |
+|---|---|
+| `Label` | Short and descriptive |
+| `URL` | Relevant project URL |
+
+Constraints: Command Center reads this table and exposes the links through project configuration.
+
+## Agent Instructions
+
+### Rule: claude-file
+
+Every project must provide a root-level `CLAUDE.md` with the following sections.
+
+| Section | Required content |
+|---|---|
+| `## Project Overview` | Purpose and key features |
+| `## Architecture` | Technology stack, key files, and patterns |
+| `## Dev Commands` | Bash project commands in a code block |
+| `## Service Endpoints` | `- Label: https://url` entries |
+| `## Bookmarks` | Grouped links using `### Group` and `- [Title](URL)` |
+
+Constraints: Normalize equivalent headings to the standard names: `Commands`, `Development Commands`, and `Build Commands` become `Dev Commands`; `Overview` and `Project Purpose` become `Project Overview`; `Stack` becomes `Architecture`.
+
+## Version Control
+
+### Rule: gitignore-and-secrets
+
+Repositories must ignore secrets, generated files, and runtime data.
+
+Constraints: Ignore `data/`, `*.db`, `*.log`, `.env`, `venv/`, `node_modules/`, Python caches and bytecode, `*.egg-info/`, `dist/`, `build/`, `.DS_Store`, and `Thumbs.db`; commit `.env.example` with placeholders.
+
+### Rule: commit-message
+
+Commit messages must use imperative, descriptive text without AI or tool mentions.
+
+## Development Workflow
+
+### Rule: task-commit
+
+Completed, error-free tasks must be committed immediately.
+
+### Rule: local-only-commit
+
+Changes must be committed locally and must not be pushed.
+
+### Rule: co-authorship
+
+Commits must not contain `Co-authored-by` lines.
+
+### Rule: restart-notice
+
+Code-change responses for web-server projects must state whether a restart is required.
+
+Constraints: Template, CSS, or static-only changes require the notice `No restart needed — browser refresh is enough.`; Python or JavaScript server changes require `Restart required — run the start script or equivalent.`</code></pre>
+<p>&lt;/pblock&gt;</p>
+<p>&lt;pblock filename=&quot;sqlite_compact.md&quot; role=&quot;stack&quot; path=&quot;/mnt/c/Users/barlo/projects/drydock/Rigging/stack/sqlite_compact.md&quot;&gt;</p>
+<pre><code>&lt;!-- Compacted from Rigging/stack/sqlite.md sha256=fd7cb92f6105bb8ea236c1ccb1824dfa2db832c8405aca14b542a7313cb8ec41 on 2026-10-24 by drydock rigging compact — regenerate with: drydock rigging compact --include-file {rel_source} --&gt;
+
+## Foundation Contract
+
+The published Python binding follows. Go callers use the language-native API in
+`languages/go/go.md`; Go tests run through the existing Blueprint AC container.
+Carried verbatim into `sqlite_compact.md`.
+
+- package: persistence
+- entry: open_database(dsn) -&gt; Database
+- fixture: db_session
+- fixture_source: persistence/testing.py
+
+### How is this engine configured and initialized?
+
+For the shipped Python binding, use the standard-library `sqlite3` driver and a file path or
+`sqlite://` DSN. Configuration resolves `DATABASE_URL`, then `DATABASE_PATH`, then `data/app.db`.
+Drydock applies generated `schema.sql` only at the DATABASE step; later acceptance verifies the existing store without DDL. Declare
+schema changes in `DATABASE.md`; rebuilding applies idempotent creation statements, not a
+migration of existing tables. The engine owns connections and enables foreign keys.
+
+### How does this engine implement the shared persistence contract?
+
+The shipped Python binding is `Rigging/languages/python/persistence/sqlite.py`, used through `persistence.db` and
+`open_database(dsn)`. Call declared table operations and use `db_session()` for criteria; do not
+import the driver in application code. SQLite does not prove PostgreSQL length/type enforcement.
+Library verification is in `tests/test_shipped_database.py`; verify Target-specific operations
+separately. The Go binding is `languages/go/persistence/sqlite.go`, verified against this engine.
+Use `OpenDatabase(ctx, dsn)` and generated typed methods; `OpenSession(ctx, dsn)` supplies
+a test store. The Go library is linked as `drydock.local/persistence`. The detailed Python interface follows.
+
+**How the Python binding is built.** Drydock builds this foundation deterministically. No build agent writes,
+edits, or replaces any file listed below.
+
+1. Plan declares the store in `DATABASE.md`: every table, every column, and each access pattern&#x27;s
+   `Repository operation` as `&lt;table&gt;.&lt;verb&gt;`.
+2. Plan emits the story that implements `DATABASE.md`, with `persistence.md` and `sqlite.md` in
+   `stack:`. That story is the DATABASE step. Its builder writes no persistence code.
+3. Before that story&#x27;s step runs, Drydock writes the package into the build root, so a story in
+   the same step can import it:
+
+| Layer | File | Origin |
+|---|---|---|
+| Library | `persistence/db.py` | shipped `Rigging/languages/python/persistence/db.py`, copied unchanged: `Database`, statement construction, parameter binding, engine selection |
+| Engines | `persistence/sqlite.py`, `persistence/postgres.py` | shipped, copied unchanged; the DSN selects one at runtime |
+| Declaration | `persistence/schema.py` | generated from `DATABASE.md`: `SCHEMA` (tables, operations, row dataclasses) and `open_database(dsn)`; contains no SQL |
+| Interface | `persistence/__init__.py` | generated; exports `Database`, `PersistenceError`, `UnknownOperation`, `SCHEMA`, `open_database` |
+| Verification | `schema-verification.json` | generated runtime catalog and count probes |
+| Fixture | `persistence/testing.py` | generated; `db_session()` |
+| DDL | `schema.sql` | generated from `DATABASE.md`; `CREATE ... IF NOT EXISTS` throughout |
+
+4. Drydock applies `schema.sql` through `open_database` to the configured store — `DATABASE_URL`,
+   else `DATABASE_PATH`, else `data/app.db` — at the DATABASE step and again before every
+   acceptance run, so a criterion that drives the application through its own client finds the
+   declared tables.
+
+Every later story writes callers only: `route → service → db.&lt;table&gt;.&lt;name&gt;(...)`. The package
+exposes one attribute per declared table and one method per declared operation. Changing the
+store means changing `DATABASE.md` and rebuilding.
+
+Each Kind returns one fixed shape, so a pattern&#x27;s Output declares the row, never a wrapper
+around it:
+
+| Kind | Returns |
+|---|---|
+| `get` | the Output row, or `None` (Go `nil`) when nothing matches |
+| `list` | a list of Output rows, one per record; the Output names the row&#x27;s columns |
+| `create` | the Output row, read back by key; the key when no Output is declared |
+| `update` | the Output row, read back by its Match, or `None` when nothing matched; the count when it reaches many rows or no Output is declared |
+| `upsert` | the Output row inserted or replaced, read back by its Match |
+| `delete` | the Output built from its Match, or `None` when nothing matched; the count when it reaches many rows or no Output is declared |
+
+```python
+# persistence/testing.py — generated by Drydock
+@contextmanager
+def db_session() -&gt; Iterator[Database]: ...
+def committed_session() -&gt; Iterator[Database]: ...
+
+# application code
+from persistence import open_database
+
+db = open_database(config.database_path)
+
+# a criterion
+from persistence.testing import db_session
+
+with db_session() as db:
+    row = db.&lt;table&gt;.create(...)  # the declared Output row
+
+# conftest.py
+import pytest
+from persistence import testing
+
+@pytest.fixture
+def db_session():
+    with testing.db_session() as db:
+        yield db
+```
+
+`db_session()` opens the configured application store (DATABASE_URL, else DATABASE_PATH,
+else data/app.db). Schema is provisioned only at the DATABASE step. Pass the yielded database into
+the feature. Under the acceptance harness, every database the criterion&#x27;s process opens, including
+this fixture, the application behind `web_client()`, and commands run through `cli_runner()`, joins
+one transaction that the harness rolls back when the criterion ends, pass or fail. Leaving the
+`with` block rolls nothing back, so a later request still sees the setup. Outside the harness (the
+project&#x27;s pytest suite) the fixture starts its own transaction and rolls it back on exit. It never
+creates a temporary database or applies schema. `committed_session()` opens the same store with
+autocommit for project tests that need committed state, and joins the harness transaction under
+acceptance. A process the criterion launches cannot see that transaction and must not depend on
+its rows. Never reset the database or delete unrelated records.
+
+---
+
+# SQLite — Contract Surface
+
+## Connection
+
+### config_key: SQLite DSN
+SQLite accepts a plain filesystem path or a `sqlite://` DSN for runtime database selection.
+
+Constraints: The same build must support SQLite for development and testing and PostgreSQL for production through the configured DSN.
+
+## Schema Rules
+
+### Rule: enforced-constraints
+SQLite enforces `PRIMARY KEY`, `NOT NULL`, `UNIQUE`, `DEFAULT`, and `REFERENCES` when foreign keys are enabled.
+
+### Rule: production-length-validation
+SQLite accepts values exceeding declared column lengths; production PostgreSQL may reject them.
+
+Constraints: Declare production column lengths and do not rely on SQLite to validate them.
+
+### Rule: type-validation
+SQLite permits values of any type in any column.
+
+Constraints: SQLite tests do not prove production column-type validity.
+
+### Rule: schema-migrations
+SQLite supports only `ADD COLUMN` and `RENAME` for `ALTER TABLE`; it does not support type changes or `ADD CONSTRAINT`.
+
+Constraints: Build the schema once from `schema.sql` during the DATABASE build step.
+
+## Access
+
+### Rule: generated-access-layer
+Consumers access persistence through the generated persistence package.
+
+Constraints: Do not import `sqlite3`, create handwritten connection helpers, cursors, or SQL strings outside the generated `persistence/` package; do not retain database connections on application objects; do not create or alter schema at application startup.</code></pre>
+<p>&lt;/pblock&gt;</p>
+<p>&lt;pblock filename=&quot;fastapi.md&quot; role=&quot;stack&quot; path=&quot;/mnt/c/Users/barlo/projects/drydock/Rigging/stack/fastapi.md&quot;&gt;</p>
+<pre><code># FastAPI Foundation
+
+**Type:** web-server
+**Version:** 20261025 V3
+**Tier:** platform
+**Category:** Web Server
+**Foundation:** web-server
+**Description:** FastAPI application boundary and test client contract
+
+Prerequisites: `stack/common.md`, `languages/python/python.md`
+
+## Foundation Contract
+
+- package: app_server
+- entry: create_app() -&gt; FastAPI
+- fixture: web_client
+- fixture_source: app_server/testing.py
+
+```python
+# app_server/main.py
+def create_app() -&gt; FastAPI: ...
+app = create_app()
+
+# app_server/testing.py
+from app_server.main import create_app
+def web_client() -&gt; TestClient: ...
+```
+
+`app_server.main` exposes `create_app()` and a module-level `app` for
+`uvicorn app_server.main:app`. `app_server.testing.web_client()` is a plain callable that
+returns `fastapi.testclient.TestClient(create_app())`. Programmatic acceptance imports and calls
+it directly. The pytest `web_client` fixture delegates to the same callable.
+
+## Rules
+
+- Keep routes in `app_server` routers. Route handlers parse HTTP input, call application services,
+  and return responses; services own business behavior and have no FastAPI dependency.
+- Provide shared resources through dependencies that tests can replace with
+  `app.dependency_overrides`. Do not create a second application or test client in acceptance code.
+- Validate request and response shapes at the HTTP boundary. Use the Blueprint&#x27;s routes, schemas,
+  configuration names, defaults, and error contracts; sample routes are not part of this foundation.
+- For server-rendered pages, include `request` in Jinja template context and serve static assets
+  through the application. Return sanitized errors in the format required by the Blueprint.
+- Put startup and shutdown work in lifespan handlers. Use Uvicorn reload only in development.
+- Declare `fastapi`, `uvicorn`, and the TestClient transport as needed by runtime and tests. Add `jinja2` only when
+  the application serves templates. Use the Python foundation&#x27;s environment and test command.
+
+## Test dependency compatibility
+
+Keep `fastapi.testclient.TestClient` as the client API. Starlette 1.2 and newer prefer `httpx2`;
+plain `httpx` is deprecated there. Declare `fastapi` and `httpx2` inside every TestClient acceptance
+criterion with `Requires: python-package=&lt;name&gt;; scope=test`. Older selected Starlette versions
+use `httpx` instead. Resolve and lock the compatible FastAPI/Starlette/transport set together;
+do not override FastAPI&#x27;s Starlette constraints or suppress deprecation warnings. Verify client
+construction and a request with deprecations treated as errors before accepting the lockfile.
+Reference: https://www.starlette.io/testclient/</code></pre>
+<p>&lt;/pblock&gt;</p>
+<p>&lt;pblock filename=&quot;cli.md&quot; role=&quot;stack&quot; path=&quot;/mnt/c/Users/barlo/projects/drydock/Rigging/stack/cli.md&quot;&gt;</p>
+<pre><code># Command-Line Application
+
+**Type:** cli
+**Version:** 20260920 V1
+**Tier:** platform
+**Category:** Technologies
+**Foundation:** cli
+**Description:** Command-line application structure: entry point, argument parsing, exit codes, cross-platform launchers, and testing without spawning a process.
+
+Technology reference. This file does not change between projects.
+
+Prerequisites: `stack/common.md`, `languages/python/python.md`
+
+---
+
+## Foundation Contract
+
+The published shape of this foundation. Drydock synthesizes the story that builds it and every
+acceptance criterion writes against these names. Carried verbatim into `cli_compact.md`.
+
+- package: cli
+- entry: main(argv: list[str] | None = None) -&gt; int
+- fixture: cli_runner
+- fixture_source: cli/testing.py
+
+```python
+# cli/__init__.py
+def main(argv: list[str] | None = None) -&gt; int:
+    ...
+
+# cli/testing.py
+import contextlib
+import io
+from cli import main
+
+def cli_runner(*args: str) -&gt; tuple[int, str, str]:
+    &quot;&quot;&quot;Return (exit_code, stdout, stderr) without spawning a process.&quot;&quot;&quot;
+    out, err = io.StringIO(), io.StringIO()
+    with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+        code = main(list(args))
+    return code, out.getvalue(), err.getvalue()
+
+# conftest.py
+import pytest
+from cli import testing
+
+@pytest.fixture
+def cli_runner():
+    return testing.cli_runner
+```
+
+A criterion imports `cli_runner` from `cli.testing`, calls `cli_runner(&quot;status&quot;, &quot;--json&quot;)`, and
+asserts on the returned tuple. It does not call `subprocess.run`, which measures the installed
+console script and the shell rather than the code the story wrote.
+
+---
+
+## 1. Directory Layout
+
+**Rule**: Command code lives in `cli/`. The root holds only packaging and infrastructure files.
+
+```
+project/
+  pyproject.toml            # [project.scripts] declares the console script
+  cli/
+    __init__.py             # main() — the single entry point
+    commands.py             # one function per command; no argument parsing
+    parser.py               # argparse construction; no behavior
+  bin/
+    run.sh                  # bash launcher
+    run.ps1                 # PowerShell launcher
+  tests/
+```
+
+**Why**: Parsing, behavior, and launching are three contracts. Collapsing them produces a command
+that cannot be tested without a shell.
+
+---
+
+## 2. Entry Point and Exit Codes
+
+**Rule**: `main(argv=None) -&gt; int` parses, dispatches, and returns an exit code. It never calls
+`sys.exit` and never raises for an expected failure. The console script is the only caller that
+translates the return value into a process exit.
+
+```python
+# cli/__init__.py
+import sys
+from cli.parser import build_parser
+from cli import commands
+
+def main(argv: list[str] | None = None) -&gt; int:
+    args = build_parser().parse_args(argv)
+    try:
+        return commands.dispatch(args)
+    except OperationalError as exc:
+        print(f&quot;error: {exc}&quot;, file=sys.stderr)
+        return 1
+```
+
+```toml
+# pyproject.toml
+[project.scripts]
+mytool = &quot;cli:main&quot;
+```
+
+**Exit codes**: `0` success, `1` operational failure, `2` usage error. `argparse` already returns
+`2` for a usage error; do not override it.
+
+**Why**: A `main` that returns rather than exits is callable from a test in-process. A `main` that
+calls `sys.exit` forces every criterion to spawn a subprocess and measure the shell.
+
+---
+
+## 3. Parsing Is Separate From Behavior
+
+**Rule**: `parser.py` builds the `argparse` tree and returns it. `commands.py` holds one function
+per command taking plain arguments, not a `Namespace`. Neither imports the other.
+
+```python
+# cli/parser.py
+import argparse
+
+def build_parser() -&gt; argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(prog=&quot;mytool&quot;)
+    sub = parser.add_subparsers(dest=&quot;command&quot;, required=True)
+    status = sub.add_parser(&quot;status&quot;, help=&quot;Report current state&quot;)
+    status.add_argument(&quot;--json&quot;, action=&quot;store_true&quot;)
+    return parser
+```
+
+```python
+# cli/commands.py
+def status(*, as_json: bool) -&gt; int:
+    ...
+
+def dispatch(args) -&gt; int:
+    if args.command == &quot;status&quot;:
+        return status(as_json=args.json)
+    return 2
+```
+
+**Why**: Behavior tested through a `Namespace` is behavior tested through the parser. Separating
+them lets a criterion call `status(as_json=True)` directly.
+
+---
+
+## 4. Cross-Platform Launchers
+
+**Rule**: Ship both launchers. They locate the environment and invoke the package entry point;
+they contain no business logic. A launcher that makes a decision is a second implementation of the
+command.
+
+```bash
+#!/usr/bin/env bash
+# bin/run.sh — locate the environment and hand off. No business logic.
+set -euo pipefail
+ROOT=&quot;$(cd &quot;$(dirname &quot;${BASH_SOURCE[0]}&quot;)/..&quot; &amp;&amp; pwd)&quot;
+if [ -d &quot;$ROOT/.venv&quot; ]; then
+    source &quot;$ROOT/.venv/bin/activate&quot;
+fi
+exec python -m cli &quot;$@&quot;
+```
+
+```powershell
+# bin/run.ps1 — locate the environment and hand off. No business logic.
+$ErrorActionPreference = &quot;Stop&quot;
+$Root = Split-Path -Parent $PSScriptRoot
+$Activate = Join-Path $Root &quot;.venv\Scripts\Activate.ps1&quot;
+if (Test-Path $Activate) { &amp; $Activate }
+python -m cli @args
+exit $LASTEXITCODE
+```
+
+```python
+# cli/__main__.py — makes `python -m cli` work identically on both platforms
+import sys
+from cli import main
+
+sys.exit(main())
+```
+
+**Why**: `python -m cli` is the one invocation both launchers share, so the two scripts cannot
+drift in behavior — only in how they find the interpreter. `exit $LASTEXITCODE` is required in
+PowerShell; without it the exit code is discarded and a failing command reports success.
+
+---
+
+## 5. Output and Streams
+
+**Rule**: Results go to stdout, diagnostics to stderr. A `--json` mode prints one JSON document to
+stdout and nothing else. Never interleave progress text into a machine-readable stream.
+
+**Why**: A caller piping stdout to `jq` receives the progress lines too, and the command becomes
+unusable in a pipeline.
+
+---
+
+## 6. Testing Without a Process
+
+**Rule**: Test through `main([&quot;status&quot;, &quot;--json&quot;])` or the `cli_runner` fixture. Reserve
+`subprocess.run` for one packaging test asserting the installed console script exists and runs.
+
+```python
+def test_status_reports_json(cli_runner):
+    code, out, err = cli_runner(&quot;status&quot;, &quot;--json&quot;)
+    assert code == 0
+    assert json.loads(out)[&quot;state&quot;] == &quot;ready&quot;
+    assert err == &quot;&quot;
+```
+
+**Why**: In-process tests are fast, debuggable, and measure the code. Subprocess tests measure the
+installed environment, which is a different and much smaller question.
+
+---
+
+## Checklist
+
+- [ ] `cli/` package; `main(argv=None) -&gt; int` that returns rather than exits
+- [ ] `[project.scripts]` declares the console script
+- [ ] `cli/__main__.py` so `python -m cli` works
+- [ ] Both `bin/run.sh` and `bin/run.ps1`, neither holding logic; `.ps1` ends with `exit $LASTEXITCODE`
+- [ ] Parsing in `parser.py`, behavior in `commands.py`, no import between them
+- [ ] Exit codes `0` / `1` / `2` used consistently
+- [ ] Results on stdout, diagnostics on stderr, `--json` emits nothing else
+- [ ] Criteria use `cli_runner`; at most one subprocess test for packaging</code></pre>
+<p>&lt;/pblock&gt;</p>
+<h2>CONTEXT - Read-Only Support</h2>
+<p>&lt;pblock filename=&quot;eurofxref-hist_2025-01.csv&quot; role=&quot;context&quot; path=&quot;/mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.202600/workspace/targets/FxRates/blueprint/eurofxref-hist_2025-01.csv&quot;&gt;</p>
+<pre><code>Date,USD,JPY,GBP,CHF,SEK,CAD,AUD,CNY,HRK,
+2025-01-31,1.0393,160.99,0.83608,0.9449,11.474,1.5035,1.6702,7.5363,N/A,
+2025-01-30,1.0403,160.32,0.83685,0.9441,11.47,1.4997,1.6705,7.5436,N/A,
+2025-01-29,1.0396,161.5,0.83723,0.943,11.4555,1.5011,1.671,7.5385,N/A,
+2025-01-28,1.0421,161.86,0.83868,0.9441,11.478,1.5019,1.6698,7.5517,N/A,
+2025-01-27,1.053,162.21,0.84106,0.9453,11.496,1.5096,1.67,7.6306,N/A,
+2025-01-24,1.0472,163.9,0.84413,0.9494,11.459,1.5015,1.66,7.5891,N/A,
+2025-01-23,1.0404,162.58,0.84468,0.9442,11.4685,1.4984,1.6594,7.5829,N/A,
+2025-01-22,1.0443,162.72,0.84466,0.9449,11.467,1.4972,1.6603,7.5892,N/A,
+2025-01-21,1.0357,161.26,0.84553,0.9427,11.475,1.4963,1.6639,7.5443,N/A,
+2025-01-20,1.0316,161.36,0.84588,0.9429,11.4945,1.4924,1.6627,7.5431,N/A,
+2025-01-17,1.0298,160.23,0.84453,0.9394,11.506,1.4864,1.6646,7.5474,N/A,
+2025-01-16,1.0272,160.46,0.84258,0.9376,11.485,1.4776,1.6574,7.5311,N/A,
+2025-01-15,1.03,161.75,0.84313,0.9394,11.5015,1.4784,1.6616,7.5515,N/A,
+2025-01-14,1.0245,161.63,0.84288,0.9395,11.512,1.4744,1.6601,7.5108,N/A,
+2025-01-13,1.0198,160.22,0.8416,0.9346,11.5055,1.4699,1.6578,7.4771,N/A,
+2025-01-10,1.0304,162.86,0.83693,0.9416,11.497,1.4845,1.6655,7.5542,N/A,
+2025-01-09,1.0305,162.56,0.83808,0.9397,11.4945,1.4831,1.663,7.5558,N/A,
+2025-01-08,1.0286,162.94,0.83403,0.9379,11.5125,1.4803,1.66,7.5413,N/A,
+2025-01-07,1.0393,163.86,0.82915,0.9426,11.475,1.4878,1.6557,7.6142,N/A,
+2025-01-06,1.0426,163.25,0.83098,0.9396,11.4645,1.4914,1.6555,7.6284,N/A,
+2025-01-03,1.0299,161.77,0.82993,0.9362,11.4395,1.4842,1.6556,7.5371,N/A,
+2025-01-02,1.0321,162.04,0.83118,0.9371,11.4223,1.4885,1.6618,7.5338,N/A,</code></pre>
+<p>&lt;/pblock&gt;</p>
+<p>&lt;pblock filename=&quot;eurofxref-hist_2025-02-03_04.csv&quot; role=&quot;context&quot; path=&quot;/mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.202600/workspace/targets/FxRates/blueprint/eurofxref-hist_2025-02-03_04.csv&quot;&gt;</p>
+<pre><code>Date,USD,JPY,GBP,CHF,SEK,CAD,AUD,CNY,
+2025-02-04,1.0335,160.52,0.83188,0.9396,11.418,1.4894,1.6629,7.4943,
+2025-02-03,1.0274,158.87,0.83136,0.9393,11.481,1.5051,1.6671,7.45,</code></pre>
+<p>&lt;/pblock&gt;</p>
+<p>&lt;pblock filename=&quot;eurofxref-hist_bad.csv&quot; role=&quot;context&quot; path=&quot;/mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.202600/workspace/targets/FxRates/blueprint/eurofxref-hist_bad.csv&quot;&gt;</p>
+<pre><code>Date,USD,JPY,
+2025-02-04,1.0345,160.12,
+2025-02-03,1.0x,159.01,</code></pre>
+<p>&lt;/pblock&gt;</p>
+<p>&lt;pblock filename=&quot;ARCHITECTURE_compact.md&quot; role=&quot;context&quot; path=&quot;/mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.202600/workspace/targets/FxRates/blueprint/ARCHITECTURE_compact.md&quot;&gt;</p>
+<pre><code>&lt;!-- Compacted from ARCHITECTURE.md sha256=c0c8a5e7a3d5142d1daf0fd898de36ed4f766fb554c0250f80d781debf599a34 on 2026-10-26 by drydock build agent --&gt;
+
+Python 3.11+, FastAPI, uvicorn, and SQLite. `cli` owns the root executable and dispatch, `app_server` owns the application factory and routes, `services` owns shared behavior, `persistence` owns generated storage access, and `config` owns database location resolution. HTTP handlers and CLI commands call services; only persistence accesses the database. Preserve ECB rates as text and use `Decimal` for arithmetic.</code></pre>
+<p>&lt;/pblock&gt;</p>
+<p>&lt;pblock filename=&quot;DATABASE_compact.md&quot; role=&quot;context&quot; path=&quot;/mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.202600/workspace/targets/FxRates/blueprint/DATABASE_compact.md&quot;&gt;</p>
+<pre><code>&lt;!-- Compacted from DATABASE.md sha256=54097832936d2ba5b7c2f8d44ed278d915a1ad842f4bab76d284889f3ecf4a66 on 2026-10-26 by drydock build agent --&gt;
+
+Rates are stored in `rates(id, date, currency, rate)`, with text values and a unique `(date, currency)` key. The generated repository currently exposes `upsert`, `by_date`, `publications_through`, `history`, and `list`; history bounds are inclusive and results use their declared ordering. Application code must use the generated persistence package and resolve the store from `DATABASE_URL`, then `DATABASE_PATH`, then `data/app.db`.</code></pre>
+<p>&lt;/pblock&gt;</p>
+<h2>IMPLEMENTS - Authoritative Step Specifications</h2>
+<p>&lt;pblock label=&quot;Implementation recency anchor&quot; kind=&quot;section&quot;&gt; The files in this section are the load-bearing specifications for this build block. Build these files exactly. Treat earlier sections as constraints and context.</p>
+<p>&lt;/pblock&gt;</p>
+<p>&lt;pblock filename=&quot;FEATURE-Load.md&quot; role=&quot;implements&quot; path=&quot;/mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.202600/workspace/targets/FxRates/blueprint/FEATURE-Load.md&quot; guidance=&quot;Feature Specification&quot;&gt;</p>
+<pre><code># FEATURE: ECB CSV Loading
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | Validates and loads ECB history CSV files atomically while preserving published rate text. |
+| Depends On  | FEATURE-CLI.md, DATABASE.md |
+
+## Purpose
+
+`./fxrates load &lt;csv&gt;` reads an ECB history file, validates the entire file before its first database write, then stores every rate other than `N/A`. A valid rate replaces the stored value for the same publication date and currency. On success, print CSV output with header `dates,rates` and one data row containing the number of dates with at least one rate and the number of rates stored from this file.
+
+## CSV Rules
+
+- The first header field is `Date`; subsequent fields are three-letter uppercase currency codes. Ignore the final empty field produced by the ECB trailing comma.
+- Each row has a real, non-repeated `YYYY-MM-DD` date and exactly one value per currency, excluding the ignored trailing field.
+- `N/A` denotes no rate and creates no stored row. Other values match `[0-9]+(\.[0-9]+)?` and are nonzero.
+- A malformed header or row, wrong field count, invalid or repeated date, or invalid rate rejects the file. Reject it before writing any row.
+- A file read failure is an operational failure. A rejected file and an operational failure produce no standard output; diagnostics go to standard error.
+
+## Database Interface
+
+- `FEATURE-RATE-001` — write: store or replace a published rate - supplies: `date`, `currency`, `rate` - returns: `date`, `currency`, `rate`
+
+## Programmatic Acceptance
+
+=== AC load-valid-file ===
+Intent: Loading the supplied January history succeeds and reports the fixture-derived date and rate counts.
+import csv
+from cli.testing import cli_runner
+
+path = &quot;sources/eurofxref-hist_2025-01.csv&quot;
+code, stdout, stderr = cli_runner(&quot;load&quot;, path)
+rows = list(csv.reader(stdout.splitlines()))
+assert code == 0
+assert rows[0] == [&quot;dates&quot;, &quot;rates&quot;]
+assert rows[1] == [str(22), str(22 * 8)]
+=== END AC load-valid-file ===
+
+=== AC load-rejects-atomically ===
+Intent: A rejected CSV file leaves the rates it would otherwise have changed untouched.
+from cli.testing import cli_runner
+from persistence.testing import db_session
+
+date = &quot;2025-02-04&quot;
+currency = &quot;USD&quot;
+rate = &quot;9.876&quot;
+
+with db_session() as db:
+    seeded = db.rates.upsert(date=date, currency=currency, rate=rate)
+    assert seeded.rate == rate
+    code, stdout, stderr = cli_runner(&quot;load&quot;, &quot;sources/eurofxref-hist_bad.csv&quot;)
+    stored = db.rates.by_date(date=date)
+    assert code == 3
+    assert stdout == &quot;&quot;
+    assert any(row.currency == currency and row.rate == rate for row in stored)
+=== END AC load-rejects-atomically ===
+
+=== AC load-replaces-published-text ===
+Intent: Loading a valid file stores its rate text exactly and replaces a matching stored rate.
+from cli.testing import cli_runner
+from persistence.testing import db_session
+
+date = &quot;2025-01-31&quot;
+currency = &quot;USD&quot;
+published = &quot;1.0393&quot;
+prior = &quot;9.876&quot;
+
+with db_session() as db:
+    seeded = db.rates.upsert(date=date, currency=currency, rate=prior)
+    assert seeded.rate == prior
+    code, stdout, stderr = cli_runner(&quot;load&quot;, &quot;sources/eurofxref-hist_2025-01.csv&quot;)
+    stored = db.rates.by_date(date=date)
+    found = next(row for row in stored if row.currency == currency)
+    assert code == 0
+    assert found.rate == published
+=== END AC load-replaces-published-text ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Check the entire file before its first write; a rejected file changes nothing.
+- Store published rate strings unchanged, omit `N/A`, and replace matching `(date, currency)` rows.
+- Access persistence only through the shipped library and generated relational layer.</code></pre>
+<p>&lt;/pblock&gt;</p>
+<p>&lt;pblock filename=&quot;FEATURE-Init.md&quot; role=&quot;implements&quot; path=&quot;/mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.202600/workspace/targets/FxRates/blueprint/FEATURE-Init.md&quot; guidance=&quot;Feature Specification&quot;&gt;</p>
+<pre><code># FEATURE: Store Initialization
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | Defines the CLI behavior for resetting the rates store. |
+| Depends On  | FEATURE-CLI.md, DATABASE.md |
+| Provides    | `./fxrates init` |
+| Consumes    | `./fxrates`, rates repository operations |
+
+## Purpose
+
+`fxrates init` resets the rates store to an empty state. It takes no arguments, prints nothing on success, and uses the persistence boundary.
+
+## Programmatic Acceptance
+
+=== AC init-clears-store ===
+Intent: The init command succeeds and leaves the rates repository empty.
+
+from cli.testing import cli_runner
+from persistence.testing import db_session
+
+with db_session() as db:
+    db.rates.upsert(date=&quot;2099-06-01&quot;, currency=&quot;QAF&quot;, rate=&quot;6.1&quot;)
+
+code, stdout, stderr = cli_runner(&quot;init&quot;)
+assert code == 0
+assert stdout == &quot;&quot;
+
+with db_session() as db:
+    rows = db.rates.list()
+    assert rows == []
+=== END AC init-clears-store ===
+
+=== AC init-rejects-extra-arguments ===
+Intent: The init command rejects an unexpected argument with the usage exit status.
+
+from cli.testing import cli_runner
+
+code, stdout, stderr = cli_runner(&quot;init&quot;, &quot;extra&quot;)
+assert code == 2
+=== END AC init-rejects-extra-arguments ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Reset the rates table through the persistence boundary.
+- Keep diagnostics on standard error.</code></pre>
+<p>&lt;/pblock&gt;</p>
+<p>&lt;pblock filename=&quot;FEATURE-Currencies.md&quot; role=&quot;implements&quot; path=&quot;/mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.202600/workspace/targets/FxRates/blueprint/FEATURE-Currencies.md&quot; guidance=&quot;Feature Specification&quot;&gt;</p>
+<pre><code># FEATURE: Currency Listing
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | Defines the API listing currencies with stored rates. |
+| Depends On  | FEATURE-AppServer.md, DATABASE.md |
+| Provides    | GET /currencies |
+| Consumes    | create_app(), rates repository operations |
+
+## Purpose
+
+`GET /currencies` returns EUR as the base and the currencies with at least one stored rate, sorted in ascending order.
+
+## Database Interface
+
+- `FEATURE-RATE-005` — read: list stored rates - supplies: — - returns: `date`, `currency`, `rate`
+
+## Programmatic Acceptance
+
+=== AC currencies-list-sorted ===
+Intent: The endpoint lists currencies present in the store in ascending order.
+Requires: python-package=fastapi; scope=test
+Requires: python-package=httpx2; scope=test
+
+from app_server.testing import web_client
+from persistence.testing import db_session
+
+date = &quot;2099-08-01&quot;
+currencies = [&quot;QAZ&quot;, &quot;QAA&quot;, &quot;QAM&quot;]
+
+with db_session() as db:
+    for index, currency in enumerate(currencies):
+        db.rates.upsert(date=date, currency=currency, rate=str(index + 1))
+    expected = sorted({row.currency for row in db.rates.list()})
+
+client = web_client()
+response = client.get(&quot;/currencies&quot;)
+assert response.status_code == 200
+body = response.json()
+assert body[&quot;currencies&quot;] == expected
+assert body[&quot;currencies&quot;] == sorted(body[&quot;currencies&quot;])
+assert all(currency in body[&quot;currencies&quot;] for currency in currencies)
+=== END AC currencies-list-sorted ===
+
+=== AC currencies-base ===
+Intent: The endpoint identifies EUR as the base currency.
+Cite: sources/INSTRUCTIONS.md:59
+Requires: python-package=fastapi; scope=test
+Requires: python-package=httpx2; scope=test
+
+from app_server.testing import web_client
+
+client = web_client()
+response = client.get(&quot;/currencies&quot;)
+assert response.status_code == 200
+assert response.json()[&quot;base&quot;] == &quot;EUR&quot;
+=== END AC currencies-base ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Include only currencies with at least one stored rate.
+- Return currency codes in ascending order.</code></pre>
+<p>&lt;/pblock&gt;</p>
+<p>&lt;pblock filename=&quot;FEATURE-LatestRates.md&quot; role=&quot;implements&quot; path=&quot;/mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.202600/workspace/targets/FxRates/blueprint/FEATURE-LatestRates.md&quot; guidance=&quot;Feature Specification&quot;&gt;</p>
+<pre><code># FEATURE: Latest Publication Rates
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | Retrieves rates from the latest stored publication. |
+| Depends On  | FEATURE-AppServer.md, DATABASE.md |
+| Provides    | GET /rates/latest |
+| Consumes    | create_app(), rates repository operations |
+
+## Purpose
+
+Return all stored rates for the latest publication date, identifying the request as `latest`.
+
+## Trigger and workflow
+
+A caller requests `GET /rates/latest`. Find the most recent publication date and retrieve its rates. Return `404` if no publication exists.
+
+## Database Interface
+
+- `FEATURE-RATE-003` — read: find publications on or before a date - supplies: `requested_date` - returns: `date`, `currency`, `rate`
+- `FEATURE-RATE-002` — read: list rates for a publication date - supplies: `date` - returns: `date`, `currency`, `rate`
+
+## Programmatic Acceptance
+
+=== AC latest-rates-response ===
+Intent: The latest-rates route returns the stored rates for the latest publication.
+
+Requires: python-package=fastapi; scope=test
+Requires: python-package=httpx2; scope=test
+
+from app_server.testing import web_client
+from persistence.testing import db_session
+
+date = &quot;2099-07-02&quot;
+currency = &quot;QAG&quot;
+rate = &quot;7.25&quot;
+
+with db_session() as db:
+    db.rates.upsert(date=date, currency=currency, rate=rate)
+
+response = web_client().get(&quot;/rates/latest&quot;)
+body = response.json()
+assert response.status_code == 200
+assert body[&quot;date&quot;] == date
+assert body[&quot;requested&quot;] == &quot;latest&quot;
+assert body[&quot;base&quot;] == &quot;EUR&quot;
+assert body[&quot;rates&quot;][currency] == rate
+=== END AC latest-rates-response ===
+
+=== AC latest-rates-empty ===
+Intent: The latest-rates route returns 404 when there is no publication.
+
+Requires: python-package=fastapi; scope=test
+Requires: python-package=httpx2; scope=test
+
+from app_server.testing import web_client
+
+assert web_client().get(&quot;/rates/latest&quot;).status_code == 404
+=== END AC latest-rates-empty ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Derive the latest date and rates from repository queries.
+- Preserve stored rate text exactly.</code></pre>
+<p>&lt;/pblock&gt;</p>
+<p>&lt;pblock filename=&quot;FEATURE-Stats.md&quot; role=&quot;implements&quot; path=&quot;/mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.202600/workspace/targets/FxRates/blueprint/FEATURE-Stats.md&quot; guidance=&quot;Feature Specification&quot;&gt;</p>
+<pre><code># FEATURE: Stored Rate Statistics
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | Defines the API summary of stored publication dates and rates. |
+| Depends On  | FEATURE-AppServer.md, DATABASE.md |
+| Provides    | GET /stats |
+| Consumes    | create_app(), rates repository operations |
+
+## Purpose
+
+`GET /stats` reports the number of publication dates and stored rates, plus the earliest and latest publication dates. Empty date bounds are null. Values come from repository queries.
+
+## Database Interface
+
+- `FEATURE-RATE-005` — read: list stored rates - supplies: — - returns: `date`, `currency`, `rate`
+
+## Programmatic Acceptance
+
+=== AC stats-derive-from-store ===
+Intent: The statistics endpoint reflects rates inserted through the repository.
+Requires: python-package=fastapi; scope=test
+Requires: python-package=httpx2; scope=test
+
+from app_server.testing import web_client
+from persistence.testing import db_session
+
+first_date = &quot;2099-07-01&quot;
+second_date = &quot;2099-07-02&quot;
+currency = &quot;QAG&quot;
+
+with db_session() as db:
+    before_rows = db.rates.list()
+    before_dates = {row.date for row in before_rows}
+    db.rates.upsert(date=first_date, currency=currency, rate=&quot;7.1&quot;)
+    db.rates.upsert(date=second_date, currency=currency, rate=&quot;7.2&quot;)
+    after_rows = db.rates.list()
+    expected_dates = before_dates | {first_date, second_date}
+    expected_rate_count = len(before_rows) + 2
+
+client = web_client()
+response = client.get(&quot;/stats&quot;)
+assert response.status_code == 200
+body = response.json()
+assert body[&quot;dates&quot;] == len(expected_dates)
+assert body[&quot;rates&quot;] == expected_rate_count
+assert body[&quot;first&quot;] == min(expected_dates)
+assert body[&quot;last&quot;] == max(expected_dates)
+=== END AC stats-derive-from-store ===
+
+=== AC stats-empty-store ===
+Intent: The statistics endpoint reports null date bounds when the rates store is empty.
+Requires: python-package=fastapi; scope=test
+Requires: python-package=httpx2; scope=test
+
+from app_server.testing import web_client
+from persistence.testing import db_session
+
+with db_session() as db:
+    rows = db.rates.list()
+    if rows:
+        from cli.testing import cli_runner
+        code, stdout, stderr = cli_runner(&quot;init&quot;)
+        assert code == 0
+
+client = web_client()
+response = client.get(&quot;/stats&quot;)
+assert response.status_code == 200
+body = response.json()
+assert body[&quot;dates&quot;] == 0
+assert body[&quot;rates&quot;] == 0
+assert body[&quot;first&quot;] is None
+assert body[&quot;last&quot;] is None
+=== END AC stats-empty-store ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Derive all reported values from the rates repository.
+- Do not store or compute rates as floating-point values.</code></pre>
+<p>&lt;/pblock&gt;</p>
+<p>&lt;pblock filename=&quot;FEATURE-Rates.md&quot; role=&quot;implements&quot; path=&quot;/mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.202600/workspace/targets/FxRates/blueprint/FEATURE-Rates.md&quot; guidance=&quot;Feature Specification&quot;&gt;</p>
+<pre><code># FEATURE: Effective-Date Rates
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | Retrieves stored rates for the latest publication on or before a requested date. |
+| Depends On  | FEATURE-AppServer.md, DATABASE.md |
+| Provides    | GET /rates/{date} |
+| Consumes    | create_app(), rates repository operations |
+
+## Purpose
+
+Return the ECB rates for a requested date using the latest available publication on or before that date.
+
+## Trigger and workflow
+
+A caller requests `GET /rates/{date}`. Validate that the path value is a real calendar date in `YYYY-MM-DD` form. Find the latest publication on or before the request, then return its stored rates as published text.
+
+Return `404` when no publication exists on or before the requested date. Malformed dates return `422`.
+
+## Database Interface
+
+- `FEATURE-RATE-003` — read: find publications on or before a date - supplies: `requested_date` - returns: `date`, `currency`, `rate`
+- `FEATURE-RATE-002` — read: list rates for a publication date - supplies: `date` - returns: `date`, `currency`, `rate`
+
+## Programmatic Acceptance
+
+=== AC rates-effective-date ===
+Intent: The route resolves a requested date to the latest available publication and returns its stored rates.
+
+Requires: python-package=fastapi; scope=test
+Requires: python-package=httpx2; scope=test
+
+from app_server.testing import web_client
+from persistence.testing import db_session
+
+requested = &quot;2099-06-03&quot;
+effective = &quot;2099-06-02&quot;
+currency = &quot;QAF&quot;
+rate = &quot;6.125&quot;
+
+with db_session() as db:
+    db.rates.upsert(date=effective, currency=currency, rate=rate)
+
+client = web_client()
+response = client.get(f&quot;/rates/{requested}&quot;)
+body = response.json()
+assert response.status_code == 200
+assert body[&quot;date&quot;] == effective
+assert body[&quot;requested&quot;] == requested
+assert body[&quot;base&quot;] == &quot;EUR&quot;
+assert body[&quot;rates&quot;][currency] == rate
+=== END AC rates-effective-date ===
+
+=== AC rates-errors ===
+Intent: The route returns the declared errors for a missing effective publication and a malformed date.
+
+Requires: python-package=fastapi; scope=test
+Requires: python-package=httpx2; scope=test
+
+from app_server.testing import web_client
+
+client = web_client()
+assert client.get(&quot;/rates/1900-01-01&quot;).status_code == 404
+assert client.get(&quot;/rates/2025-13-01&quot;).status_code == 422
+=== END AC rates-errors ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Resolve rates using the latest publication date on or before the request.
+- Return stored rate text unchanged; do not convert it to floating point.
+- Do not hardcode dates, counts, or rates in application code.</code></pre>
+<p>&lt;/pblock&gt;</p>
+<p>&lt;pblock filename=&quot;FEATURE-History.md&quot; role=&quot;implements&quot; path=&quot;/mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.202600/workspace/targets/FxRates/blueprint/FEATURE-History.md&quot; guidance=&quot;Feature Specification&quot;&gt;</p>
+<pre><code># FEATURE: Currency History
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | Returns a currency&#x27;s stored rate history and summary statistics over optional bounds. |
+| Depends On  | FEATURE-AppServer.md, DATABASE.md |
+| Provides    | GET /history/{code} |
+| Consumes    | create_app(), rates repository operations |
+
+## Purpose
+
+Return a currency&#x27;s publication points and min, max, and mean statistics over an optional inclusive date range.
+
+## Trigger and workflow
+
+A caller requests a currency history with optional `start` and `end` dates. Malformed bounds return `422`. Return points in ascending date order and preserve each published rate string. Return `404` if the currency has no stored history at all, including EUR. If it has history but no points in the selected range, return count zero, null min/max/mean, and an empty points list.
+
+Compute minimum and maximum by numeric value. Compute the exact mean using `Decimal` and round half-even to six decimal places.
+
+## Database Interface
+
+- `FEATURE-RATE-004` — read: list a currency&#x27;s rates within optional inclusive bounds - supplies: `currency`, `start_date`, `end_date` - returns: `date`, `currency`, `rate`
+- `FEATURE-RATE-005` — read: determine whether the currency has any stored rate - supplies: none - returns: `date`, `currency`, `rate`
+
+## Programmatic Acceptance
+
+=== AC history-range-and-statistics ===
+Intent: The history endpoint returns bounded points and statistics derived from the seeded rates.
+
+Requires: python-package=fastapi; scope=test
+Requires: python-package=httpx2; scope=test
+
+from decimal import Decimal, ROUND_HALF_EVEN
+from app_server.testing import web_client
+from persistence.testing import db_session
+
+currency = &quot;QAK&quot;
+dates = [&quot;2099-09-01&quot;, &quot;2099-09-02&quot;, &quot;2099-09-03&quot;]
+rates = [&quot;1.1&quot;, &quot;1.3&quot;, &quot;1.2&quot;]
+start = dates[0]
+end = dates[2]
+
+with db_session() as db:
+    for date, rate in zip(dates, rates):
+        db.rates.upsert(date=date, currency=currency, rate=rate)
+
+response = web_client().get(f&quot;/history/{currency}&quot;, params={&quot;start&quot;: start, &quot;end&quot;: end})
+body = response.json()
+expected_mean = (sum((Decimal(rate) for rate in rates), Decimal(0)) / len(rates)).quantize(
+    Decimal(&quot;0.000001&quot;), rounding=ROUND_HALF_EVEN
+)
+assert response.status_code == 200
+assert body[&quot;currency&quot;] == currency
+assert body[&quot;base&quot;] == &quot;EUR&quot;
+assert [point[&quot;date&quot;] for point in body[&quot;points&quot;]] == dates
+assert [point[&quot;rate&quot;] for point in body[&quot;points&quot;]] == rates
+assert body[&quot;count&quot;] == len(rates)
+assert body[&quot;min&quot;] == min(rates, key=Decimal)
+assert body[&quot;max&quot;] == max(rates, key=Decimal)
+assert body[&quot;mean&quot;] == f&quot;{expected_mean:.6f}&quot;
+=== END AC history-range-and-statistics ===
+
+=== AC history-empty-range-and-errors ===
+Intent: The history endpoint distinguishes an empty range from a currency with no history and rejects malformed bounds.
+
+Requires: python-package=fastapi; scope=test
+Requires: python-package=httpx2; scope=test
+
+from app_server.testing import web_client
+from persistence.testing import db_session
+
+currency = &quot;QAL&quot;
+date = &quot;2099-10-01&quot;
+rate = &quot;1.4&quot;
+
+with db_session() as db:
+    db.rates.upsert(date=date, currency=currency, rate=rate)
+
+client = web_client()
+empty = client.get(f&quot;/history/{currency}&quot;, params={&quot;start&quot;: &quot;2099-10-02&quot;})
+assert empty.status_code == 200
+assert empty.json()[&quot;count&quot;] == 0
+assert empty.json()[&quot;min&quot;] is None
+assert empty.json()[&quot;max&quot;] is None
+assert empty.json()[&quot;mean&quot;] is None
+assert empty.json()[&quot;points&quot;] == []
+assert client.get(&quot;/history/QAM&quot;).status_code == 404
+assert client.get(f&quot;/history/{currency}&quot;, params={&quot;start&quot;: &quot;2099-10-01-x&quot;}).status_code == 422
+=== END AC history-empty-range-and-errors ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Preserve stored rate text for history points and min/max values.
+- Use exact decimal arithmetic for mean and round half-even to six decimal places.
+- Treat a currency with no history as 404, distinct from an empty bounded result.</code></pre>
+<p>&lt;/pblock&gt;</p>
+<p>&lt;pblock filename=&quot;FEATURE-Convert.md&quot; role=&quot;implements&quot; path=&quot;/mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.202600/workspace/targets/FxRates/blueprint/FEATURE-Convert.md&quot; guidance=&quot;Feature Specification&quot;&gt;</p>
+<pre><code># FEATURE: Currency Conversion
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | Converts an amount between two currencies using exact decimal arithmetic. |
+| Depends On  | FEATURE-AppServer.md, DATABASE.md |
+| Provides    | GET /convert |
+| Consumes    | create_app(), rates repository operations |
+
+## Purpose
+
+Convert an amount from one currency to another using ECB rates, with EUR as the base currency.
+
+## Trigger and workflow
+
+A caller supplies `from`, `to`, and `amount`, with an optional `date`. Missing required parameters, malformed amounts, or malformed dates return `422`. Without a date, use the latest publication. With a date, resolve the latest publication on or before it. Return `404` when no effective publication exists or a requested non-EUR currency lacks a rate on that publication.
+
+EUR has the implicit rate `1`. The conversion rate is `rate(to) / rate(from)`, rounded half-even to six decimal places. The result is calculated directly from the unrounded stored rates and amount, rounded half-even to two decimal places. Both are strings with fixed decimal places; echo the amount text unchanged.
+
+## Database Interface
+
+- `FEATURE-RATE-003` — read: find publications on or before a date - supplies: `requested_date` - returns: `date`, `currency`, `rate`
+- `FEATURE-RATE-002` — read: list rates for a publication date - supplies: `date` - returns: `date`, `currency`, `rate`
+
+## Programmatic Acceptance
+
+=== AC convert-decimal-and-rounding ===
+Intent: The conversion endpoint echoes its input amount and calculates its rate and result from the fixture rates with the specified rounding.
+
+Requires: python-package=fastapi; scope=test
+Requires: python-package=httpx2; scope=test
+
+from decimal import Decimal, ROUND_HALF_EVEN
+from app_server.testing import web_client
+from persistence.testing import db_session
+
+date = &quot;2099-08-01&quot;
+source_currency = &quot;QAH&quot;
+target_currency = &quot;QAI&quot;
+amount = &quot;2.00&quot;
+source_rate = &quot;2&quot;
+target_rate = &quot;5&quot;
+
+with db_session() as db:
+    db.rates.upsert(date=date, currency=source_currency, rate=source_rate)
+    db.rates.upsert(date=date, currency=target_currency, rate=target_rate)
+
+response = web_client().get(
+    &quot;/convert&quot;,
+    params={&quot;from&quot;: source_currency, &quot;to&quot;: target_currency, &quot;amount&quot;: amount, &quot;date&quot;: date},
+)
+body = response.json()
+expected_rate = (Decimal(target_rate) / Decimal(source_rate)).quantize(
+    Decimal(&quot;0.000001&quot;), rounding=ROUND_HALF_EVEN
+)
+expected_result = (Decimal(amount) * Decimal(target_rate) / Decimal(source_rate)).quantize(
+    Decimal(&quot;0.01&quot;), rounding=ROUND_HALF_EVEN
+)
+assert response.status_code == 200
+assert body[&quot;date&quot;] == date
+assert body[&quot;from&quot;] == source_currency
+assert body[&quot;to&quot;] == target_currency
+assert body[&quot;amount&quot;] == amount
+assert body[&quot;rate&quot;] == f&quot;{expected_rate:.6f}&quot;
+assert body[&quot;result&quot;] == f&quot;{expected_result:.2f}&quot;
+=== END AC convert-decimal-and-rounding ===
+
+=== AC convert-validation-and-unknown-currency ===
+Intent: The conversion endpoint rejects missing or malformed inputs and returns 404 for a currency without a rate.
+
+Requires: python-package=fastapi; scope=test
+Requires: python-package=httpx2; scope=test
+
+from app_server.testing import web_client
+
+client = web_client()
+assert client.get(&quot;/convert&quot;, params={&quot;from&quot;: &quot;USD&quot;, &quot;to&quot;: &quot;EUR&quot;}).status_code == 422
+assert client.get(
+    &quot;/convert&quot;, params={&quot;from&quot;: &quot;USD&quot;, &quot;to&quot;: &quot;EUR&quot;, &quot;amount&quot;: &quot;abc&quot;}
+).status_code == 422
+assert client.get(
+    &quot;/convert&quot;, params={&quot;from&quot;: &quot;USD&quot;, &quot;to&quot;: &quot;EUR&quot;, &quot;amount&quot;: &quot;1&quot;, &quot;date&quot;: &quot;2025-13-01&quot;}
+).status_code == 422
+assert client.get(
+    &quot;/convert&quot;, params={&quot;from&quot;: &quot;USD&quot;, &quot;to&quot;: &quot;QAJ&quot;, &quot;amount&quot;: &quot;1&quot;, &quot;date&quot;: &quot;2099-08-02&quot;}
+).status_code == 404
+=== END AC convert-validation-and-unknown-currency ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Use `decimal.Decimal` only; never use floating-point arithmetic.
+- Compute the result from unrounded source rates, not from the rounded response rate.
+- Preserve the caller&#x27;s amount text in the response.
+- Do not embed rates or computed answers in application code.</code></pre>
+<p>&lt;/pblock&gt;</p>
+<p>&lt;pblock filename=&quot;FEATURE-Health.md&quot; role=&quot;implements&quot; path=&quot;/mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.202600/workspace/targets/FxRates/blueprint/FEATURE-Health.md&quot; guidance=&quot;Feature Specification&quot;&gt;</p>
+<pre><code># FEATURE: Health Endpoint
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | Defines the service health endpoint. |
+| Depends On  | FEATURE-AppServer.md |
+| Provides    | GET /health |
+| Consumes    | create_app() |
+
+## Purpose
+
+`GET /health` provides a lightweight check that the API is responding.
+
+## Programmatic Acceptance
+
+=== AC health-response ===
+Intent: The health endpoint responds successfully with the documented JSON body.
+Cite: sources/INSTRUCTIONS.md:57-58
+Requires: python-package=fastapi; scope=test
+Requires: python-package=httpx2; scope=test
+
+from app_server.testing import web_client
+
+client = web_client()
+response = client.get(&quot;/health&quot;)
+assert response.status_code == 200
+assert response.json() == {&quot;status&quot;: &quot;ok&quot;}
+=== END AC health-response ===
+
+=== AC health-method ===
+Intent: An unsupported method is refused by the health route.
+Requires: python-package=fastapi; scope=test
+Requires: python-package=httpx2; scope=test
+
+from app_server.testing import web_client
+
+client = web_client()
+response = client.post(&quot;/health&quot;)
+assert response.status_code == 405
+=== END AC health-method ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- The endpoint returns JSON and does not depend on stored rates.</code></pre>
+<p>&lt;/pblock&gt;</p>
+<p>&lt;pblock filename=&quot;FEATURE-CLI-Errors.md&quot; role=&quot;implements&quot; path=&quot;/mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.202600/workspace/targets/FxRates/blueprint/FEATURE-CLI-Errors.md&quot; guidance=&quot;Feature Specification&quot;&gt;</p>
+<pre><code># FEATURE: CLI Errors
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | Defines command-line usage and operational error behavior for fxrates. |
+| Depends On  | FEATURE-CLI.md |
+| Provides    | CLI usage and error exit behavior |
+| Consumes    | ./fxrates |
+
+## Purpose
+
+Give every command a consistent failure contract. Failed commands write no standard output and one diagnostic line to standard error.
+
+## Behavior
+
+- Unknown commands, incorrect argument counts, and a non-integer `serve --port` value exit with status 2.
+- A file that cannot be read exits with status 1.
+- A CSV rejected by the load validator exits with status 3.
+- Keep failure messages on standard error; their wording is not part of the contract.
+
+## Programmatic Acceptance
+
+=== AC cli-usage-errors ===
+Intent: Usage errors return status 2 and produce no standard output.
+
+from cli.testing import cli_runner
+
+for args in ((&quot;frobnicate&quot;,), (&quot;load&quot;,), (&quot;serve&quot;, &quot;--port&quot;, &quot;notaport&quot;)):
+    code, stdout, stderr = cli_runner(*args)
+    assert code == 2
+    assert stdout == &quot;&quot;
+    assert stderr
+=== END AC cli-usage-errors ===
+
+=== AC cli-operational-errors ===
+Intent: File read failures return status 1 and rejected CSV files return status 3.
+
+from cli.testing import cli_runner
+
+missing_path = &quot;sources/absent-for-cli-error-check.csv&quot;
+code, stdout, stderr = cli_runner(&quot;load&quot;, missing_path)
+assert code == 1
+assert stdout == &quot;&quot;
+assert stderr
+
+code, stdout, stderr = cli_runner(&quot;load&quot;, &quot;sources/eurofxref-hist_bad.csv&quot;)
+assert code == 3
+assert stdout == &quot;&quot;
+assert stderr
+=== END AC cli-operational-errors ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Keep diagnostics on standard error.
+- Do not emit standard output for failed commands.
+- Preserve the distinct exit statuses for usage, operational, and rejected-file failures.</code></pre>
+<p>&lt;/pblock&gt;</p>
+<p>&lt;pblock label=&quot;Build instructions&quot; kind=&quot;instructions&quot;&gt;</p>
+<h3>Build instructions for this block</h3>
+<h4>Validate and load ECB CSV history files atomically. (load)</h4>
+<p>Implement load as a complete validation pass followed by writes only if the entire file is valid. Parse the ECB CSV header and rows, ignore the trailing empty field, validate three-letter uppercase currency codes, real non-repeated YYYY-MM-DD dates, exact field counts, and values matching [0-9]+(\.[0-9]+)? that are not zero. Ignore N/A values. Store all other rate strings exactly as published and replace an existing rate for the same date and currency. On rejection, write nothing and return the rejected-file exit status. On success, report the number of dates with at least one stored rate and the number of rates stored from the file.</p>
+<h4>Initialize an empty rates store. (init)</h4>
+<p>Implement init to drop the rates table if present and create it empty using the persistence boundary. It prints nothing on success.</p>
+<h4>List currencies that have stored rates. (api_currencies)</h4>
+<p>Implement GET /currencies with EUR as base and the currencies that have at least one stored rate, sorted in ascending order.</p>
+<h4>Retrieve rates from the latest publication. (api_latest)</h4>
+<p>Implement GET /rates/latest using the latest publication and its stored rates. Identify the request as &quot;latest&quot; and return 404 if the store has no publication.</p>
+<h4>Report stored rate statistics. (api_stats)</h4>
+<p>Implement GET /stats with date and rate counts and the first and last publication dates. Return null bounds when the store contains no publication dates. Derive all values from repository queries.</p>
+<h4>Retrieve rates by effective date. (api_rates)</h4>
+<p>Implement GET /rates/{date}. Validate that the path value is a real YYYY-MM-DD date and return 422 for malformed dates. Resolve the latest publication date on or before the request; return 404 if none exists. Return every stored rate for the effective date as its published text, with the requested date and EUR base in the response.</p>
+<h4>Retrieve currency history and summary statistics. (history)</h4>
+<p>Implement GET /history/{code} with optional inclusive start and end dates. Malformed bounds return 422. Return publication points in ascending date order, preserving stored rate text. For a currency with no stored rate at all, return 404, including EUR. For a currency with history but no points in the selected range, return count zero, null min/max/mean, and an empty points list. Compute min and max by numeric value and compute the exact Decimal mean rounded half-even to six decimal places.</p>
+<h4>Convert amounts between currencies. (convert)</h4>
+<p>Implement GET /convert with required from, to, and amount parameters and an optional date. Validate amount against [0-9]+(\.[0-9]+)? and validate any supplied date as a real YYYY-MM-DD date; malformed or missing parameters return 422. Without a date, use the latest publication. Otherwise resolve the effective publication date on or before the request. Return 404 when there is no effective publication or a requested non-EUR currency lacks a rate on that date. EUR has implicit rate 1. Use Decimal only. Compute the response rate as rate(to) / rate(from), rounded half-even to six decimal places, and compute result directly from the unrounded stored rates and amount, rounded half-even to two decimal places. Emit both values with fixed decimal places and echo the amount text unchanged.</p>
+<h4>Serve the health endpoint. (api_health)</h4>
+<p>Implement GET /health returning status 200 and the JSON object {&quot;status&quot;:&quot;ok&quot;}.</p>
+<h4>Report CLI usage and operational errors. (cli_errors)</h4>
+<p>Implement shared CLI error behavior: unknown commands, wrong argument counts, and a non-integer port return exit status 2; operational file read failures return 1; rejected CSV files return</p>
+<ol><li>Failed commands produce no standard output and write a diagnostic line to standard error.</li></ol>
+<p>&lt;/pblock&gt;</p>
+<h1>Agent Task</h1>
+<p>You are a Drydock build agent implementing exactly one build step of a larger plan. The build job block below names the target, the build working directory, and the step. Everything you need is stacked into this prompt under role headings:</p>
+<ul><li><code>compass</code> — the Target&#x27;s COMPASS.md orientation.</li><li><code>implements</code> — the Typed Specification files this step builds. These are</li></ul>
+<p>authoritative; implement them exactly.</p>
+<ul><li><code>context</code> — read-only support specifications. Do not reimplement them.</li><li><code>stack</code> — enterprise stack and technology rules. Honor them.</li><li><code>rules</code> — governance and branding rules. Honor them.</li></ul>
+<p>Operating contract:</p>
+<ol><li>Follow the write authorization and protected paths in the stacked <code>COMPASS.md</code> exactly.</li></ol>
+<p>That persisted guardrail is the sole authority for paths this build may modify.</p>
+<ol><li>Start by inspecting the build working directory. Read the current contents of each file before</li></ol>
+<p>applying a contextual patch. If patch verification fails, re-read that file and rebuild the patch against its current text; do not repeat stale context or overwrite unrelated changes. Preserve existing application files unless this step&#x27;s specifications require a change. Its <code>sources/</code> subdirectory holds staged build assets — imported test corpora, conformance harnesses, and fixtures — placed there for you. They are read-only inputs: run them, import them, and write code against them, but never create, rewrite, trim, regenerate, or substitute one, even to make a check pass. A step that modifies a staged asset fails and the asset is restored. If an asset you expect is absent, report that; do not author a replacement.</p>
+<ol><li>Implement only this step. Use <code>context</code>, <code>stack</code>, and <code>rules</code> as constraints,</li></ol>
+<p>not as additional work to perform.</p>
+<ol><li>Follow the stack and rules for languages, structure, naming, and branding.</li><li>The programmatic acceptance assertions in the <code>implements</code> specifications are</li></ol>
+<p>this step&#x27;s <strong>Definition of Done</strong> — human-owned, declared before the build, and fixed. Build the story and, in this same step, write the deterministic tests that prove each declared assertion, as a TDD master would; add finer tests for coverage. Every test you write follows the same rule the acceptance assertions do: <strong>act on the system, read the state back, compare to expected.</strong> The oracle is a return value, parsed JSON, a status code, a stored row, file contents read back, or an exit status — never a substring of captured stdout or stderr, a test-runner tally, or a log line. Write tests in the project&#x27;s own language using that language&#x27;s libraries; an in-language HTTP client yields a status code and a parsed body, where <code>curl</code> yields text to scrape. Round-trip anything that stores state: act, then read back through the public interface. Assert declared failure signals on negative paths, never message wording. You may add tests but must never remove, soften, or weaken a declared acceptance assertion. A <code>Suite: full</code> conformance check gates on the entire imported test suite: the step is done only when it passes in full, never on a representative subset — reproduce the standard exactly rather than wrapping a third-party library that approximates it. For a suite, the runner&#x27;s exit status is the verdict and the whole verdict: print its captured output for diagnosis, never assert on the text of its summary. When an assertion is a static or filesystem scan (import boundary, &quot;X never appears outside Y,&quot; grep/AST gate), honor the scope the specification states and never widen it: scan production source only, exclude <code>.venv/</code>, <code>site-packages</code>, and vendored or generated code, and do not flag test doubles or fixtures that use the guarded dependency. Run targeted tests for the behavior you change and preserve existing passing behavior. Drydock executes every declared acceptance assertion after your call and owns the verdict. Use available failure logs before rerunning suites to rediscover failures; use section or example filters to diagnose the underlying behavior, never example-specific exceptions. If you run a suite, wait for completion or its declared timeout; silence is not a hang.</p>
+<ol><li>Grow the project&#x27;s own test suite as you write the code, and treat it as the project&#x27;s</li></ol>
+<p>real coverage. The acceptance assertions in <code>implements</code> are gates: few, fixed, and written before any code existed, so every expectation in them is a prediction. The tests you write are written <em>beside</em> the finished code, so their expected values are observed rather than predicted — which is why exhaustive coverage belongs here and not there. Extend the suite in the project&#x27;s established location and runner, keep it runnable by the project&#x27;s declared test command, and leave it green when you return. Cover, at minimum: every public entry point and every verb it declares, including declared error paths; the boundaries — empty, exactly one, many, absent optional fields, declared maxima; declared idempotence, applied twice; one behavior per test, named for the behavior; and isolation — database criteria use the provisioned application store and the shipped rollback fixture, passing its connection into the feature. Other connections and durability tests use criterion-owned records, idempotent setup and checked cleanup through supported interfaces. Never replace the configured store, reapply schema, or delete unrelated business records. When Drydock supplies a disposable SQLite store in DATABASE_URL/DATABASE_PATH, use those inherited values for development tests. Each agent call receives a fresh provisioned test store. Never delete a default database path to clean test failures. Project tests still need fixture-owned setup and cleanup so repeated tests in the same call do not depend on order. A managed-state violation stops the block and retains a recovery snapshot; do not restore or reprovision shared state yourself. Preserve published text even when a conflicting criterion requests formatting: report the source conflict and its evidence instead of changing semantics. Where a staged authoritative suite already covers a surface, use it as the coverage; do not duplicate its cases. Any invocation must respect this step&#x27;s declared scope. Do not run the unscoped entry point for a <code>Suite: scoped</code> story, or run a suite this step does not declare. Report only completed checks and their observed results.</p>
+<ol><li>Treat <code>User Acceptance</code> entries as review evidence requirements. Implement</li></ol>
+<p>the supporting behavior, but do not claim to have performed human judgment.</p>
+<ol><li>The <code>implements</code> section is authoritative and intentionally stacked late in</li></ol>
+<p>the prompt as the recency anchor. Build that WHAT exactly; do not substitute generic framework defaults.</p>
+<ol><li>Before adding or installing Python dependencies, verify each package name</li></ol>
+<p>against the declared registry. Do not invent package names. If a needed package cannot be verified or appears newly published, fail explicitly instead of installing it.</p>
+<ol><li>Use the stack&#x27;s required package manager workflow for dependency changes.</li></ol>
+<p>When the stack requires <code>uv</code>, update manifests through <code>uv</code> conventions rather than bare <code>pip install</code>.</p>
+<ol><li>Do not claim success unless you actually created or modified project files in</li></ol>
+<p>the build working directory. If you cannot write files or cannot complete the step, report failure explicitly.</p>
+<ol><li>Do not run <code>git add</code>, <code>git commit</code>, create branches, create tags, rewrite</li></ol>
+<p>history, or otherwise mutate Git history. Drydock checkpoints application changes and Target evidence after each execution and completed step. File lineage comes from Git and the Manifest&#x27;s <code>implements:</code> entries; no additional attribution response is required.</p>
+<ol><li>End your response with this exact closing structure:</li></ol>
+<pre><code>RESULT: SUCCESS | FAILED
+
+FILES CHANGED:
+- relative/path
+
+SUMMARY:
+&lt;brief reviewable summary&gt;
+
+BLOCKERS:
+- &lt;only if any&gt;</code></pre>
+<p>Before <code>RESULT</code>, you may emit one optional JSON payload when implementation required a bounded choice not already settled by the owning specification. This records what you did; it does not ask permission, create a questionnaire, or excuse incomplete work:</p>
+<pre><code>&lt;blueprint-decisions&gt;
+[{&quot;spec&quot;:&quot;FEATURE-Example.md&quot;,&quot;severity&quot;:&quot;Material&quot;,&quot;subject&quot;:&quot;Chosen behavior&quot;,&quot;decision&quot;:&quot;Options A and B were available. I implemented B because ... Is that acceptable, or should this change on replan?&quot;}]
+&lt;/blueprint-decisions&gt;</code></pre>
+<p>Name only a specification implemented by this build block. Use <code>Low</code> or <code>Material</code>; Build never emits a Blocking decision. Omit the payload when no implementation decision was necessary.</p>
+<ol><li><code>FILES CHANGED</code> must list only files actually written in the build working</li></ol>
+<p>directory. When the existing implementation already satisfies this step, report <code>RESULT: SUCCESS</code>, list no changed files, and state the checks performed and their results. A verification-only step requires no application changes. Drydock runs the declared deterministic checks and decides the outcome independently of this report.</p>
+<ol><li>On <code>RESULT: FAILED</code>, append two additional lines so the failure is actionable</li></ol>
+<p>without opening logs. <code>FAILURE_SUMMARY</code> is one line naming the cause; <code>FAILURE_DETAIL</code> states what happened, why, and what to change before a rerun. Name concrete conditions when they apply: token or context limit exceeded, could not execute commands in this environment, a required input was missing, or a specific tool or command failed.</p>
+<pre><code>FAILURE_SUMMARY: &lt;one line naming the cause&gt;
+FAILURE_DETAIL: &lt;what happened, why, and what to change before rerunning&gt;</code></pre>
+<ol><li>When a declared acceptance criterion cannot pass no matter how the code is written,</li></ol>
+<p>say so with this exact token. You may not edit the criterion — it is staged and restored before grading:</p>
+<pre><code>AC_BROKEN: &lt;check-id&gt;[, &lt;check-id&gt;]</code></pre>
+<p>This is a report, not a verdict, and it stops nothing. A criterion reaches you only when its expected value is one its author could not have invented — a status code, a staged suite&#x27;s exit status, a value the criterion itself supplied as input — so your claim that the criterion rather than the code is at fault is the less likely explanation, and the budget is spent as it would be for any other failure. A criterion whose expectation <em>was</em> hand-typed already settles <code>DISPUTED</code> on its own, without you naming it. Emit the token only after running the criterion and confirming the underlying command succeeded while the assertion still failed. Name the affected check ids, emit it alongside your normal <code>RESULT</code> line, state the reasoning in <code>FAILURE_DETAIL</code>, and emit it even when <code>RESULT: SUCCESS</code>. Do not use it for a criterion you merely failed to satisfy.</p></article>
+</main>
+</body>
+</html>

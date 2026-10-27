@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>build/FxRates/tests/conftest.py</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>build/FxRates/tests/conftest.py</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../build/FxRates/tests/conftest.py">Raw file</a></div></header>
+<article class="doc"><pre>&quot;&quot;&quot;Shared pytest fixtures for the FxRates suite.
+
+Tests never open a network connection. Any attempt to connect a socket fails the test, so an
+accidental download cannot slip through a suite that is meant to run offline.
+&quot;&quot;&quot;
+
+from __future__ import annotations
+
+import socket
+from collections.abc import Iterator
+from pathlib import Path
+
+import pytest
+
+from app_server import testing as app_testing
+from cli import testing as cli_testing
+
+
+class NetworkAccessError(RuntimeError):
+    &quot;&quot;&quot;Raised when a test attempts to open a network connection.&quot;&quot;&quot;
+
+
+def _refuse_connection(*_args: object, **_kwargs: object) -&gt; None:
+    raise NetworkAccessError(&quot;tests must not open network connections&quot;)
+
+
+@pytest.fixture(autouse=True)
+def _block_network(monkeypatch: pytest.MonkeyPatch) -&gt; Iterator[None]:
+    monkeypatch.setattr(socket.socket, &quot;connect&quot;, _refuse_connection)
+    monkeypatch.setattr(socket, &quot;create_connection&quot;, _refuse_connection)
+    yield
+
+
+@pytest.fixture
+def project_root() -&gt; Path:
+    return Path(__file__).resolve().parent.parent
+
+
+@pytest.fixture
+def cli_runner():
+    return cli_testing.cli_runner
+
+
+@pytest.fixture
+def web_client():
+    return app_testing.web_client()
+</pre></article>
+</main>
+</body>
+</html>

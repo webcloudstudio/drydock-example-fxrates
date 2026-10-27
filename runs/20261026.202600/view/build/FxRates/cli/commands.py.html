@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>build/FxRates/cli/commands.py</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>build/FxRates/cli/commands.py</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../build/FxRates/cli/commands.py">Raw file</a></div></header>
+<article class="doc"><pre>from __future__ import annotations
+import sys
+from cli.parser import ParsedArgs
+
+def dispatch(args: ParsedArgs) -&gt; int:
+    from services.rates import load_file, initialize
+    if args.command == &#x27;load&#x27;:
+        try: dates, rates = load_file(args.path)
+        except OSError as exc:
+            print(f&#x27;error: {exc}&#x27;, file=sys.stderr); return 1
+        except ValueError as exc:
+            print(f&#x27;error: {exc}&#x27;, file=sys.stderr); return 3
+        print(&#x27;dates,rates&#x27;); print(f&#x27;{dates},{rates}&#x27;); return 0
+    if args.command == &#x27;fetch&#x27;:
+        from services.rates import fetch_file
+        try: dates, rates = fetch_file()
+        except Exception as exc:
+            print(f&#x27;error: {exc}&#x27;, file=sys.stderr); return 1
+        print(&#x27;dates,rates&#x27;); print(f&#x27;{dates},{rates}&#x27;); return 0
+    if args.command == &#x27;init&#x27;:
+        initialize(); return 0
+    if args.command == &#x27;serve&#x27;:
+        import uvicorn
+        uvicorn.run(&#x27;app_server.main:app&#x27;, host=&#x27;127.0.0.1&#x27;, port=args.port); return 0
+    return 2
+</pre></article>
+</main>
+</body>
+</html>

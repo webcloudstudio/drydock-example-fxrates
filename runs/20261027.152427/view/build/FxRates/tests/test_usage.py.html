@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>build/FxRates/tests/test_usage.py</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>build/FxRates/tests/test_usage.py</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../build/FxRates/tests/test_usage.py">Raw file</a></div></header>
+<article class="doc"><pre>&quot;&quot;&quot;Usage validation: malformed invocations exit 2 with empty stdout and one stderr line.
+
+Exercised in-process through `cli_runner` and `cli.usage.validate`; no process is spawned.
+&quot;&quot;&quot;
+
+from __future__ import annotations
+
+import pytest
+
+from cli import dispatcher
+from cli.usage import UsageError, validate
+
+MALFORMED = [
+    [],
+    [&quot;frobnicate&quot;],
+    [&quot;load&quot;],
+    [&quot;load&quot;, &quot;a.csv&quot;, &quot;b.csv&quot;],
+    [&quot;init&quot;, &quot;extra&quot;],
+    [&quot;fetch&quot;, &quot;extra&quot;],
+    [&quot;serve&quot;, &quot;--port&quot;, &quot;notaport&quot;],
+    [&quot;serve&quot;, &quot;--port&quot;],
+    [&quot;serve&quot;, &quot;--port&quot;, &quot;0&quot;],
+    [&quot;serve&quot;, &quot;--port&quot;, &quot;65536&quot;],
+    [&quot;serve&quot;, &quot;--port&quot;, &quot;-1&quot;],
+    [&quot;serve&quot;, &quot;--port&quot;, &quot;1.5&quot;],
+    [&quot;serve&quot;, &quot;extra&quot;],
+    [&quot;serve&quot;, &quot;--port&quot;, &quot;8000&quot;, &quot;extra&quot;],
+]
+
+VALID = [
+    [&quot;serve&quot;],
+    [&quot;serve&quot;, &quot;--port&quot;, &quot;1&quot;],
+    [&quot;serve&quot;, &quot;--port&quot;, &quot;65535&quot;],
+    [&quot;serve&quot;, &quot;--port&quot;, &quot;8000&quot;],
+    [&quot;init&quot;],
+    [&quot;load&quot;, &quot;x.csv&quot;],
+    [&quot;fetch&quot;],
+]
+
+
+@pytest.fixture(autouse=True)
+def isolated_registry(monkeypatch: pytest.MonkeyPatch) -&gt; None:
+    &quot;&quot;&quot;Each test registers into its own copy of the registry so commands do not leak.&quot;&quot;&quot;
+    monkeypatch.setattr(dispatcher, &quot;_handlers&quot;, dict(dispatcher._handlers))
+
+
+@pytest.mark.parametrize(&quot;argv&quot;, MALFORMED, ids=lambda argv: &quot; &quot;.join(argv) or &quot;no-command&quot;)
+def test_malformed_invocation_exits_2_with_empty_stdout(cli_runner, argv: list[str]) -&gt; None:
+    code, out, err = cli_runner(*argv)
+
+    assert code == 2
+    assert out == &quot;&quot;
+    assert len(err.strip().splitlines()) == 1
+
+
+@pytest.mark.parametrize(&quot;argv&quot;, VALID, ids=lambda argv: &quot; &quot;.join(argv))
+def test_valid_invocation_passes_validation(argv: list[str]) -&gt; None:
+    validate(argv)
+
+
+@pytest.mark.parametrize(&quot;argv&quot;, MALFORMED, ids=lambda argv: &quot; &quot;.join(argv) or &quot;no-command&quot;)
+def test_validate_raises_usage_error_for_malformed_invocation(argv: list[str]) -&gt; None:
+    with pytest.raises(UsageError):
+        validate(argv)
+
+
+@pytest.mark.parametrize(&quot;port&quot;, [&quot;1&quot;, &quot;65535&quot;])
+def test_port_boundaries_are_accepted(port: str) -&gt; None:
+    validate([&quot;serve&quot;, &quot;--port&quot;, port])
+
+
+@pytest.mark.parametrize(&quot;port&quot;, [&quot;0&quot;, &quot;65536&quot;, &quot;-1&quot;, &quot;notaport&quot;, &quot;&quot;, &quot;+80&quot;])
+def test_out_of_range_or_non_integer_port_is_rejected(port: str) -&gt; None:
+    with pytest.raises(UsageError):
+        validate([&quot;serve&quot;, &quot;--port&quot;, port])
+
+
+@pytest.mark.parametrize(&quot;argv&quot;, [[&quot;init&quot;, &quot;--help&quot;], [&quot;load&quot;, &quot;--help&quot;], [&quot;fetch&quot;, &quot;--help&quot;], [&quot;serve&quot;, &quot;--help&quot;]])
+def test_lone_help_after_known_command_passes_through(argv: list[str]) -&gt; None:
+    validate(argv)
+
+
+def test_registered_command_outside_table_is_not_arity_checked() -&gt; None:
+    validate([&quot;probe&quot;, &quot;a&quot;, &quot;b&quot;, &quot;c&quot;], registered=[&quot;probe&quot;])
+
+
+def test_command_outside_table_and_registry_is_rejected() -&gt; None:
+    with pytest.raises(UsageError):
+        validate([&quot;probe&quot;], registered=[])
+
+
+def test_empty_argv_is_rejected() -&gt; None:
+    with pytest.raises(UsageError):
+        validate([])
+
+
+def test_usage_error_is_raised_before_handler_runs(cli_runner) -&gt; None:
+    calls: list[list[str]] = []
+    dispatcher.register_command(&quot;init&quot;, lambda rest: calls.append(list(rest)) or 0)
+
+    code, out, err = cli_runner(&quot;init&quot;, &quot;extra&quot;)
+
+    assert code == 2
+    assert out == &quot;&quot;
+    assert len(err.strip().splitlines()) == 1
+    assert calls == []
+
+
+def test_registered_handler_still_receives_valid_arguments(cli_runner) -&gt; None:
+    calls: list[list[str]] = []
+    dispatcher.register_command(&quot;serve&quot;, lambda rest: calls.append(list(rest)) or 0)
+
+    code, _out, _err = cli_runner(&quot;serve&quot;, &quot;--port&quot;, &quot;8000&quot;)
+
+    assert code == 0
+    assert calls == [[&quot;--port&quot;, &quot;8000&quot;]]
+</pre></article>
+</main>
+</body>
+</html>

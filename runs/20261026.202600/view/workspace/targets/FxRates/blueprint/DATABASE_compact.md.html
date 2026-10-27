@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/DATABASE_compact.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/DATABASE_compact.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/DATABASE_compact.md">Raw file</a></div></header>
+<article class="doc"><p>&lt;!-- Compacted from DATABASE.md sha256=54097832936d2ba5b7c2f8d44ed278d915a1ad842f4bab76d284889f3ecf4a66 on 2026-10-26 by drydock build agent --&gt;</p>
+<p>Rates are stored in <code>rates(id, date, currency, rate)</code>, with text values and a unique <code>(date, currency)</code> key. The generated repository currently exposes <code>upsert</code>, <code>by_date</code>, <code>publications_through</code>, <code>history</code>, and <code>list</code>; history bounds are inclusive and results use their declared ordering. Application code must use the generated persistence package and resolve the store from <code>DATABASE_URL</code>, then <code>DATABASE_PATH</code>, then <code>data/app.db</code>.</p></article>
+</main>
+</body>
+</html>

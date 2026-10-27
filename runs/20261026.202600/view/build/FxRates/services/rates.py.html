@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>build/FxRates/services/rates.py</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>build/FxRates/services/rates.py</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../build/FxRates/services/rates.py">Raw file</a></div></header>
+<article class="doc"><pre>from __future__ import annotations
+import csv, os, re, tempfile, urllib.request, zipfile, io
+from datetime import date
+from decimal import Decimal, ROUND_HALF_EVEN
+from config import database_dsn
+from persistence import open_database
+
+RATE = re.compile(r&#x27;[0-9]+(?:\.[0-9]+)?\Z&#x27;)
+CODE = re.compile(r&#x27;[A-Z]{3}\Z&#x27;)
+ECB_HISTORY_URL = &#x27;https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist.zip&#x27;
+
+def fetch_file() -&gt; tuple[int, int]:
+    with urllib.request.urlopen(ECB_HISTORY_URL) as response:
+        payload = response.read()
+    with zipfile.ZipFile(io.BytesIO(payload)) as archive:
+        csv_payload = archive.read(&#x27;eurofxref-hist.csv&#x27;)
+    with tempfile.NamedTemporaryFile() as source:
+        source.write(csv_payload)
+        source.flush()
+        return load_file(source.name)
+
+def db(): return open_database(database_dsn())
+def valid_date(value: str) -&gt; bool:
+    try: return date.fromisoformat(value).isoformat() == value
+    except ValueError: return False
+
+def load_file(path: str) -&gt; tuple[int,int]:
+    with open(path, newline=&#x27;&#x27;, encoding=&#x27;utf-8-sig&#x27;) as f: rows=list(csv.reader(f))
+    if not rows: raise ValueError(&#x27;empty CSV&#x27;)
+    header=rows[0]
+    if header and header[-1]==&#x27;&#x27;: header=header[:-1]
+    if len(header)&lt;2 or header[0]!=&#x27;Date&#x27; or any(not CODE.fullmatch(c) for c in header[1:]) or len(set(header[1:]))!=len(header[1:]): raise ValueError(&#x27;invalid header&#x27;)
+    parsed=[]; seen=set()
+    for row in rows[1:]:
+        if row and row[-1]==&#x27;&#x27;: row=row[:-1]
+        if len(row)!=len(header) or not valid_date(row[0]) or row[0] in seen: raise ValueError(&#x27;invalid row&#x27;)
+        seen.add(row[0]); values=[]
+        for code,value in zip(header[1:],row[1:]):
+            if value==&#x27;N/A&#x27;: continue
+            if not RATE.fullmatch(value) or Decimal(value)==0: raise ValueError(&#x27;invalid rate&#x27;)
+            values.append((row[0],code,value))
+        parsed.extend(values)
+    with db() as store:
+        for d,c,r in parsed: store.rates.upsert(date=d,currency=c,rate=r)
+    return len({d for d,_,_ in parsed}),len(parsed)
+
+def initialize(store=None):
+    if store is None:
+        from pathlib import Path
+        with db() as store:
+            store.execute_script((Path(__file__).resolve().parent.parent / &#x27;schema.sql&#x27;).read_text(encoding=&#x27;utf-8&#x27;))
+            for row in store.rates.list():
+                store.rates.delete(date=row.date, currency=row.currency)
+        return
+    if store is not None:
+        for row in store.rates.list():
+            store.rates.delete(date=row.date, currency=row.currency)
+
+def all_rows():
+    with db() as store: return store.rates.list()
+def through(d):
+    with db() as store: return store.rates.publications_through(requested_date=d)
+def by_date(d):
+    with db() as store: return store.rates.by_date(date=d)
+def history(c,s,e):
+    # The generated repository compares both bounds unconditionally. Supply the
+    # full ISO date domain for an omitted bound so open-ended history still works.
+    with db() as store:
+        return store.rates.history(
+            currency=c,
+            start_date=s if s is not None else &#x27;0001-01-01&#x27;,
+            end_date=e if e is not None else &#x27;9999-12-31&#x27;,
+        )
+</pre></article>
+</main>
+</body>
+</html>

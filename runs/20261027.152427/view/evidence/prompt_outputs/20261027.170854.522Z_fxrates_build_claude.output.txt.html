@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/prompt_outputs/20261027.170854.522Z_fxrates_build_claude.output.txt</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/prompt_outputs/20261027.170854.522Z_fxrates_build_claude.output.txt</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/prompt_outputs/20261027.170854.522Z_fxrates_build_claude.output.txt">Raw file</a></div></header>
+<article class="doc"><pre>I&#x27;ll start by inspecting the build directory and the grader before changing anything.The grader is the verdict, so I&#x27;ll run it unmodified to see where the application stands.The grader is at 11/35. Nearly every failure traces to one error: `no such table: rates`, so the schema is not present when commands run. I&#x27;ll look at how the schema is provisioned before deciding whether this is a true application defect.The root cause is clear now: `init` deliberately runs no DDL and says &quot;the schema is provisioned by the DATABASE step&quot;, but the grader points `DATABASE_URL` at a fresh temp file, so nothing ever creates the table. I&#x27;ll check the specs to see who is supposed to apply the schema.The schema is only created by `Database.execute_script`, which the library says runs &quot;once, at the DATABASE build step.&quot; I need to find which spec owns creating the schema on a fresh database, so I&#x27;ll search the blueprint for that.The specs leave a gap. `FEATURE-InitCommand` forbids application DDL, DATABASE.md says the schema is built once at the DATABASE step, and nothing provisions a fresh `DATABASE_URL`, which is exactly what the grader uses. Before deciding anything, I&#x27;ll test whether this is the only blocker. I&#x27;ll use a scratch copy in `/tmp` so the build directory stays untouched.My probe patch put an import above `from __future__`, which is a syntax error in the scratch copy. I&#x27;ll fix the probe with an inline import and rerun.Schema provisioning is the only blocker: with the schema applied on `init` in a scratch copy, the grader passes 35/35. I&#x27;ll remove the scratch copy and confirm the build tree is unchanged.The grader does not pass: `sh sources/run.sh` exits 1 with 11 of 35 checks passing. I made no changes to the build directory because the fix needs a decision that the specs reserve for you.
+
+**Cause:** the grader points `DATABASE_URL` at a fresh temp file, and nothing creates the `rates` table there. Every command and route that touches the store fails with `no such table: rates`.
+
+- `FEATURE-InitCommand.md` says application code never runs DDL, and that the schema is &quot;provisioned by the DATABASE step.&quot;
+- DATABASE.md says the schema is built &quot;once, at the DATABASE build step.&quot; That step only ran against `data/app.db`, not a fresh store.
+- So no spec creates the table on a fresh `DATABASE_URL`, but the grader needs one.
+
+**Evidence that this is the only blocker:** in a scratch copy under `/tmp`, I made `fxrates init` apply `schema.sql` through `db.execute_script` before deleting rows. The unmodified grader then passed 35/35. I deleted the scratch copy afterwards.
+
+**Options:**
+1. Amend `FEATURE-InitCommand.md` and the DATABASE guardrails to allow idempotent `CREATE ... IF NOT EXISTS` on init or on store open. This is what makes the grader pass, and it is the one I&#x27;d recommend.
+2. Provision the schema some other way in the grader&#x27;s flow. The grader is fixed, so this would have to be done by the harness before `init` runs.
+
+I did not apply option 1 in the build tree, because it breaks an explicit guardrail in a spec I was told to build exactly, and `blueprint/` is protected. This is not `AC_BROKEN`, since the criterion can pass once the specs allow schema creation.
+
+RESULT: FAILED
+
+FILES CHANGED:
+- (none)
+
+SUMMARY:
+Ran `sh sources/run.sh` unmodified from the application root: 11 passed, 24 failed (of 35), exit 1. All failures trace to the missing `rates` table on the fresh temp database. Applying the schema on init in a scratch copy made all 35 pass, which confirms this is the sole blocker. No build files were changed.
+
+BLOCKERS:
+- The specs leave no step that creates the schema on a fresh `DATABASE_URL`, and the init guardrail forbids the DDL that would do it. A spec decision is needed before this block can pass.
+
+FAILURE_SUMMARY: Fresh grader database has no `rates` table; no spec provisions the schema and init forbids DDL.
+FAILURE_DETAIL: `sh sources/run.sh` creates a new temp `DATABASE_URL` per run. `init`, `load`, and every read route then raise `sqlite3.OperationalError: no such table: rates` (24 of 35 checks fail). `FEATURE-InitCommand.md` and `DATABASE.md` forbid application DDL and place schema creation in a DATABASE build step that does not run against fresh stores. Confirmed in a scratch copy: adding `db.execute_script(schema.sql)` to init makes all 35 checks pass. Before rerunning, amend `FEATURE-InitCommand.md` and the DATABASE guardrails to permit idempotent schema creation on init or store open, then rebuild.</pre></article>
+</main>
+</body>
+</html>

@@ -1,8 +1,0 @@
-=== AC FEATURE-Reject-History.md :: reject-invalid-file ===
-Intent: The staged malformed history file is rejected with the specified exit status.
-
-from cli.testing import cli_runner
-
-code, stdout, stderr = cli_runner("load", "sources/eurofxref-hist_bad.csv")
-assert code == 3
-=== END AC FEATURE-Reject-History.md :: reject-invalid-file ===

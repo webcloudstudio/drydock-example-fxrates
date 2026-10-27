@@ -1,4 +1,0 @@
-{"type":"thread.started","thread_id":"01a174b1-8977-7f81-8d70-9cb8ebdc84b5"}
-{"type":"turn.started"}
-{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"<unattached story=\"architecture-foundation\"/>\n<unattached story=\"database-foundation\"/>\n<unattached story=\"api-foundation\"/>\n<unattached story=\"cli-foundation\"/>\n<unattached story=\"ecb-001\"/>\n<unattached story=\"ecb-002\"/>\n<unattached story=\"api-001\"/>\n<unattached story=\"api-002\"/>\n<unattached story=\"api-003\"/>\n<unattached story=\"api-004\"/>\n<unattached story=\"ecb-003\"/>\n<unattached story=\"del-001\"/>\n<unattached story=\"del-002\"/>"}}
-{"type":"turn.completed","usage":{"input_tokens":14461,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":199,"reasoning_output_tokens":73}}

@@ -1,0 +1,9 @@
+RESULT: SUCCESS
+
+FILES CHANGED:
+- services/rates.py
+
+SUMMARY:
+`fxrates init` now applies the generated schema before clearing rates in a fresh database. The unmodified grader passed: 35 checks, 0 failures.
+
+BLOCKERS:

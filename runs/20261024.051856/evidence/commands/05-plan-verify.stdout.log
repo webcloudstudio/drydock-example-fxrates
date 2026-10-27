@@ -1,9 +1,0 @@
-Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
-plan verify: FxRates
-  1 criterion cannot run as written
-  ✗  FEATURE-Reject-History.md [reject-invalid-file]: Cite: sources/INSTRUCTIONS.md:61-63 contains none of this criterion's expected literals verbatim; cite the lines that state the expected value
-  ⚠  FEATURE-Convert.md [convert-route-returns-computed-values]: expects "f'{expected_rate:.6f}'", a value re-typed rather than derived from the input or read back from the system
-  ⚠  FEATURE-Convert.md [convert-route-returns-computed-values]: expects "f'{expected_result:.2f}'", a value re-typed rather than derived from the input or read back from the system
-  ⚠  FEATURE-History.md [history-route-returns-bounded-summary]: expects "f'{expected_mean:.6f}'", a value re-typed rather than derived from the input or read back from the system
-  Run: drydock plan repair FxRates
-Target - committed project workspace git store

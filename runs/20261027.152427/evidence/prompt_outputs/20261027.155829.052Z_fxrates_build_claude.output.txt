@@ -1,0 +1,36 @@
+I'll start by inspecting the build directory and the current state of the project.The load command needs `rates.replace_rate` and a single transaction, so I need the generated schema and the Database transaction API. I'll also check how the init tests are written.I need to see how `Database` handles commits and transactions, since the load has to be all-or-nothing.The persistence library has no public transaction API. `Database` autocommits each declared operation, and the library forbids driver access inside the acceptance transaction. I'll check the usage tests for `load`, the staged sources, and the existing ECB tests before deciding how to write the load.I have what I need. Here is the plan before I write anything:
+
+- **Validation first:** `parse_history` runs over the whole file before any write, so a rejected file stores nothing.
+- **Transaction gap:** the persistence layer has no transaction operation, and driver access is blocked inside the acceptance transaction. The spec asks for one transaction, so I can't deliver that from `cli/` without reaching around the library. I'll write each rate through `rates.replace_rate`, note the gap in the code, and flag it as a Material decision.
+
+Writing the command handler now, registered the same way as `init`.Now the test suite, following the `test_init.py` pattern: the autouse acceptance-transaction fixture, reads back through `db.rates`, and temp files via `tmp_path`.I left a syntax error in the January test's comprehension (a stray `->`). I also wrote two count assertions that assume an empty store, when the store may already hold rates. Fixing all three.The January round-trip test still counts rows in the whole store, which breaks if the store already holds overlapping January rates. I'll check each parsed rate against the store instead.Running the new tests first, then the full suite through the declared gate (`bin/test.sh`).One failure, and it's a bug in my test, not the command: I passed `""` as a header column, so the validator correctly rejected it as a currency code. Fixing the header.All 15 load tests pass, and the declared gate `bin/test.sh` passes with 149 tests and exit 0. As a last check I'll run the real launcher end to end against a copy of the store, so the shipped database isn't touched.`fxrates load` is implemented and the declared gate passes. One requirement is not met: the load is not a single transaction.
+
+**What's not met:** FEATURE-LoadStore asks for all rates to be stored in one transaction. The persistence library has no transaction operation, and driver access is blocked inside the acceptance transaction, so `cli/` cannot open one without reaching around the library. Each `rates.replace_rate` commits on its own. The validation runs before the first write, so a rejected file still stores nothing. A database error part way through a valid file would leave a partial load. Fixing this needs a transaction operation in DATABASE.md or the shipped persistence layer, which are Drydock-owned.
+
+RESULT: SUCCESS
+
+FILES CHANGED:
+- cli/load_command.py
+- cli/__init__.py
+- tests/test_load.py
+
+SUMMARY:
+- `cli/load_command.py` registers the `load` handler. It reads the file, runs `fxrates_app.ecb.parse_history` over the whole file, and returns exit 3 with one stderr line and empty stdout on `RejectedFile`. On success it writes each rate through `db.rates.replace_rate` and prints `dates,rates` then `<dates>,<rates>`.
+- `cli/__init__.py` imports the new module, the same way `init` is registered.
+- `tests/test_load.py` has 15 tests. They cover counts, all-N/A dates, text rate storage, reload idempotence, replacement without adding rows, rejected files storing nothing, and the supplied good and bad ECB files. Reads go back through `db.rates`, and each test runs in the rolled-back acceptance transaction.
+
+Checks run:
+- `.venv/bin/pytest -q tests/test_load.py`: 15 passed. One of my tests first failed because I wrote a bad header in it. I fixed the test, not the command.
+- `sh bin/test.sh`: exit 0, 149 passed.
+- End-to-end on a temp copy of the store (`DATABASE_PATH`): the January file gives `22,176` twice; the bad file gives exit 3 with `error: line 3 has a malformed rate: '1.0x'`; the Feb 3–4 file gives `2,16`; `load` with no argument gives exit 2. The shipped `data/app.db` was not touched.
+- I did not run the acceptance assertions directly. Drydock runs them after this step.
+
+Choices I made:
+- `load --help` returns 0 with no output and does not read a file, matching how `init` treats its arguments. The spec does not cover it.
+- A missing or unreadable file raises an `OSError` and is not caught. That belongs to FEATURE-LoadUnreadable, which is not in this block.
+
+```blueprint-decisions
+[{"spec":"FEATURE-LoadStore.md","severity":"Material","subject":"Single transaction for the load","decision":"The spec asks for all upserts in one transaction. The persistence library exposes no transaction operation, and driver access is forbidden inside the acceptance transaction, so cli/ cannot open one without bypassing the library. I wrote each rate through rates.replace_rate, which autocommits per row. Validation still runs over the whole file before the first write, so rejected files store nothing, but a database failure mid-load is not rolled back. Should a transaction operation be added to DATABASE.md, or is per-row commit acceptable?"},{"spec":"FEATURE-LoadStore.md","severity":"Low","subject":"load --help handling","decision":"load --help returns exit 0 with no output and does not read a file, matching init. The spec does not define it. Confirm or change on replan."}]
+```
+
+FAILURE_SUMMARY is not needed because the result is SUCCESS, with the atomicity gap reported above.

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-CliUsageErrors.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-CliUsageErrors.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-CliUsageErrors.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: CLI Usage Errors</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261027 V1</td></tr><tr><td>Description</td><td>Argument validation that reports usage errors with exit 2, empty stdout, and one stderr line.</td></tr><tr><td>Depends On</td><td>FEATURE-CliFoundation.md</td></tr><tr><td>Provides</td><td>fxrates usage validation</td></tr><tr><td>Consumes</td><td>cli.main</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Reject malformed invocations before any handler, database, or socket is touched.</p>
+<h2>Behavior</h2>
+<p><code>cli/usage.py</code> provides <code>UsageError</code> and <code>validate(argv: list[str]) -&gt; None</code>; <code>cli.main</code> calls it before dispatch and, on <code>UsageError</code>, writes one line to standard error, nothing to standard output, and returns <code>2</code>.</p>
+<div class="scroll"><table><thead><tr><th>Command</th><th>Arguments</th></tr></thead><tbody><tr><td><code>init</code></td><td>none</td></tr><tr><td><code>load</code></td><td>exactly one (the CSV path)</td></tr><tr><td><code>fetch</code></td><td>none</td></tr><tr><td><code>serve</code></td><td>optional <code>--port &lt;n&gt;</code>; <code>n</code> an integer from 1 to 65535</td></tr></tbody></table></div>
+<ul><li>No command, or a command in neither this table nor the handler registry, is a usage error.</li><li>A wrong argument count, a <code>--port</code> without a value, a non-integer <code>--port</code>, and a <code>--port</code></li></ul>
+<p>outside 1 to 65535 are usage errors.</p>
+<ul><li>A command registered but absent from the table is not arity-checked.</li><li>A lone <code>--help</code> after a known command is passed through to its handler.</li></ul>
+<h2>Database Interface</h2>
+<ul><li>None — persistence is owned by DATABASE.md.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC usage-rejected-invocations ===<br>Intent: Each malformed invocation exits 2 with empty stdout and exactly one stderr line.<br>Requires: executable=python3; scope=test</p>
+<p>from cli.testing import cli_runner</p>
+<p>cases = [ [], [&quot;frobnicate&quot;], [&quot;load&quot;], [&quot;load&quot;, &quot;a.csv&quot;, &quot;b.csv&quot;], [&quot;init&quot;, &quot;extra&quot;], [&quot;fetch&quot;, &quot;extra&quot;], [&quot;serve&quot;, &quot;--port&quot;, &quot;notaport&quot;], [&quot;serve&quot;, &quot;--port&quot;], [&quot;serve&quot;, &quot;--port&quot;, &quot;0&quot;], [&quot;serve&quot;, &quot;--port&quot;, &quot;65536&quot;], [&quot;serve&quot;, &quot;--port&quot;, &quot;-1&quot;], ] for argv in cases: code, out, err = cli_runner(*argv) assert code == 2, argv assert out == &quot;&quot;, argv assert len(err.strip().splitlines()) == 1, argv === END AC usage-rejected-invocations ===</p>
+<p>=== AC usage-valid-ports-pass-validation ===<br>Intent: Boundary ports and no port are valid, and validation raises UsageError only for invalid input.<br>Requires: executable=python3; scope=test</p>
+<p>from cli.usage import UsageError, validate</p>
+<p>for argv in ([&quot;serve&quot;], [&quot;serve&quot;, &quot;--port&quot;, &quot;1&quot;], [&quot;serve&quot;, &quot;--port&quot;, &quot;65535&quot;], [&quot;serve&quot;, &quot;--port&quot;, &quot;8000&quot;], [&quot;init&quot;], [&quot;load&quot;, &quot;x.csv&quot;], [&quot;fetch&quot;]): validate(argv)</p>
+<p>bad = [&quot;serve&quot;, &quot;--port&quot;, &quot;65536&quot;] try: validate(bad) except UsageError: pass else: raise AssertionError(&quot;expected UsageError&quot;) === END AC usage-valid-ports-pass-validation ===</p>
+<p>=== AC usage-executable-exit-2 ===<br>Intent: The fxrates executable itself exits 2 with empty stdout for an unknown command.<br>Requires: executable=python3; scope=test</p>
+<p>import subprocess</p>
+<p>result = subprocess.run([&quot;./fxrates&quot;, &quot;frobnicate&quot;], capture_output=True, text=True, stdin=subprocess.DEVNULL) print(result.stdout) print(result.stderr) assert result.returncode == 2 assert result.stdout == &quot;&quot; === END AC usage-executable-exit-2 ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Validation never opens a database or binds a socket.</li><li>Error message wording is not part of the contract; only exit status, empty stdout, and a single stderr line are.</li></ul></article>
+</main>
+</body>
+</html>

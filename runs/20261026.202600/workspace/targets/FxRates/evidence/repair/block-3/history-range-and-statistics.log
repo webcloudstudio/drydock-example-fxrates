@@ -1,0 +1,11 @@
+
+
+--- stderr ---
+--- drydock: values at failure ---
+  response = <Response [404 Not Found]>
+--- drydock: end values ---
+Traceback (most recent call last):
+  File "history-range-and-statistics.py", line 20, in <module>
+    assert response.status_code == 200
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError

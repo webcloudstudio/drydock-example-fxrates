@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-Init.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-Init.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-Init.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Store Initialization</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261026 V1</td></tr><tr><td>Description</td><td>Defines the CLI behavior for resetting the rates store.</td></tr><tr><td>Depends On</td><td>FEATURE-CLI.md, DATABASE.md</td></tr><tr><td>Provides</td><td><code>./fxrates init</code></td></tr><tr><td>Consumes</td><td><code>./fxrates</code>, rates repository operations</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p><code>fxrates init</code> resets the rates store to an empty state. It takes no arguments, prints nothing on success, and uses the persistence boundary.</p>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC init-clears-store ===<br>Intent: The init command succeeds and leaves the rates repository empty.</p>
+<p>from cli.testing import cli_runner from persistence.testing import db_session</p>
+<p>with db_session() as db: db.rates.upsert(date=&quot;2099-06-01&quot;, currency=&quot;QAF&quot;, rate=&quot;6.1&quot;)</p>
+<p>code, stdout, stderr = cli_runner(&quot;init&quot;) assert code == 0 assert stdout == &quot;&quot;</p>
+<p>with db_session() as db: rows = db.rates.list() assert rows == [] === END AC init-clears-store ===</p>
+<p>=== AC init-rejects-extra-arguments ===<br>Intent: The init command rejects an unexpected argument with the usage exit status.</p>
+<p>from cli.testing import cli_runner</p>
+<p>code, stdout, stderr = cli_runner(&quot;init&quot;, &quot;extra&quot;) assert code == 2 === END AC init-rejects-extra-arguments ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Reset the rates table through the persistence boundary.</li><li>Keep diagnostics on standard error.</li></ul></article>
+</main>
+</body>
+</html>

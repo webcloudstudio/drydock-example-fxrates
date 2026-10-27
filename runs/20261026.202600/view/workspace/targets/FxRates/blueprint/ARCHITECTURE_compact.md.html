@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/ARCHITECTURE_compact.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/ARCHITECTURE_compact.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/ARCHITECTURE_compact.md">Raw file</a></div></header>
+<article class="doc"><p>&lt;!-- Compacted from ARCHITECTURE.md sha256=c0c8a5e7a3d5142d1daf0fd898de36ed4f766fb554c0250f80d781debf599a34 on 2026-10-26 by drydock build agent --&gt;</p>
+<p>Python 3.11+, FastAPI, uvicorn, and SQLite. <code>cli</code> owns the root executable and dispatch, <code>app_server</code> owns the application factory and routes, <code>services</code> owns shared behavior, <code>persistence</code> owns generated storage access, and <code>config</code> owns database location resolution. HTTP handlers and CLI commands call services; only persistence accesses the database. Preserve ECB rates as text and use <code>Decimal</code> for arithmetic.</p></article>
+</main>
+</body>
+</html>

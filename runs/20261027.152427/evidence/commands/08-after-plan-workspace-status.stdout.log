@@ -1,0 +1,16 @@
+Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
+Drydock status — workspace
+
+Target: FxRates
+   Phase:     Implement
+   State:     25 pending
+   Detail:    5 imported · 25 authored · metadata planned
+   Analysis:  Ready · 21 stories · 0 questions · 0 blockers
+   Plan:      25 pending
+   Next Step: drydock build FxRates  (frontier: Stand up the Python project root, environment, dependency manifest, package layout, and test runner.)
+   10-27:     ✅  drydock build status FxRates
+   10-27:     ✅  drydock plan verify FxRates --plan-override-model sonnet
+   10-27:     ✅  drydock plan FxRates --override --plan-override-model sonnet
+   10-27:     ✅  drydock analyze FxRates
+   10-27:     ✅  drydock import FxRates /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261027.152427/sources --format markdown
+

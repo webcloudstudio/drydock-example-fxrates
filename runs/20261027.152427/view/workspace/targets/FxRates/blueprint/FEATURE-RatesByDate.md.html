@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-RatesByDate.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-RatesByDate.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-RatesByDate.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Rates By Date</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261027 V1</td></tr><tr><td>Description</td><td><code>GET /rates/{date}</code> resolves the effective publication date and lists the rates published on it.</td></tr><tr><td>Depends On</td><td>FEATURE-ServeHealth.md, FEATURE-LoadStore.md</td></tr><tr><td>Provides</td><td>GET /rates/{date}, fxrates_app.rates.effective_date</td></tr><tr><td>Consumes</td><td>rates.list_on_or_before, rates.list_for_date, app_server.create_app</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Answer which rates applied on a calendar day. The ECB publishes on working days only, so a request for any date uses the latest publication on or before it.</p>
+<h2>Effective date</h2>
+<p><code>fxrates_app.rates.effective_date(d)</code> returns the latest publication date on or before <code>d</code>, or <code>None</code> when no such date exists. It is computed with <code>rates.list_on_or_before(as_of=d)</code>; the first row&#x27;s date is the effective date. Other stories (<code>/convert</code>, <code>/history</code>, <code>/rates/latest</code>) reuse it.</p>
+<h2>Route</h2>
+<p><code>GET /rates/{date}</code>:</p>
+<div class="scroll"><table><thead><tr><th>Condition</th><th>Status</th><th>Body</th></tr></thead><tbody><tr><td><code>date</code> is a real calendar date <code>YYYY-MM-DD</code> with an effective date</td><td>200</td><td><code>{&quot;date&quot;: &lt;effective&gt;, &quot;requested&quot;: &lt;date&gt;, &quot;base&quot;: &quot;EUR&quot;, &quot;rates&quot;: {&lt;code&gt;: &lt;stored text&gt;, ...}}</code></td></tr><tr><td><code>date</code> is a real date with no publication on or before it</td><td>404</td><td>any</td></tr><tr><td><code>date</code> is malformed or not a real date (for example <code>2025-13-01</code>)</td><td>422</td><td>any</td></tr></tbody></table></div>
+<ul><li><code>rates</code> holds every currency with a rate on the effective date, as the stored text in a JSON</li></ul>
+<p>string, and has no <code>EUR</code> entry.</p>
+<ul><li>The date is validated through FastAPI request validation, which produces 422.</li><li>Static routes such as <code>/rates/latest</code> are registered before this dynamic route so <code>latest</code> is not</li></ul>
+<p>parsed as a date.</p>
+<h2>Database Interface</h2>
+<ul><li><code>FEATURE-RATE-003</code> — read: list publication dates on or before a date - supplies: <code>as_of</code> - returns: <code>date</code></li><li><code>FEATURE-RATE-002</code> — read: list every rate published on one date - supplies: <code>date</code> - returns: <code>date</code>, <code>currency</code>, <code>rate</code></li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC rates-by-date-exact ===<br>Intent: A request for a publication date returns that date as both date and requested, base EUR, and each stored rate text exactly as supplied.<br>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx2; scope=test</p>
+<p>from app_server.testing import web_client from persistence.testing import db_session</p>
+<p>d = &quot;1900-10-01&quot; ra = &quot;1.50&quot; rb = &quot;2.250&quot;</p>
+<p>with db_session() as db: db.rates.replace_rate(date=d, currency=&quot;ZZA&quot;, rate=ra) db.rates.replace_rate(date=d, currency=&quot;ZZB&quot;, rate=rb) client = web_client() response = client.get(f&quot;/rates/{d}&quot;) assert response.status_code == 200 body = response.json() assert body[&quot;date&quot;] == d assert body[&quot;requested&quot;] == d assert body[&quot;base&quot;] == &quot;EUR&quot; assert body[&quot;rates&quot;][&quot;ZZA&quot;] == ra assert body[&quot;rates&quot;][&quot;ZZB&quot;] == rb assert &quot;EUR&quot; not in body[&quot;rates&quot;] stored = {r.currency: r.rate for r in db.rates.list_for_date(date=d)} assert body[&quot;rates&quot;] == stored === END AC rates-by-date-exact ===</p>
+<p>=== AC rates-by-date-effective ===<br>Intent: A request between two publications resolves to the earlier publication, keeps the requested date, and carries that earlier date&#x27;s rates rather than the later ones.<br>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx2; scope=test</p>
+<p>from app_server.testing import web_client from persistence.testing import db_session</p>
+<p>early = &quot;1900-10-01&quot; late = &quot;1900-10-05&quot; between = &quot;1900-10-03&quot; r_early = &quot;1.50&quot; r_late = &quot;1.6&quot;</p>
+<p>with db_session() as db: db.rates.replace_rate(date=early, currency=&quot;ZZA&quot;, rate=r_early) db.rates.replace_rate(date=late, currency=&quot;ZZA&quot;, rate=r_late) client = web_client() response = client.get(f&quot;/rates/{between}&quot;) assert response.status_code == 200 body = response.json() assert body[&quot;date&quot;] == early assert body[&quot;requested&quot;] == between assert body[&quot;rates&quot;][&quot;ZZA&quot;] == r_early === END AC rates-by-date-effective ===</p>
+<p>=== AC rates-effective-date-function ===<br>Intent: effective_date returns the latest publication date on or before its argument and None when none exists.<br>Requires: executable=python3; scope=test</p>
+<p>from fxrates_app.rates import effective_date from persistence.testing import db_session</p>
+<p>early = &quot;1900-10-01&quot; late = &quot;1900-10-05&quot; between = &quot;1900-10-03&quot; before_all = &quot;1899-12-31&quot;</p>
+<p>with db_session() as db: db.rates.replace_rate(date=early, currency=&quot;ZZA&quot;, rate=&quot;1&quot;) db.rates.replace_rate(date=late, currency=&quot;ZZA&quot;, rate=&quot;2&quot;) assert effective_date(between) == early assert effective_date(late) == late assert effective_date(before_all) is None === END AC rates-effective-date-function ===</p>
+<p>=== AC rates-by-date-errors ===<br>Intent: A date before every publication answers 404, and malformed or impossible dates answer 422.<br>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx2; scope=test</p>
+<p>from app_server.testing import web_client</p>
+<p>client = web_client() before_all = &quot;1899-12-31&quot; assert client.get(f&quot;/rates/{before_all}&quot;).status_code == 404 assert client.get(&quot;/rates/2025-13-01&quot;).status_code == 422 assert client.get(&quot;/rates/not-a-date&quot;).status_code == 422 assert client.get(&quot;/rates/2025-01-31-x&quot;).status_code == 422 === END AC rates-by-date-errors ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>No rate or date is hardcoded; every value comes from a query.</li><li>Rates are returned as the stored text, never converted to a float.</li><li>EUR never appears in the <code>rates</code> map.</li></ul></article>
+</main>
+</body>
+</html>

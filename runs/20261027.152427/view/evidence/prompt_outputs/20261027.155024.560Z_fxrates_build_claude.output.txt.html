@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/prompt_outputs/20261027.155024.560Z_fxrates_build_claude.output.txt</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/prompt_outputs/20261027.155024.560Z_fxrates_build_claude.output.txt</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/prompt_outputs/20261027.155024.560Z_fxrates_build_claude.output.txt">Raw file</a></div></header>
+<article class="doc"><pre>Existing code is clear: `cli.main` dispatches to handlers registered with `register_command`, `fxrates_app.config.open_store()` opens the store, and `rates.delete_from_date` is the declared reset operation. I&#x27;ll add the init handler in its own module, register it from the `cli` package, and add tests.Now I&#x27;ll run the declared acceptance assertions for this story (the three `init` AC blocks) and the full project suite.The new tests fail with `database is locked`. `db_session()` holds a transaction on its own connection, and `init` opens a second connection to delete rows. I&#x27;ll check how the persistence layer provisions schema and whether the acceptance harness path (single shared connection) is what makes the declared AC work.The rollback session holds a transaction on its own connection, so a second connection can&#x27;t write. The declared AC avoids this by running under the acceptance harness, which joins every store to one shared transaction. I&#x27;ll confirm that the declared AC passes under that harness, then give my tests the same isolation.All three declared assertions pass under the harness. Next I&#x27;ll switch my tests to the same harness-owned transaction, so they roll back and don&#x27;t wipe the configured store.Init is implemented, the three declared `init` assertions pass under the acceptance harness, and the full suite is green (101 passed).
+
+RESULT: SUCCESS
+
+FILES CHANGED:
+- cli/init_command.py
+- cli/__init__.py
+- tests/test_init.py
+
+SUMMARY:
+- `cli/init_command.py` adds `init(rest) -&gt; int`. It opens the store with `fxrates_app.config.open_store()`, calls `db.rates.delete_from_date(from_date=&quot;0000-01-01&quot;)` to remove every rate, closes the database in a `finally`, and returns 0. It prints nothing and does no DDL and no driver access. It registers itself as `init` on import.
+- `cli/__init__.py` imports `init_command` so the handler is registered whenever the `cli` package loads.
+- `tests/test_init.py` adds five tests, all run in one harness-owned transaction that rolls back:
+  - seeded rates for a currency are removed;
+  - rates across many dates (1900, 2025, 9999) are removed;
+  - stdout and stderr are empty;
+  - init on an empty store succeeds and leaves it empty;
+  - init applied twice exits 0 both times and stays empty.
+- Read-back goes through `db.rates`, not captured output.
+
+Checks run:
+- `.venv/bin/pytest -q tests/test_init.py`: 5 passed.
+- `sh bin/test.sh` (full suite): exit 0, 101 passed.
+- The three declared AC blocks (`init-empties-store`, `init-idempotent`, `init-rejects-extra-argument`) run under `persistence.db.begin_acceptance_transaction()`: all pass. The extra-argument case is rejected by the existing usage validation, which exits 2 and leaves rows intact.
+
+Things to know:
+- Under plain pytest without the harness, the first version of the tests failed with `database is locked`. The rollback session holds a write transaction on its own connection, so `init`&#x27;s second connection can&#x27;t write. The declared AC avoids this only because the harness shares one connection. My tests now use the same harness transaction, so they don&#x27;t wipe `data/app.db`.
+- I did not run `./fxrates init` against the build&#x27;s real store, since it would delete the rates in `data/app.db`. The in-process tests cover the behavior.
+- Nothing was committed.</pre></article>
+</main>
+</body>
+</html>

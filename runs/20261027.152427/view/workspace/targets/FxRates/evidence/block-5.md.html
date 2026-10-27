@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/evidence/block-5.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/evidence/block-5.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/evidence/block-5.md">Raw file</a></div></header>
+<article class="doc"><h1>Evidence: Block 5 · Service (block-5)</h1>
+<ul><li>block type: block</li><li>date: 2026-10-27</li><li>resulting state: closed/verified</li><li>story points (combined assembled cost): 8862</li><li>execution id: 20261027.155024.560Z-6475a427</li></ul>
+<h2>Stories built</h2>
+<ul><li><code>fxrates init</code> resets the rates table to empty, prints nothing, exits 0. (cli-002-init) [story]</li></ul>
+<h2>Acceptance tooling authorization</h2>
+<ul><li>FEATURE-InitCommand.md#init-empties-store: executable=python3; scope=test; authorization=existing Target environment</li><li>FEATURE-InitCommand.md#init-idempotent: executable=python3; scope=test; authorization=existing Target environment</li><li>FEATURE-InitCommand.md#init-rejects-extra-argument: executable=python3; scope=test; authorization=existing Target environment</li></ul>
+<h2>Stacked context</h2>
+<ul><li>stack: python_compact.md (SP 921)</li><li>compass: COMPASS.md (SP 1152)</li><li>implements: FEATURE-InitCommand.md (SP 1265)</li><li>context: ARCHITECTURE_compact.md (SP 386)</li><li>context: DATABASE_compact.md (SP 707)</li><li>stack: common_compact.md (SP 1653)</li><li>stack: cli.md (SP 2689)</li></ul>
+<h2>Build directory changes</h2>
+<ul><li>cli/<strong>init</strong>.py</li><li>cli/init_command.py</li><li>data/app.db-shm</li><li>data/app.db-wal</li><li>data/logs/test_2026-10-27_115234.log</li><li>tests/test_init.py</li></ul>
+<h2>Pre-build acceptance observation</h2>
+<ul><li>RED: init-empties-store (FEATURE-InitCommand.md)</li></ul>
+<p>intent: After init, rates seeded through the repository are gone, and init prints nothing and exits 0. return code: 1 stderr: --- drydock: values at failure --- code = 2 --- drydock: end values --- Traceback (most recent call last): File &quot;init-empties-store.py&quot;, line 11, in &lt;module&gt; assert code == 0 ^^^^^^^^^ AssertionError</p>
+<ul><li>RED: init-idempotent (FEATURE-InitCommand.md)</li></ul>
+<p>intent: Running init twice in a row exits 0 both times, prints nothing, and leaves the store empty. return code: 1 stderr: --- drydock: values at failure --- code = 2 --- drydock: end values --- Traceback (most recent call last): File &quot;init-idempotent.py&quot;, line 8, in &lt;module&gt; assert code == 0 ^^^^^^^^^ AssertionError</p>
+<ul><li>GREEN (prepassed): init-rejects-extra-argument (FEATURE-InitCommand.md)</li></ul>
+<p>intent: Init with an extra argument is a usage error that exits 2 and leaves stored rates untouched. return code: 0</p>
+<h2>Post-build programmatic acceptance</h2>
+<ul><li>PASS: init-empties-store (FEATURE-InitCommand.md)</li></ul>
+<p>intent: After init, rates seeded through the repository are gone, and init prints nothing and exits 0. target interpreter: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261027.152427/build/FxRates/.venv/bin/python provisioning: not required return code: 0</p>
+<ul><li>PASS: init-idempotent (FEATURE-InitCommand.md)</li></ul>
+<p>intent: Running init twice in a row exits 0 both times, prints nothing, and leaves the store empty. target interpreter: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261027.152427/build/FxRates/.venv/bin/python provisioning: not required return code: 0</p>
+<ul><li>PASS: init-rejects-extra-argument (FEATURE-InitCommand.md)</li></ul>
+<p>intent: Init with an extra argument is a usage error that exits 2 and leaves stored rates untouched. target interpreter: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261027.152427/build/FxRates/.venv/bin/python provisioning: not required return code: 0</p>
+<h2>Build summary</h2>
+<p>Existing code is clear: <code>cli.main</code> dispatches to handlers registered with <code>register_command</code>, <code>fxrates_app.config.open_store()</code> opens the store, and <code>rates.delete_from_date</code> is the declared reset operation. I&#x27;ll add the init handler in its own module, register it from the <code>cli</code> package, and add tests.Now I&#x27;ll run the declared acceptance assertions for this story (the three <code>init</code> AC blocks) and the full project suite.The new tests fail with <code>database is locked</code>. <code>db_session()</code> holds a transaction on its own connection, and <code>init</code> opens a second connection to delete rows. I&#x27;ll check how the persistence layer provisions schema and whether the acceptance harness path (single shared connection) is what makes the declared AC work.The rollback session holds a transaction on its own connection, so a second connection can&#x27;t write. The declared AC avoids this by running under the acceptance harness, which joins every store to one shared transaction. I&#x27;ll confirm that the declared AC passes under that harness, then give my tests the same isolation.All three declared assertions pass under the harness. Next I&#x27;ll switch my tests to the same harness-owned transaction, so they roll back and don&#x27;t wipe the configured store.Init is implemented, the three declared <code>init</code> assertions pass under the acceptance harness, and the full suite is green (101 passed).</p>
+<p>RESULT: SUCCESS</p>
+<p>FILES CHANGED:</p>
+<ul><li>cli/init_command.py</li><li>cli/<strong>init</strong>.py</li><li>tests/test_init.py</li></ul>
+<p>SUMMARY:</p>
+<ul><li><code>cli/init_command.py</code> adds <code>init(rest) -&gt; int</code>. It opens the store with <code>fxrates_app.config.open_store()</code>, calls <code>db.rates.delete_from_date(from_date=&quot;0000-01-01&quot;)</code> to remove every rate, closes the database in a <code>finally</code>, and returns 0. It prints nothing and does no DDL and no driver access. It registers itself as <code>init</code> on import.</li><li><code>cli/__init__.py</code> imports <code>init_command</code> so the handler is registered whenever the <code>cli</code> package loads.</li><li><code>tests/test_init.py</code> adds five tests, all run in one harness-owned transaction that rolls back:<ul><li>seeded rates for a currency are removed;</li><li>rates across many dates (1900, 2025, 9999) are removed;</li><li>stdout and stderr are empty;</li><li>init on an empty store succeeds and leaves it empty;</li><li>init applied twice exits 0 both times and stays empty.</li></ul></li><li>Read-back goes through <code>db.rates</code>, not captured output.</li></ul>
+<p>Checks run:</p>
+<ul><li><code>.venv/bin/pytest -q tests/test_init.py</code>: 5 passed.</li><li><code>sh bin/test.sh</code> (full suite): exit 0, 101 passed.</li><li>The three declared AC blocks (<code>init-empties-store</code>, <code>init-idempotent</code>, <code>init-rejects-extra-argument</code>) run under <code>persistence.db.begin_acceptance_transaction()</code>: all pass. The extra-argument case is rejected by the existing usage validation, which exits 2 and leaves rows intact.</li></ul>
+<p>Things to know:</p>
+<ul><li>Under plain pytest without the harness, the first version of the tests failed with <code>database is locked</code>. The rollback session holds a write transaction on its own connection, so <code>init</code>&#x27;s second connection can&#x27;t write. The declared AC avoids this only because the harness shares one connection. My tests now use the same harness transaction, so they don&#x27;t wipe <code>data/app.db</code>.</li><li>I did not run <code>./fxrates init</code> against the build&#x27;s real store, since it would delete the rates in <code>data/app.db</code>. The in-process tests cover the behavior.</li><li>Nothing was committed.</li></ul></article>
+</main>
+</body>
+</html>

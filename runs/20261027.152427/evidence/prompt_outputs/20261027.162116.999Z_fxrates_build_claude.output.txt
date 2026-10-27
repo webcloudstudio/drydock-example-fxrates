@@ -1,0 +1,43 @@
+Baseline is green (182 passed). Three older tests assert that `--help` prints nothing for `load`, `serve`, and `fetch`, which conflicts with the stdout requirement in `cli-004-help`, so I'll update those assertions along with the code. Writing the help module and the command changes first.Now the service modules for the three routes.Before writing tests, I'll check how FastAPI's date validation treats the malformed inputs the spec names.The `datetime.date` annotation accepts `2025-01-31T00:00:00` and answers 404, but the spec defines the path as `YYYY-MM-DD` and says anything else is 422. I'll tighten it with a path pattern plus a calendar check.Now the tests. Each new file uses the same acceptance-transaction fixture the existing `init` and `load` tests use, so seeding and the routes share one connection and roll back at the end.Now I'll update the three older help assertions that expected silent `--help`.All 226 tests pass: the 182 baseline plus 44 new. I'll confirm the launcher's help output and then review the final route file.The four stories in block 11 are built and the full suite passes: 226 tests, up from 182, exit 0 (`sh bin/test.sh`). I did not run `sources/run.sh`, since COMPASS makes it a once-last terminal check.
+
+**What I built**
+- **`GET /stats`** (`fxrates_app/stats.py`): counts dates and rates from `db.rates.list_all_keys()`, with first and last dates, or `null` when the store is empty.
+- **`GET /currencies`** (`fxrates_app/currencies.py`): returns `{"base": "EUR", "currencies": [...]}` from `db.rates.list_currencies()`, deduplicated and ascending.
+- **`GET /rates/{date}`** (`fxrates_app/rates.py`): `effective_date(d)` picks the first row of `list_on_or_before`. The route returns 404 when no publication precedes the date, and 422 for anything not `YYYY-MM-DD` or not a real calendar date.
+- **`--help` for init, load, fetch, serve** (`cli/help.py`): prints a usage line and a one-line summary to stdout, exits 0, and returns before any database or socket access.
+
+**Things you should know**
+- **`init --help` was destructive.** Before this change it fell through to the delete. It now returns before opening the store. Load, fetch, and serve printed nothing for `--help`, so they now print the help text too.
+- **Three older tests asserted silent `--help`.** `test_load.py`, `test_serve.py`, and `test_fetch.py` each expected empty stdout. I changed those assertions to check the usage line, since the `cli-004-help` story requires stdout output. These are not declared acceptance assertions, but they are the only existing tests I edited.
+- **EUR is filtered explicitly** from both `/currencies` and the `/rates` map, following the spec's "not listed" and "no EUR entry" rules. The ECB data carries no EUR column, so this only matters for hand-seeded rows.
+- **Date validation** uses a `YYYY-MM-DD` path pattern plus `date.fromisoformat`. I checked that a bare `date` annotation would accept `2025-01-31T00:00:00` and answer 404, which the spec does not allow.
+
+**Tests added** (`tests/test_stats.py`, `test_currencies.py`, `test_rates_by_date.py`, `test_help.py`): they follow the same acceptance-transaction fixture as the existing init and load tests, and read results back through `db.rates`. The declared acceptance assertions are covered by equivalent tests here; Drydock runs its own copies for the verdict.
+
+Nothing was committed.
+
+RESULT: SUCCESS
+
+FILES CHANGED:
+- app_server/routes.py
+- cli/help.py
+- cli/init_command.py
+- cli/load_command.py
+- cli/fetch_command.py
+- cli/serve_command.py
+- fxrates_app/rates.py
+- fxrates_app/stats.py
+- fxrates_app/currencies.py
+- tests/test_stats.py
+- tests/test_currencies.py
+- tests/test_rates_by_date.py
+- tests/test_help.py
+- tests/test_load.py
+- tests/test_serve.py
+- tests/test_fetch.py
+
+SUMMARY:
+Implemented GET /stats, GET /currencies, GET /rates/{date} with effective-date resolution, and `--help` for init, load, fetch, and serve. `sh bin/test.sh` exits 0 with 226 passed (182 baseline + 44 new). The init `--help` path previously ran a store reset; it now returns before touching the database. Three older tests were updated to expect the new stdout help text. `sources/run.sh` was not run (terminal story, not this block).
+
+BLOCKERS:
+- none

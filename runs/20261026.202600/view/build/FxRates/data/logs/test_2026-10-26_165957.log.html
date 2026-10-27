@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>build/FxRates/data/logs/test_2026-10-26_165957.log</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>build/FxRates/data/logs/test_2026-10-26_165957.log</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../build/FxRates/data/logs/test_2026-10-26_165957.log">Raw file</a></div></header>
+<article class="doc"><pre>timestamp=2026-10-26T16:59:57-0400
+arguments=
+working_directory=/mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.202600/build/FxRates
+...F.........................                                            [100%]
+=================================== FAILURES ===================================
+_____________________ test_history_bounds_and_empty_range ______________________
+
+client_with_rates = (&lt;starlette.testclient.TestClient object at 0x7e4e88c6dca0&gt;, [])
+
+    def test_history_bounds_and_empty_range(client_with_rates):
+        client = client_with_rates[0]
+        body = client.get(&quot;/history/QAX&quot;, params={&quot;start&quot;: &quot;2098-12-01&quot;, &quot;end&quot;: &quot;2098-12-03&quot;}).json()
+        assert body[&quot;count&quot;] == 2
+        assert body[&quot;points&quot;] == [{&quot;date&quot;: &quot;2098-12-01&quot;, &quot;rate&quot;: &quot;2.00&quot;}, {&quot;date&quot;: &quot;2098-12-03&quot;, &quot;rate&quot;: &quot;4.00&quot;}]
+        assert body[&quot;mean&quot;] == &quot;3.000000&quot;
+&gt;       empty = client_with_rates.get(&quot;/history/QAX&quot;, params={&quot;start&quot;: &quot;2098-12-04&quot;}).json()
+                ^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: &#x27;tuple&#x27; object has no attribute &#x27;get&#x27;
+
+tests/test_api.py:68: AttributeError
+=========================== short test summary info ============================
+FAILED tests/test_api.py::test_history_bounds_and_empty_range - AttributeErro...
+1 failed, 28 passed in 16.50s
+completed=2026-10-26T17:00:22-0400 status=1
+</pre></article>
+</main>
+</body>
+</html>

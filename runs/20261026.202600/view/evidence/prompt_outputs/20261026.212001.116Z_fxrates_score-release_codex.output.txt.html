@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/prompt_outputs/20261026.212001.116Z_fxrates_score-release_codex.output.txt</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/prompt_outputs/20261026.212001.116Z_fxrates_score-release_codex.output.txt</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/prompt_outputs/20261026.212001.116Z_fxrates_score-release_codex.output.txt">Raw file</a></div></header>
+<article class="doc"><pre>{
+  &quot;criteria&quot;: [
+    {
+      &quot;id&quot;: &quot;st-001&quot;,
+      &quot;verdict&quot;: &quot;MET&quot;,
+      &quot;rationale&quot;: &quot;The supplied grader exited zero against this tree.&quot;,
+      &quot;evidence&quot;: [&quot;sources/run.sh: outcome PASS, return code 0, 35 passed and 0 failed&quot;]
+    },
+    {
+      &quot;id&quot;: &quot;st-002&quot;,
+      &quot;verdict&quot;: &quot;MET&quot;,
+      &quot;rationale&quot;: &quot;The shipped POSIX shell test runner exists and the offline test run exited zero.&quot;,
+      &quot;evidence&quot;: [&quot;bin/test.sh:1 uses #!/bin/sh&quot;, &quot;offline command: sh bin/test.sh exited 0; 29 passed&quot;]
+    },
+    {
+      &quot;id&quot;: &quot;st-003&quot;,
+      &quot;verdict&quot;: &quot;MET&quot;,
+      &quot;rationale&quot;: &quot;A probe confirmed rates are stored as published text, matching date and currency entries are replaced, and an invalid row leaves storage unchanged; the grader also confirmed invalid loads exit 3.&quot;,
+      &quot;evidence&quot;: [&quot;services/rates.py: load_file parses rows before writing and stores values through upsert&quot;, &quot;persistence/schema.py: rates.upsert matches on date and currency&quot;, &quot;probe: replacement preserved &#x27;2.00&#x27; and other rates; invalid input left stored rows unchanged&quot;, &quot;sources/run.sh: A4 passed with expected exit 3&quot;]
+    },
+    {
+      &quot;id&quot;: &quot;st-004&quot;,
+      &quot;verdict&quot;: &quot;MET&quot;,
+      &quot;rationale&quot;: &quot;The service health endpoint returned status 200 and the required JSON body.&quot;,
+      &quot;evidence&quot;: [&quot;app_server/main.py: health returns {&#x27;status&#x27;:&#x27;ok&#x27;}&quot;, &quot;probe: GET /health returned 200 with {&#x27;status&#x27;: &#x27;ok&#x27;}&quot;]
+    },
+    {
+      &quot;id&quot;: &quot;st-005&quot;,
+      &quot;verdict&quot;: &quot;MET&quot;,
+      &quot;rationale&quot;: &quot;The grader confirmed effective-date lookups return the latest available publication on or before the requested date and return 404 when none exists.&quot;,
+      &quot;evidence&quot;: [&quot;sources/run.sh: H5 and L4 passed for dates after a publication&quot;, &quot;sources/run.sh: H6 and H16 passed with 404 when no earlier publication exists&quot;, &quot;app_server/main.py: effective uses publications_through&quot;]
+    },
+    {
+      &quot;id&quot;: &quot;st-006&quot;,
+      &quot;verdict&quot;: &quot;MET&quot;,
+      &quot;rationale&quot;: &quot;The grader&#x27;s known conversion and history answers passed, and the application uses Decimal with half-even rounding.&quot;,
+      &quot;evidence&quot;: [&quot;sources/run.sh: H9–H12 and H17–H18 passed&quot;, &quot;app_server/main.py: conversion and history calculations use Decimal and ROUND_HALF_EVEN&quot;]
+    },
+    {
+      &quot;id&quot;: &quot;st-007&quot;,
+      &quot;verdict&quot;: &quot;MET&quot;,
+      &quot;rationale&quot;: &quot;The grader confirmed malformed dates, amounts, and missing parameters receive 422, while unknown currencies receive 404.&quot;,
+      &quot;evidence&quot;: [&quot;sources/run.sh: H7, H13–H15, H16, and H21 passed with their expected statuses&quot;, &quot;app_server/main.py: request validation raises HTTPException with the specified statuses&quot;]
+    },
+    {
+      &quot;id&quot;: &quot;st-008&quot;,
+      &quot;verdict&quot;: &quot;MET&quot;,
+      &quot;rationale&quot;: &quot;Application database access goes through the shipped persistence API selected from DATABASE_URL, and rates are declared and passed as text values.&quot;,
+      &quot;evidence&quot;: [&quot;services/rates.py: database access uses open_database(database_dsn())&quot;, &quot;config/__init__.py: database_dsn selects DATABASE_URL&quot;, &quot;persistence/schema.py: rates.upsert accepts and returns rate as str&quot;, &quot;services/rates.py: load_file passes the published rate string to upsert&quot;, &quot;application modules contain no direct database driver access&quot;]
+    },
+    {
+      &quot;id&quot;: &quot;st-009&quot;,
+      &quot;verdict&quot;: &quot;MET&quot;,
+      &quot;rationale&quot;: &quot;The test runner exited zero with network access denied.&quot;,
+      &quot;evidence&quot;: [&quot;offline command: unshare -rn sh bin/test.sh exited 0; 29 passed&quot;]
+    },
+    {
+      &quot;id&quot;: &quot;st-010&quot;,
+      &quot;verdict&quot;: &quot;MET&quot;,
+      &quot;rationale&quot;: &quot;Automated tests stub the download and cover both a successful fetch and a failed download that exits 1.&quot;,
+      &quot;evidence&quot;: [&quot;tests/test_fetch.py: success test patches urllib.request.urlopen and asserts loaded rates&quot;, &quot;tests/test_fetch.py: failure test patches urlopen to raise OSError and asserts exit code 1&quot;, &quot;offline command: test suite passed&quot;]
+    }
+  ],
+  &quot;improvements&quot;: []
+}</pre></article>
+</main>
+</body>
+</html>

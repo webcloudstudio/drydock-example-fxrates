@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-LatestRates.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-LatestRates.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-LatestRates.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Latest Publication Rates</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261026 V1</td></tr><tr><td>Description</td><td>Retrieves rates from the latest stored publication.</td></tr><tr><td>Depends On</td><td>FEATURE-AppServer.md, DATABASE.md</td></tr><tr><td>Provides</td><td>GET /rates/latest</td></tr><tr><td>Consumes</td><td>create_app(), rates repository operations</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Return all stored rates for the latest publication date, identifying the request as <code>latest</code>.</p>
+<h2>Trigger and workflow</h2>
+<p>A caller requests <code>GET /rates/latest</code>. Find the most recent publication date and retrieve its rates. Return <code>404</code> if no publication exists.</p>
+<h2>Database Interface</h2>
+<ul><li><code>FEATURE-RATE-003</code> — read: find publications on or before a date - supplies: <code>requested_date</code> - returns: <code>date</code>, <code>currency</code>, <code>rate</code></li><li><code>FEATURE-RATE-002</code> — read: list rates for a publication date - supplies: <code>date</code> - returns: <code>date</code>, <code>currency</code>, <code>rate</code></li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC latest-rates-response ===<br>Intent: The latest-rates route returns the stored rates for the latest publication.</p>
+<p>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx2; scope=test</p>
+<p>from app_server.testing import web_client from persistence.testing import db_session</p>
+<p>date = &quot;2099-07-02&quot; currency = &quot;QAG&quot; rate = &quot;7.25&quot;</p>
+<p>with db_session() as db: db.rates.upsert(date=date, currency=currency, rate=rate)</p>
+<p>response = web_client().get(&quot;/rates/latest&quot;) body = response.json() assert response.status_code == 200 assert body[&quot;date&quot;] == date assert body[&quot;requested&quot;] == &quot;latest&quot; assert body[&quot;base&quot;] == &quot;EUR&quot; assert body[&quot;rates&quot;][currency] == rate === END AC latest-rates-response ===</p>
+<p>=== AC latest-rates-empty ===<br>Intent: The latest-rates route returns 404 when there is no publication.</p>
+<p>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx2; scope=test</p>
+<p>from app_server.testing import web_client</p>
+<p>assert web_client().get(&quot;/rates/latest&quot;).status_code == 404 === END AC latest-rates-empty ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Derive the latest date and rates from repository queries.</li><li>Preserve stored rate text exactly.</li></ul></article>
+</main>
+</body>
+</html>

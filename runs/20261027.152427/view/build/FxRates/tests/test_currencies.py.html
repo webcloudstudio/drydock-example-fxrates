@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>build/FxRates/tests/test_currencies.py</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>build/FxRates/tests/test_currencies.py</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../build/FxRates/tests/test_currencies.py">Raw file</a></div></header>
+<article class="doc"><pre>&quot;&quot;&quot;GET /currencies: the base currency and every stored currency code, ascending.
+
+Each test shares one acceptance transaction with the web client and rolls back at the end. Exact
+expectations start from an emptied store inside that transaction, so only the seeded codes appear.
+&quot;&quot;&quot;
+
+from __future__ import annotations
+
+from collections.abc import Iterator
+
+import pytest
+
+from persistence import db as persistence_db
+from persistence.testing import db_session
+
+
+@pytest.fixture(autouse=True)
+def rolled_back_transaction() -&gt; Iterator[None]:
+    &quot;&quot;&quot;Share one connection between the route and the test, then roll everything back.&quot;&quot;&quot;
+    persistence_db.begin_acceptance_transaction()
+    try:
+        yield
+    finally:
+        persistence_db.end_acceptance_transaction()
+
+
+def empty_store(db) -&gt; None:
+    &quot;&quot;&quot;Remove every stored rate inside the acceptance transaction.&quot;&quot;&quot;
+    db.rates.delete_from_date(from_date=&quot;0000-01-01&quot;)
+
+
+def test_currencies_lists_stored_codes_ascending(web_client) -&gt; None:
+    with db_session() as db:
+        empty_store(db)
+        for code in [&quot;ZZC&quot;, &quot;ZZA&quot;, &quot;ZZB&quot;]:
+            db.rates.replace_rate(date=&quot;1900-11-01&quot;, currency=code, rate=&quot;1&quot;)
+
+        response = web_client.get(&quot;/currencies&quot;)
+
+    assert response.status_code == 200
+    assert response.json() == {&quot;base&quot;: &quot;EUR&quot;, &quot;currencies&quot;: [&quot;ZZA&quot;, &quot;ZZB&quot;, &quot;ZZC&quot;]}
+
+
+def test_currencies_matches_the_distinct_stored_codes(web_client) -&gt; None:
+    with db_session() as db:
+        expected = sorted({r.currency for r in db.rates.list_currencies()})
+
+        body = web_client.get(&quot;/currencies&quot;).json()
+
+    assert body[&quot;currencies&quot;] == expected
+    assert body[&quot;currencies&quot;] == sorted(set(body[&quot;currencies&quot;]))
+
+
+def test_currencies_lists_a_code_once_across_many_dates(web_client) -&gt; None:
+    with db_session() as db:
+        empty_store(db)
+        db.rates.replace_rate(date=&quot;1900-11-02&quot;, currency=&quot;ZZA&quot;, rate=&quot;1&quot;)
+        db.rates.replace_rate(date=&quot;1900-11-03&quot;, currency=&quot;ZZA&quot;, rate=&quot;2&quot;)
+        db.rates.replace_rate(date=&quot;1900-11-03&quot;, currency=&quot;ZZB&quot;, rate=&quot;3&quot;)
+
+        body = web_client.get(&quot;/currencies&quot;).json()
+
+    assert body[&quot;currencies&quot;] == [&quot;ZZA&quot;, &quot;ZZB&quot;]
+
+
+def test_currencies_never_lists_the_base(web_client) -&gt; None:
+    with db_session() as db:
+        empty_store(db)
+        db.rates.replace_rate(date=&quot;1900-11-04&quot;, currency=&quot;EUR&quot;, rate=&quot;1&quot;)
+        db.rates.replace_rate(date=&quot;1900-11-04&quot;, currency=&quot;ZZA&quot;, rate=&quot;2&quot;)
+
+        body = web_client.get(&quot;/currencies&quot;).json()
+
+    assert body[&quot;base&quot;] == &quot;EUR&quot;
+    assert body[&quot;currencies&quot;] == [&quot;ZZA&quot;]
+
+
+def test_currencies_on_an_empty_store_is_an_empty_list(web_client) -&gt; None:
+    with db_session() as db:
+        empty_store(db)
+
+        response = web_client.get(&quot;/currencies&quot;)
+
+    assert response.status_code == 200
+    assert response.json() == {&quot;base&quot;: &quot;EUR&quot;, &quot;currencies&quot;: []}
+
+
+def test_currencies_body_has_exactly_base_and_currencies(web_client) -&gt; None:
+    body = web_client.get(&quot;/currencies&quot;).json()
+
+    assert set(body) == {&quot;base&quot;, &quot;currencies&quot;}
+    assert isinstance(body[&quot;currencies&quot;], list)
+
+
+def test_currencies_applied_twice_returns_the_same_body(web_client) -&gt; None:
+    first = web_client.get(&quot;/currencies&quot;).json()
+    second = web_client.get(&quot;/currencies&quot;).json()
+
+    assert first == second
+</pre></article>
+</main>
+</body>
+</html>

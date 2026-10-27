@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-History.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-History.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-History.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Currency History</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261026 V1</td></tr><tr><td>Description</td><td>Returns a currency&#x27;s stored rate history and summary statistics over optional bounds.</td></tr><tr><td>Depends On</td><td>FEATURE-AppServer.md, DATABASE.md</td></tr><tr><td>Provides</td><td>GET /history/{code}</td></tr><tr><td>Consumes</td><td>create_app(), rates repository operations</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Return a currency&#x27;s publication points and min, max, and mean statistics over an optional inclusive date range.</p>
+<h2>Trigger and workflow</h2>
+<p>A caller requests a currency history with optional <code>start</code> and <code>end</code> dates. Malformed bounds return <code>422</code>. Return points in ascending date order and preserve each published rate string. Return <code>404</code> if the currency has no stored history at all, including EUR. If it has history but no points in the selected range, return count zero, null min/max/mean, and an empty points list.</p>
+<p>Compute minimum and maximum by numeric value. Compute the exact mean using <code>Decimal</code> and round half-even to six decimal places.</p>
+<h2>Database Interface</h2>
+<ul><li><code>FEATURE-RATE-004</code> — read: list a currency&#x27;s rates within optional inclusive bounds - supplies: <code>currency</code>, <code>start_date</code>, <code>end_date</code> - returns: <code>date</code>, <code>currency</code>, <code>rate</code></li><li><code>FEATURE-RATE-005</code> — read: determine whether the currency has any stored rate - supplies: none - returns: <code>date</code>, <code>currency</code>, <code>rate</code></li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC history-range-and-statistics ===<br>Intent: The history endpoint returns bounded points and statistics derived from the seeded rates.</p>
+<p>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx2; scope=test</p>
+<p>from decimal import Decimal, ROUND_HALF_EVEN from app_server.testing import web_client from persistence.testing import db_session</p>
+<p>currency = &quot;QAK&quot; dates = [&quot;2099-09-01&quot;, &quot;2099-09-02&quot;, &quot;2099-09-03&quot;] rates = [&quot;1.1&quot;, &quot;1.3&quot;, &quot;1.2&quot;] start = dates[0] end = dates[2]</p>
+<p>with db_session() as db: for date, rate in zip(dates, rates): db.rates.upsert(date=date, currency=currency, rate=rate)</p>
+<p>response = web_client().get(f&quot;/history/{currency}&quot;, params={&quot;start&quot;: start, &quot;end&quot;: end}) body = response.json() expected_mean = (sum((Decimal(rate) for rate in rates), Decimal(0)) / len(rates)).quantize( Decimal(&quot;0.000001&quot;), rounding=ROUND_HALF_EVEN ) assert response.status_code == 200 assert body[&quot;currency&quot;] == currency assert body[&quot;base&quot;] == &quot;EUR&quot; assert [point[&quot;date&quot;] for point in body[&quot;points&quot;]] == dates assert [point[&quot;rate&quot;] for point in body[&quot;points&quot;]] == rates assert body[&quot;count&quot;] == len(rates) assert body[&quot;min&quot;] == min(rates, key=Decimal) assert body[&quot;max&quot;] == max(rates, key=Decimal) assert body[&quot;mean&quot;] == f&quot;{expected_mean:.6f}&quot; === END AC history-range-and-statistics ===</p>
+<p>=== AC history-empty-range-and-errors ===<br>Intent: The history endpoint distinguishes an empty range from a currency with no history and rejects malformed bounds.</p>
+<p>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx2; scope=test</p>
+<p>from app_server.testing import web_client from persistence.testing import db_session</p>
+<p>currency = &quot;QAL&quot; date = &quot;2099-10-01&quot; rate = &quot;1.4&quot;</p>
+<p>with db_session() as db: db.rates.upsert(date=date, currency=currency, rate=rate)</p>
+<p>client = web_client() empty = client.get(f&quot;/history/{currency}&quot;, params={&quot;start&quot;: &quot;2099-10-02&quot;}) assert empty.status_code == 200 assert empty.json()[&quot;count&quot;] == 0 assert empty.json()[&quot;min&quot;] is None assert empty.json()[&quot;max&quot;] is None assert empty.json()[&quot;mean&quot;] is None assert empty.json()[&quot;points&quot;] == [] assert client.get(&quot;/history/QAM&quot;).status_code == 404 assert client.get(f&quot;/history/{currency}&quot;, params={&quot;start&quot;: &quot;2099-10-01-x&quot;}).status_code == 422 === END AC history-empty-range-and-errors ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Preserve stored rate text for history points and min/max values.</li><li>Use exact decimal arithmetic for mean and round half-even to six decimal places.</li><li>Treat a currency with no history as 404, distinct from an empty bounded result.</li></ul></article>
+</main>
+</body>
+</html>

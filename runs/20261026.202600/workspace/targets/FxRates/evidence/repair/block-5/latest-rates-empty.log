@@ -1,0 +1,8 @@
+
+
+--- stderr ---
+Traceback (most recent call last):
+  File "latest-rates-empty.py", line 3, in <module>
+    assert web_client().get("/rates/latest").status_code == 404
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError

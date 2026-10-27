@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>build/FxRates/tests/test_foundation.py</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>build/FxRates/tests/test_foundation.py</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../build/FxRates/tests/test_foundation.py">Raw file</a></div></header>
+<article class="doc"><pre>&quot;&quot;&quot;Foundation checks: interpreter, package import, manifest, and lockfile.&quot;&quot;&quot;
+
+from __future__ import annotations
+
+import re
+import sys
+import tomllib
+from pathlib import Path
+
+import fxrates_app
+
+
+def _load_manifest(project_root: Path) -&gt; dict:
+    return tomllib.loads((project_root / &quot;pyproject.toml&quot;).read_text(encoding=&quot;utf-8&quot;))
+
+
+def _dependency_names(specs: list[str]) -&gt; set[str]:
+    return {re.match(r&quot;[A-Za-z0-9._-]+&quot;, spec).group(0).lower() for spec in specs}
+
+
+def test_interpreter_is_python_311_or_newer() -&gt; None:
+    assert sys.version_info &gt;= (3, 11)
+
+
+def test_application_package_imports_by_name() -&gt; None:
+    assert fxrates_app.__name__ == &quot;fxrates_app&quot;
+
+
+def test_manifest_requires_python_311_or_newer(project_root: Path) -&gt; None:
+    manifest = _load_manifest(project_root)
+
+    assert manifest[&quot;project&quot;][&quot;requires-python&quot;] == &quot;&gt;=3.11&quot;
+
+
+def test_manifest_declares_runtime_stack(project_root: Path) -&gt; None:
+    manifest = _load_manifest(project_root)
+
+    names = _dependency_names(manifest[&quot;project&quot;][&quot;dependencies&quot;])
+
+    assert {&quot;fastapi&quot;, &quot;uvicorn&quot;, &quot;httpx2&quot;} &lt;= names
+
+
+def test_manifest_declares_pytest_as_dev_dependency(project_root: Path) -&gt; None:
+    manifest = _load_manifest(project_root)
+
+    names = _dependency_names(manifest[&quot;dependency-groups&quot;][&quot;dev&quot;])
+
+    assert &quot;pytest&quot; in names
+
+
+def test_lockfile_is_committed_at_project_root(project_root: Path) -&gt; None:
+    assert (project_root / &quot;uv.lock&quot;).is_file()
+
+
+def test_pytest_suite_is_configured_under_tests_directory(project_root: Path) -&gt; None:
+    manifest = _load_manifest(project_root)
+
+    assert manifest[&quot;tool&quot;][&quot;pytest&quot;][&quot;ini_options&quot;][&quot;testpaths&quot;] == [&quot;tests&quot;]
+
+
+def test_conftest_exists_in_tests_directory(project_root: Path) -&gt; None:
+    assert (project_root / &quot;tests&quot; / &quot;conftest.py&quot;).is_file()
+</pre></article>
+</main>
+</body>
+</html>

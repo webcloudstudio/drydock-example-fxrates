@@ -15,8 +15,15 @@ brief is original to this kit. Complexity: 3 of 5, about 7 stories.
 
 ## Grading
 
-`bin/run.sh [APP]` sets `DATABASE_URL` to a temporary SQLite file, runs `APP/fxrates` (default:
-the current directory), starts `fxrates serve --port <free port>`, and makes 35 checks. HTTP
+`bin/run.sh [APP]` grades the configured, schema-provisioned test store. It preserves
+`DATABASE_URL`, falls back to `DATABASE_PATH`, then `data/app.db` relative to APP. A missing store
+or `rates` table fails preflight without creating a database. The DATABASE step owns schema
+creation; `init` only empties the table. The grader clears existing rates and leaves its loaded
+fixture rows in place, so the configured store must be dedicated to testing. Agent calls use
+the provisioned test store supplied by Drydock.
+
+The grader runs `APP/fxrates` (default: the current directory), starts
+`fxrates serve --port <free port>`, and makes the same 35 checks. HTTP
 bodies are compared as JSON values; error bodies are not compared. The server is stopped on exit.
 
 | Group | Checks |

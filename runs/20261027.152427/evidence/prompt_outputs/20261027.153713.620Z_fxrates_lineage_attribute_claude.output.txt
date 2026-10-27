@@ -1,0 +1,27 @@
+<requirement name="reject-malformed-history-file" stories="load-001-validate,load-002-store,load-003-unreadable">
+Date,USD,JPY,
+2025-02-04,1.0345,160.12,
+2025-02-03,1.0x,159.01,
+</requirement>
+<unattached story="foundation-python"/>
+<unattached story="database"/>
+<unattached story="cli-foundation"/>
+<unattached story="web-foundation"/>
+<unattached story="cli-001-usage-errors"/>
+<unattached story="cli-005-offline-tests"/>
+<unattached story="cli-003-database-selection"/>
+<unattached story="cli-002-init"/>
+<unattached story="load-005-fetch"/>
+<unattached story="rates-001-serve-health"/>
+<unattached story="rates-002-stats"/>
+<unattached story="rates-003-currencies"/>
+<unattached story="rates-004-rates-by-date"/>
+<unattached story="cli-004-help"/>
+<unattached story="rates-005-latest"/>
+<unattached story="load-004-visible-to-server"/>
+<unattached story="convert-001-convert"/>
+<unattached story="hist-001-points"/>
+<unattached story="convert-002-convert-errors"/>
+<unattached story="hist-002-summary"/>
+<unattached story="hist-003-errors"/>
+<unattached story="accept-001-grader"/>

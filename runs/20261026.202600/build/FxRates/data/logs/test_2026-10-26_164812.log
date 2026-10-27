@@ -1,0 +1,24 @@
+timestamp=2026-10-26T16:48:12-04:00
+arguments=tests/test_rates_repository.py
+working_directory=/mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.202600/build/FxRates
+.....F                                                                   [100%]
+=================================== FAILURES ===================================
+__________________ test_init_clears_rates_through_repository ___________________
+
+    def test_init_clears_rates_through_repository() -> None:
+        from services.rates import initialize
+    
+        with db_session() as db:
+            db.rates.upsert(date="2099-11-12", currency="QAR", rate="1.25")
+            db.rates.upsert(date="2099-11-13", currency="QAS", rate="2.5")
+            initialize()
+>           assert db.rates.list() == []
+E           AssertionError: assert [RatesListOut..., rate='2.5')] == []
+E             
+E             Left contains 2 more items, first extra item: RatesListOutput(date='2099-11-12', currency='QAR', rate='1.25')
+E             Use -v to get more diff
+
+tests/test_rates_repository.py:57: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_rates_repository.py::test_init_clears_rates_through_repository
+1 failed, 5 passed in 8.48s

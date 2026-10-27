@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/evidence/block-6.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/evidence/block-6.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/evidence/block-6.md">Raw file</a></div></header>
+<article class="doc"><h1>Evidence: Block 6 · Service (block-6)</h1>
+<ul><li>block type: block</li><li>date: 2026-10-27</li><li>resulting state: closed/verified</li><li>story points (combined assembled cost): 7305</li><li>execution id: 20261027.155444.881Z-69d42135</li></ul>
+<h2>Stories built</h2>
+<ul><li>Validate a whole ECB history file before any write. (load-001-validate) [story]</li></ul>
+<h2>Acceptance tooling authorization</h2>
+<ul><li>FEATURE-LoadValidation.md#parse-valid-file: executable=python3; scope=test; authorization=existing Target environment</li><li>FEATURE-LoadValidation.md#parse-only-na: executable=python3; scope=test; authorization=existing Target environment</li><li>FEATURE-LoadValidation.md#parse-rejects-structure: executable=python3; scope=test; authorization=existing Target environment</li><li>FEATURE-LoadValidation.md#parse-rejects-dates: executable=python3; scope=test; authorization=existing Target environment</li><li>FEATURE-LoadValidation.md#parse-rejects-values: executable=python3; scope=test; authorization=existing Target environment</li></ul>
+<h2>Stacked context</h2>
+<ul><li>stack: python_compact.md (SP 921)</li><li>compass: COMPASS.md (SP 1152)</li><li>implements: FEATURE-LoadValidation.md (SP 2284)</li><li>context: ARCHITECTURE_compact.md (SP 386)</li><li>context: DATABASE_compact.md (SP 707)</li><li>stack: common_compact.md (SP 1653)</li></ul>
+<h2>Build directory changes</h2>
+<ul><li>data/app.db-shm</li><li>data/app.db-wal</li><li>data/logs/test_2026-10-27_115531.log</li><li>fxrates_app/ecb.py</li><li>tests/test_ecb.py</li></ul>
+<h2>Pre-build acceptance observation</h2>
+<ul><li>RED: parse-valid-file (FEATURE-LoadValidation.md)</li></ul>
+<p>intent: A valid file yields exactly its non-N/A cells as (date, currency, text) with the published text unchanged, ignoring the trailing comma. return code: 1 stderr: Traceback (most recent call last): File &quot;parse-valid-file.py&quot;, line 3, in &lt;module&gt; from fxrates_app.ecb import parse_history<br>ModuleNotFoundError: No module named &#x27;fxrates_app.ecb&#x27;</p>
+<ul><li>RED: parse-only-na (FEATURE-LoadValidation.md)</li></ul>
+<p>intent: A file whose values are all N/A is valid and yields no rates. return code: 1 stderr: Traceback (most recent call last): File &quot;parse-only-na.py&quot;, line 3, in &lt;module&gt; from fxrates_app.ecb import parse_history<br>ModuleNotFoundError: No module named &#x27;fxrates_app.ecb&#x27;</p>
+<ul><li>RED: parse-rejects-structure (FEATURE-LoadValidation.md)</li></ul>
+<p>intent: A wrong first header field, a malformed currency code, or a row with the wrong field count rejects the file. return code: 1 stderr: Traceback (most recent call last): File &quot;parse-rejects-structure.py&quot;, line 3, in &lt;module&gt; from fxrates_app.ecb import parse_history, RejectedFile<br>ModuleNotFoundError: No module named &#x27;fxrates_app.ecb&#x27;</p>
+<ul><li>RED: parse-rejects-dates (FEATURE-LoadValidation.md)</li></ul>
+<p>intent: A malformed, impossible, or repeated date rejects the whole file even when other rows are valid. return code: 1 stderr: Traceback (most recent call last): File &quot;parse-rejects-dates.py&quot;, line 3, in &lt;module&gt; from fxrates_app.ecb import parse_history, RejectedFile<br>ModuleNotFoundError: No module named &#x27;fxrates_app.ecb&#x27;</p>
+<ul><li>RED: parse-rejects-values (FEATURE-LoadValidation.md)</li></ul>
+<p>intent: Any value that is neither N/A nor a nonzero decimal matching the ECB pattern rejects the file, even when it is on a later row. return code: 1 stderr: Traceback (most recent call last): File &quot;parse-rejects-values.py&quot;, line 3, in &lt;module&gt; from fxrates_app.ecb import parse_history, RejectedFile<br>ModuleNotFoundError: No module named &#x27;fxrates_app.ecb&#x27;</p>
+<h2>Post-build programmatic acceptance</h2>
+<ul><li>PASS: parse-valid-file (FEATURE-LoadValidation.md)</li></ul>
+<p>intent: A valid file yields exactly its non-N/A cells as (date, currency, text) with the published text unchanged, ignoring the trailing comma. target interpreter: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261027.152427/build/FxRates/.venv/bin/python provisioning: not required return code: 0</p>
+<ul><li>PASS: parse-only-na (FEATURE-LoadValidation.md)</li></ul>
+<p>intent: A file whose values are all N/A is valid and yields no rates. target interpreter: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261027.152427/build/FxRates/.venv/bin/python provisioning: not required return code: 0</p>
+<ul><li>PASS: parse-rejects-structure (FEATURE-LoadValidation.md)</li></ul>
+<p>intent: A wrong first header field, a malformed currency code, or a row with the wrong field count rejects the file. target interpreter: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261027.152427/build/FxRates/.venv/bin/python provisioning: not required return code: 0</p>
+<ul><li>PASS: parse-rejects-dates (FEATURE-LoadValidation.md)</li></ul>
+<p>intent: A malformed, impossible, or repeated date rejects the whole file even when other rows are valid. target interpreter: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261027.152427/build/FxRates/.venv/bin/python provisioning: not required return code: 0</p>
+<ul><li>PASS: parse-rejects-values (FEATURE-LoadValidation.md)</li></ul>
+<p>intent: Any value that is neither N/A nor a nonzero decimal matching the ECB pattern rejects the file, even when it is on a later row. target interpreter: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261027.152427/build/FxRates/.venv/bin/python provisioning: not required return code: 0</p>
+<h2>Build summary</h2>
+<p>Existing code is in place: <code>fxrates_app/</code> has only <code>config.py</code>, and there is no <code>ecb.py</code> yet. The spec is self-contained (pure parsing, no DB), so I&#x27;ll write the module and its tests together.Now the test file. It mirrors the four declared acceptance checks and adds boundary and negative-path cases. Each test parses, then checks the returned values or the raised signal, never message text.Running the new tests, then the full project suite with the declared runner.The step is done and the full suite passes: 134 tests, including the 33 new ECB tests.</p>
+<p>Implemented <code>fxrates_app.ecb.parse_history</code> and <code>RejectedFile</code> to validate a whole ECB history file before returning anything. The function is pure and does no database or file access. It returns <code>(date, currency, rate_text)</code> for each non-N/A value, with rates kept as published text.</p>
+<p>I also wrote <code>tests/test_ecb.py</code>, which mirrors the four declared acceptance checks and adds boundary and negative cases. Each test parses the file and compares the returned tuples or the <code>RejectedFile</code> signal. I did not commit anything.</p>
+<p>Two choices the spec did not settle:</p>
+<ul><li>A repeated currency code in the header is rejected, because it would produce duplicate <code>(date, currency)</code> keys.</li><li>Empty input is rejected as having no header. A header-only file is accepted and yields no rates.</li></ul>
+<p>RESULT: SUCCESS</p>
+<p>FILES CHANGED:</p>
+<ul><li>fxrates_app/ecb.py</li><li>tests/test_ecb.py</li></ul>
+<p>SUMMARY:</p>
+<ul><li><code>parse_history(text)</code> checks the entire file before returning. It validates the header, field counts, dates, and values, and it ignores the ECB&#x27;s trailing comma.</li><li>Dates must match <code>YYYY-MM-DD</code>, be real calendar dates, and be unique within the file.</li><li>Values must be <code>N/A</code> or match <code>[0-9]+(\.[0-9]+)?</code> and be nonzero. Zero is checked with <code>Decimal</code>.</li><li>Checks run: <code>.venv/bin/pytest -q tests/test_ecb.py</code> gave 33 passed, and <code>sh bin/test.sh</code> gave 134 passed with exit 0.</li><li><code>sources/</code> was not touched, and <code>persistence/</code> was not imported.</li></ul>
+<p>&lt;blueprint-decisions&gt; [{&quot;spec&quot;:&quot;FEATURE-LoadValidation.md&quot;,&quot;severity&quot;:&quot;Low&quot;,&quot;subject&quot;:&quot;Repeated currency code in the header&quot;,&quot;decision&quot;:&quot;The spec does not cover duplicate header codes. I reject the file, because two columns with the same code would produce duplicate (date, currency) keys. Is that acceptable?&quot;},{&quot;spec&quot;:&quot;FEATURE-LoadValidation.md&quot;,&quot;severity&quot;:&quot;Low&quot;,&quot;subject&quot;:&quot;Empty input and header-only files&quot;,&quot;decision&quot;:&quot;The spec does not say how to treat empty input. I reject empty text as having no header. A header-only file with no data rows is accepted and yields an empty list. Is that acceptable?&quot;}] &lt;/blueprint-decisions&gt;</p>
+<p>FAILURE_SUMMARY: not applicable (step succeeded)<br>FAILURE_DETAIL: not applicable</p></article>
+</main>
+</body>
+</html>

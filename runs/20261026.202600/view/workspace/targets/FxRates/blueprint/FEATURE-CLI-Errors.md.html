@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-CLI-Errors.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-CLI-Errors.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-CLI-Errors.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: CLI Errors</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261026 V1</td></tr><tr><td>Description</td><td>Defines command-line usage and operational error behavior for fxrates.</td></tr><tr><td>Depends On</td><td>FEATURE-CLI.md</td></tr><tr><td>Provides</td><td>CLI usage and error exit behavior</td></tr><tr><td>Consumes</td><td>./fxrates</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Give every command a consistent failure contract. Failed commands write no standard output and one diagnostic line to standard error.</p>
+<h2>Behavior</h2>
+<ul><li>Unknown commands, incorrect argument counts, and a non-integer <code>serve --port</code> value exit with status 2.</li><li>A file that cannot be read exits with status 1.</li><li>A CSV rejected by the load validator exits with status 3.</li><li>Keep failure messages on standard error; their wording is not part of the contract.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC cli-usage-errors ===<br>Intent: Usage errors return status 2 and produce no standard output.</p>
+<p>from cli.testing import cli_runner</p>
+<p>for args in ((&quot;frobnicate&quot;,), (&quot;load&quot;,), (&quot;serve&quot;, &quot;--port&quot;, &quot;notaport&quot;)): code, stdout, stderr = cli_runner(*args) assert code == 2 assert stdout == &quot;&quot; assert stderr === END AC cli-usage-errors ===</p>
+<p>=== AC cli-operational-errors ===<br>Intent: File read failures return status 1 and rejected CSV files return status 3.</p>
+<p>from cli.testing import cli_runner</p>
+<p>missing_path = &quot;sources/absent-for-cli-error-check.csv&quot; code, stdout, stderr = cli_runner(&quot;load&quot;, missing_path) assert code == 1 assert stdout == &quot;&quot; assert stderr</p>
+<p>code, stdout, stderr = cli_runner(&quot;load&quot;, &quot;sources/eurofxref-hist_bad.csv&quot;) assert code == 3 assert stdout == &quot;&quot; assert stderr === END AC cli-operational-errors ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Keep diagnostics on standard error.</li><li>Do not emit standard output for failed commands.</li><li>Preserve the distinct exit statuses for usage, operational, and rejected-file failures.</li></ul></article>
+</main>
+</body>
+</html>

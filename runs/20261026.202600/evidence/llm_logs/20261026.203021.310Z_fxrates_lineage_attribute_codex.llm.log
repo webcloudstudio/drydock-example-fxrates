@@ -1,0 +1,3 @@
+2026-10-26 16:30:21 EDT  Calling CODEX/gpt-6-luna (lineage_attribute)...
+  Completed CODEX/gpt-6-luna (lineage_attribute)  rc=0
+    elapsed=3.9s   cached=11,520 (74% hit)   uncached=4,030   out=131   tps=34.0

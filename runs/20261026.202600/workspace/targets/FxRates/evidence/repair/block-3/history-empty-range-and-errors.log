@@ -1,0 +1,11 @@
+
+
+--- stderr ---
+--- drydock: values at failure ---
+  empty = <Response [404 Not Found]>
+--- drydock: end values ---
+Traceback (most recent call last):
+  File "history-empty-range-and-errors.py", line 13, in <module>
+    assert empty.status_code == 200
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/evidence/block-2.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/evidence/block-2.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/evidence/block-2.md">Raw file</a></div></header>
+<article class="doc"><h1>Evidence: Block 2 · Foundational (block-2)</h1>
+<ul><li>block type: block</li><li>date: 2026-10-27</li><li>resulting state: closed/verified</li><li>story points (combined assembled cost): 18693</li><li>execution id: -</li></ul>
+<h2>Stories built</h2>
+<ul><li>Declare the rates table and every repository operation the stories need; Drydock generates the persistence package. (database) [story]</li></ul>
+<h2>Acceptance tooling authorization</h2>
+<ul><li>DATABASE.md#rates-replace-rate: executable=python3; scope=test; authorization=existing Target environment</li><li>DATABASE.md#rates-list-for-date: executable=python3; scope=test; authorization=existing Target environment</li><li>DATABASE.md#rates-list-on-or-before: executable=python3; scope=test; authorization=existing Target environment</li><li>DATABASE.md#rates-list-all-keys: executable=python3; scope=test; authorization=existing Target environment</li><li>DATABASE.md#rates-list-currencies: executable=python3; scope=test; authorization=existing Target environment</li><li>DATABASE.md#rates-list-currency-history: executable=python3; scope=test; authorization=existing Target environment</li><li>DATABASE.md#rates-delete-from-date: executable=python3; scope=test; authorization=existing Target environment</li></ul>
+<h2>Stacked context</h2>
+<ul><li>stack: python_compact.md (SP 921)</li><li>compass: COMPASS.md (SP 1152)</li><li>implements: DATABASE.md (SP 4877)</li><li>stack: common_compact.md (SP 1653)</li><li>stack: persistence.md (SP 6507)</li><li>stack: sqlite.md (SP 3364)</li></ul>
+<h2>Pre-build acceptance observation</h2>
+<ul><li>RED: rates-replace-rate (DATABASE.md)</li></ul>
+<p>intent: Storing a rate for an existing (date, currency) replaces its text rather than adding a row, and the read-back returns the second text exactly. error: foundation not built: <code>persistence</code> is the package the database foundation (postgres.md, sqlite.md) builds, and the build directory has no <code>persistence/</code>. The criterion exercises the built application, so it was not run.</p>
+<ul><li>RED: rates-list-for-date (DATABASE.md)</li></ul>
+<p>intent: Listing one date returns only that date&#x27;s rates, ordered by currency ascending. error: foundation not built: <code>persistence</code> is the package the database foundation (postgres.md, sqlite.md) builds, and the build directory has no <code>persistence/</code>. The criterion exercises the built application, so it was not run.</p>
+<ul><li>RED: rates-list-on-or-before (DATABASE.md)</li></ul>
+<p>intent: Dates come back latest first and bounded by as_of inclusive, so the first row is the effective date for a request between two publications. error: foundation not built: <code>persistence</code> is the package the database foundation (postgres.md, sqlite.md) builds, and the build directory has no <code>persistence/</code>. The criterion exercises the built application, so it was not run.</p>
+<ul><li>RED: rates-list-all-keys (DATABASE.md)</li></ul>
+<p>intent: Every stored key at or after the lower bound is listed in ascending date order, and a bound after a row excludes it. error: foundation not built: <code>persistence</code> is the package the database foundation (postgres.md, sqlite.md) builds, and the build directory has no <code>persistence/</code>. The criterion exercises the built application, so it was not run.</p>
+<ul><li>RED: rates-list-currencies (DATABASE.md)</li></ul>
+<p>intent: Currency codes are listed in ascending order for rows at or after the lower bound. error: foundation not built: <code>persistence</code> is the package the database foundation (postgres.md, sqlite.md) builds, and the build directory has no <code>persistence/</code>. The criterion exercises the built application, so it was not run.</p>
+<ul><li>RED: rates-list-currency-history (DATABASE.md)</li></ul>
+<p>intent: A currency&#x27;s history is filtered by inclusive optional bounds and sorted by date ascending; an inverted range is empty. error: foundation not built: <code>persistence</code> is the package the database foundation (postgres.md, sqlite.md) builds, and the build directory has no <code>persistence/</code>. The criterion exercises the built application, so it was not run.</p>
+<ul><li>RED: rates-delete-from-date (DATABASE.md)</li></ul>
+<p>intent: Deleting from a date removes rates on or after it and leaves earlier ones, and reports how many rows went. error: foundation not built: <code>persistence</code> is the package the database foundation (postgres.md, sqlite.md) builds, and the build directory has no <code>persistence/</code>. The criterion exercises the built application, so it was not run.</p>
+<h2>Post-build programmatic acceptance</h2>
+<ul><li>PASS: rates-replace-rate (DATABASE.md)</li></ul>
+<p>intent: Storing a rate for an existing (date, currency) replaces its text rather than adding a row, and the read-back returns the second text exactly. target interpreter: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261027.152427/build/FxRates/.venv/bin/python provisioning: not requested return code: 0</p>
+<ul><li>PASS: rates-list-for-date (DATABASE.md)</li></ul>
+<p>intent: Listing one date returns only that date&#x27;s rates, ordered by currency ascending. target interpreter: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261027.152427/build/FxRates/.venv/bin/python provisioning: not requested return code: 0</p>
+<ul><li>PASS: rates-list-on-or-before (DATABASE.md)</li></ul>
+<p>intent: Dates come back latest first and bounded by as_of inclusive, so the first row is the effective date for a request between two publications. target interpreter: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261027.152427/build/FxRates/.venv/bin/python provisioning: not requested return code: 0</p>
+<ul><li>PASS: rates-list-all-keys (DATABASE.md)</li></ul>
+<p>intent: Every stored key at or after the lower bound is listed in ascending date order, and a bound after a row excludes it. target interpreter: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261027.152427/build/FxRates/.venv/bin/python provisioning: not requested return code: 0</p>
+<ul><li>PASS: rates-list-currencies (DATABASE.md)</li></ul>
+<p>intent: Currency codes are listed in ascending order for rows at or after the lower bound. target interpreter: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261027.152427/build/FxRates/.venv/bin/python provisioning: not requested return code: 0</p>
+<ul><li>PASS: rates-list-currency-history (DATABASE.md)</li></ul>
+<p>intent: A currency&#x27;s history is filtered by inclusive optional bounds and sorted by date ascending; an inverted range is empty. target interpreter: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261027.152427/build/FxRates/.venv/bin/python provisioning: not requested return code: 0</p>
+<ul><li>PASS: rates-delete-from-date (DATABASE.md)</li></ul>
+<p>intent: Deleting from a date removes rates on or after it and leaves earlier ones, and reports how many rows went. target interpreter: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261027.152427/build/FxRates/.venv/bin/python provisioning: not requested return code: 0</p>
+<h2>Build summary</h2>
+<p>(no summary returned)</p></article>
+</main>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>build/FxRates/bin/test.sh</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>build/FxRates/bin/test.sh</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../build/FxRates/bin/test.sh">Raw file</a></div></header>
+<article class="doc"><pre>#!/bin/sh
+# CommandCenter Operation
+# Name: Run project tests
+# Type: batch
+set -eu
+
+ROOT=$(CDPATH= cd -- &quot;$(dirname -- &quot;$0&quot;)/..&quot; &amp;&amp; pwd)
+cd &quot;$ROOT&quot;
+mkdir -p data/logs
+STAMP=$(date &#x27;+%Y-%m-%d_%H%M%S&#x27;)
+LOG=&quot;data/logs/test_${STAMP}.log&quot;
+TMP=${TMPDIR:-/tmp}/fxrates-test-$$
+trap &#x27;rm -f &quot;$TMP&quot;&#x27; EXIT HUP INT TERM
+{
+    printf &#x27;timestamp=%s\n&#x27; &quot;$(date &#x27;+%Y-%m-%dT%H:%M:%S%z&#x27;)&quot;
+    printf &#x27;arguments=%s\n&#x27; &quot;$*&quot;
+    printf &#x27;working_directory=%s\n&#x27; &quot;$ROOT&quot;
+} | tee &quot;$LOG&quot;
+if .venv/bin/python -m pytest -q &quot;$@&quot; &gt;&quot;$TMP&quot; 2&gt;&amp;1; then
+    cat &quot;$TMP&quot; | tee -a &quot;$LOG&quot;
+    printf &#x27;completed=%s\n&#x27; &quot;$(date &#x27;+%Y-%m-%dT%H:%M:%S%z&#x27;)&quot; | tee -a &quot;$LOG&quot;
+    exit 0
+else
+    STATUS=$?
+    cat &quot;$TMP&quot; | tee -a &quot;$LOG&quot;
+    printf &#x27;completed=%s status=%s\n&#x27; &quot;$(date &#x27;+%Y-%m-%dT%H:%M:%S%z&#x27;)&quot; &quot;$STATUS&quot; | tee -a &quot;$LOG&quot;
+    exit &quot;$STATUS&quot;
+fi
+</pre></article>
+</main>
+</body>
+</html>

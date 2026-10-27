@@ -1,0 +1,20 @@
+Baseline is green (149 passed). The gap is in `load()`: `open()` and `read()` run outside any error handling, so a missing or directory path raises `OSError`, and undecodable bytes raise `UnicodeDecodeError`. I'll catch both there, returning exit 1 with one stderr line before any store access.Now I'll add tests for the three declared acceptance cases, in the existing `tests/test_load.py` style. Each one reads the store back to confirm nothing was written.Unreadable input now exits 1 with one stderr line and writes nothing. The full suite passes (154 tests, up from 149 with the five new ones).
+
+- **`cli/load_command.py`:** the read happens inside a `try` that catches `OSError` (missing file, directory, permission) and `UnicodeDecodeError`. On either, it prints one `error: cannot read <path>: <reason>` line to stderr and returns 1. This happens before parsing and before the store is opened, so nothing is written.
+- **`tests/test_load.py`:** five new tests cover the declared cases: missing file, directory path, and undecodable bytes. Each checks exit 1, empty stdout, and one stderr line. The missing-file and undecodable cases also read the store back and confirm no rows were added.
+
+Checks run:
+- `.venv/bin/pytest -q`: 154 passed.
+- `./fxrates load /nonexistent/x.csv`: exit 1, one stderr line.
+- `./fxrates load sources/eurofxref-hist_bad.csv`: exit 3, which is unchanged.
+
+I did not run `sources/run.sh`, because this block is not the terminal story. I did not commit, per the build rules. No `sources/` files were touched.
+
+RESULT: SUCCESS
+
+FILES CHANGED:
+- cli/load_command.py
+- tests/test_load.py
+
+SUMMARY:
+`load` now treats an `OSError` or `UnicodeDecodeError` during the file read as an operational failure: exit 1, empty stdout, one stderr line, and no store access. Five tests cover the missing, directory, and undecodable cases, including store read-back for the write-nothing guarantee. Full suite: 154 passed.

@@ -1,0 +1,16 @@
+Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
+Drydock status — workspace
+
+Target: FxRates
+   Phase:     Loop
+   State:     17 closed/implemented
+   Detail:    5 imported · 17 authored · metadata built
+   Analysis:  Ready · 13 stories · 0 questions · 0 blockers
+   Plan:      17 closed/implemented
+   Next Step: drydock refit FxRates BOTH <Scope> <Change>
+   10-26:     ✅  drydock build status FxRates
+   10-26:     ✅  drydock build FxRates --override --repair-attempts 6
+   10-26:     ✅  drydock build status FxRates
+   10-26:     ✅  drydock plan verify FxRates
+   10-26:     ✅  drydock plan FxRates --override
+

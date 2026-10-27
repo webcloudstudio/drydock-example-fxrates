@@ -1,9 +1,0 @@
---- llm 1/2 · build · codex gpt-6-luna · 20261024.074110.972Z-9790f444 ---
-  Completed CODEX/gpt-6-luna (build)  rc=0
-    elapsed=1m 24.7s   cached=459,776 (87% hit)   uncached=68,152   out=4,943   tps=58.4
-  tokens: cached=459,776 (87% hit) · uncached=68,152 · out=4,943
-
---- llm 2/2 · diagnose · codex gpt-6-luna · 20261024.074248.365Z-10fea49a ---
-2026-10-24 03:42:48 EDT  Calling CODEX/gpt-6-luna (diagnose)...
-  Completed CODEX/gpt-6-luna (diagnose)  rc=0
-    elapsed=3.8s   cached=11,520 (75% hit)   uncached=3,833   out=63   tps=16.5

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-LoadVisibility.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-LoadVisibility.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-LoadVisibility.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Load Visibility</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261027 V1</td></tr><tr><td>Description</td><td>A completed load is visible to the next API request, and a rejected load changes nothing a request can see.</td></tr><tr><td>Depends On</td><td>FEATURE-LoadStore.md, FEATURE-Stats.md, DATABASE.md</td></tr><tr><td>Provides</td><td>load visibility contract</td></tr><tr><td>Consumes</td><td>fxrates load, GET /stats</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Loads happen while the server runs. This integration story proves the API reads committed state on every request and that a load is applied as one transaction.</p>
+<h2>Behavior</h2>
+<ul><li>The API opens its store per request and caches no rows or connection state that could hide a later commit.</li><li><code>load</code> validates the whole file, then writes inside one transaction, so a reader sees the rates from before the load or from after it, never part of it.</li><li>A rejected load (exit 3) leaves <code>/stats</code> unchanged.</li></ul>
+<h2>Database Interface</h2>
+<ul><li>None — persistence is owned by DATABASE.md.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC load-visible-to-stats ===<br>Intent: After a successful load of one new date with two currencies, /stats reports one more date and two more rates than before, and last equals the loaded date.<br>Requires: executable=python3; scope=test<br>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx2; scope=test</p>
+<p>import csv import os import tempfile from cli.testing import cli_runner from app_server.testing import web_client</p>
+<p>d = &quot;2999-12-30&quot; rows = [[&quot;Date&quot;, &quot;ZZA&quot;, &quot;ZZB&quot;, &quot;&quot;], [d, &quot;1.5&quot;, &quot;2.25&quot;, &quot;&quot;]]</p>
+<p>client = web_client() before = client.get(&quot;/stats&quot;) assert before.status_code == 200 b = before.json()</p>
+<p>with tempfile.TemporaryDirectory() as tmp: path = os.path.join(tmp, &quot;load.csv&quot;) with open(path, &quot;w&quot;, newline=&quot;&quot;) as handle: csv.writer(handle, lineterminator=&quot;\n&quot;).writerows(rows) code, out, err = cli_runner(&quot;load&quot;, path) assert code == 0</p>
+<p>after = client.get(&quot;/stats&quot;) assert after.status_code == 200 a = after.json() assert a[&quot;dates&quot;] == b[&quot;dates&quot;] + 1 assert a[&quot;rates&quot;] == b[&quot;rates&quot;] + 2 assert a[&quot;last&quot;] == d === END AC load-visible-to-stats ===</p>
+<p>=== AC rejected-load-invisible ===<br>Intent: A file whose second row holds an invalid value is rejected with exit 3 and /stats is identical before and after.<br>Requires: executable=python3; scope=test<br>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx2; scope=test</p>
+<p>import csv import os import tempfile from cli.testing import cli_runner from app_server.testing import web_client</p>
+<p>rows = [ [&quot;Date&quot;, &quot;ZZA&quot;, &quot;&quot;], [&quot;2999-11-02&quot;, &quot;1.5&quot;, &quot;&quot;], [&quot;2999-11-01&quot;, &quot;1.5x&quot;, &quot;&quot;], ]</p>
+<p>client = web_client() before = client.get(&quot;/stats&quot;) assert before.status_code == 200</p>
+<p>with tempfile.TemporaryDirectory() as tmp: path = os.path.join(tmp, &quot;bad.csv&quot;) with open(path, &quot;w&quot;, newline=&quot;&quot;) as handle: csv.writer(handle, lineterminator=&quot;\n&quot;).writerows(rows) code, out, err = cli_runner(&quot;load&quot;, path) assert code == 3 assert out == &quot;&quot;</p>
+<p>after = client.get(&quot;/stats&quot;) assert after.status_code == 200 assert after.json() == before.json() === END AC rejected-load-invisible ===</p>
+<p>=== AC reload-leaves-stats ===<br>Intent: Loading the same file twice leaves /stats unchanged by the second load, because replaced rows are not added.<br>Requires: executable=python3; scope=test<br>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx2; scope=test</p>
+<p>import csv import os import tempfile from cli.testing import cli_runner from app_server.testing import web_client</p>
+<p>rows = [[&quot;Date&quot;, &quot;ZZA&quot;, &quot;&quot;], [&quot;2999-10-01&quot;, &quot;7.5&quot;, &quot;&quot;]]</p>
+<p>client = web_client() with tempfile.TemporaryDirectory() as tmp: path = os.path.join(tmp, &quot;again.csv&quot;) with open(path, &quot;w&quot;, newline=&quot;&quot;) as handle: csv.writer(handle, lineterminator=&quot;\n&quot;).writerows(rows) code, out, err = cli_runner(&quot;load&quot;, path) assert code == 0 first = client.get(&quot;/stats&quot;) assert first.status_code == 200 code, out, err = cli_runner(&quot;load&quot;, path) assert code == 0 second = client.get(&quot;/stats&quot;) assert second.status_code == 200 assert second.json() == first.json() === END AC reload-leaves-stats ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>A load never leaves a partly applied state visible to a request.</li><li>The API never caches stored rows between requests.</li><li>A rejected file writes nothing.</li></ul></article>
+</main>
+</body>
+</html>

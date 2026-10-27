@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/commands/06-after-plan-build-status.stdout.log</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/commands/06-after-plan-build-status.stdout.log</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/commands/06-after-plan-build-status.stdout.log">Raw file</a></div></header>
+<article class="doc"><pre>Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
+Next: drydock build FxRates
+
+Blueprint: FxRates
+Target: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.202600/workspace/targets/FxRates
+Rows: &lt;state&gt; &lt;type&gt;  &lt;Name&gt;  [&lt;id&gt;]   — pass [&lt;id&gt;] to --step
+
+Block: Build Block 1 · Foundational  [block-1]   — 0/1 stories complete
+  [pending] story  Define application modules and their ownership boundaries.  [architecture]  &lt;- next
+
+Block: Build Block 2 · Foundational  [block-2]   — 0/3 stories complete
+  [pending] story  Declare the rates schema and generated repository contract.  [database]
+  [pending] story  Establish the FastAPI application and test client.  [app_server]
+  [pending] story  Establish the fxrates executable and CLI entry point.  [cli]
+
+Block: Build Block 3 · Service  [block-3]   — 0/10 stories complete
+  [pending] story  Validate and load ECB CSV history files atomically.  [load]
+  [pending] story  Initialize an empty rates store.  [init]
+  [pending] story  List currencies that have stored rates.  [api_currencies]
+  [pending] story  Retrieve rates from the latest publication.  [api_latest]
+  [pending] story  Report stored rate statistics.  [api_stats]
+  [pending] story  Retrieve rates by effective date.  [api_rates]
+  [pending] story  Retrieve currency history and summary statistics.  [history]
+  [pending] story  Convert amounts between currencies.  [convert]
+  [pending] story  Serve the health endpoint.  [api_health]
+  [pending] story  Report CLI usage and operational errors.  [cli_errors]
+
+Block: Build Block 4 · Service  [block-4]   — 0/1 stories complete
+  [pending] story  Download and load the ECB history archive.  [fetch]
+
+Block: Build Block 5 · Service  [block-5]   — 0/1 stories complete
+  [pending] story  Provide the offline pytest suite and test launcher.  [tests]
+
+Block: Build Block 6 · Service  [block-6]   — 0/1 stories complete
+  [pending] story  Verify complete supplied grader conformance.  [grader]
+
+Steps: 17 total — 0 done, 0 built (await verify), 0 in review, 17 pending, 0 blocked by questions, 0 failed (0% complete)
+Buildable now: block-1
+</pre></article>
+</main>
+</body>
+</html>

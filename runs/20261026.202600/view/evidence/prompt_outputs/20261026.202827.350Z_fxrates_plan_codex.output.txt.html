@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/prompt_outputs/20261026.202827.350Z_fxrates_plan_codex.output.txt</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/prompt_outputs/20261026.202827.350Z_fxrates_plan_codex.output.txt</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/prompt_outputs/20261026.202827.350Z_fxrates_plan_codex.output.txt">Raw file</a></div></header>
+<article class="doc"><pre>=== BEGIN ARTIFACT FEATURE-Init.md ===
+# FEATURE: Store Initialization
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | Defines the CLI behavior for resetting the rates store. |
+| Depends On  | FEATURE-CLI.md, DATABASE.md |
+| Provides    | `./fxrates init` |
+| Consumes    | `./fxrates`, rates repository operations |
+
+## Questions
+
+- None.
+
+## Purpose
+
+`fxrates init` resets the rates store to an empty state. It takes no arguments, prints nothing on success, and uses the persistence boundary.
+
+## Programmatic Acceptance
+
+=== AC init-clears-store ===
+Intent: The init command succeeds and leaves the rates repository empty.
+
+from cli.testing import cli_runner
+from persistence.testing import db_session
+
+with db_session() as db:
+    db.rates.upsert(date=&quot;2099-06-01&quot;, currency=&quot;QAF&quot;, rate=&quot;6.1&quot;)
+
+code, stdout, stderr = cli_runner(&quot;init&quot;)
+assert code == 0
+assert stdout == &quot;&quot;
+
+with db_session() as db:
+    rows = db.rates.list()
+    assert rows == []
+=== END AC init-clears-store ===
+
+=== AC init-rejects-extra-arguments ===
+Intent: The init command rejects an unexpected argument with the usage exit status.
+
+from cli.testing import cli_runner
+
+code, stdout, stderr = cli_runner(&quot;init&quot;, &quot;extra&quot;)
+assert code == 2
+=== END AC init-rejects-extra-arguments ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Reset the rates table through the persistence boundary.
+- Keep diagnostics on standard error.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-Health.md ===
+# FEATURE: Health Endpoint
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | Defines the service health endpoint. |
+| Depends On  | FEATURE-AppServer.md |
+| Provides    | GET /health |
+| Consumes    | create_app() |
+
+## Questions
+
+- None.
+
+## Purpose
+
+`GET /health` provides a lightweight check that the API is responding.
+
+## Programmatic Acceptance
+
+=== AC health-response ===
+Intent: The health endpoint responds successfully with the documented JSON body.
+Cite: sources/INSTRUCTIONS.md:57-58
+Requires: python-package=fastapi; scope=test
+Requires: python-package=httpx2; scope=test
+
+from app_server.testing import web_client
+
+client = web_client()
+response = client.get(&quot;/health&quot;)
+assert response.status_code == 200
+assert response.json() == {&quot;status&quot;: &quot;ok&quot;}
+=== END AC health-response ===
+
+=== AC health-method ===
+Intent: An unsupported method is refused by the health route.
+Requires: python-package=fastapi; scope=test
+Requires: python-package=httpx2; scope=test
+
+from app_server.testing import web_client
+
+client = web_client()
+response = client.post(&quot;/health&quot;)
+assert response.status_code == 405
+=== END AC health-method ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- The endpoint returns JSON and does not depend on stored rates.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-Stats.md ===
+# FEATURE: Stored Rate Statistics
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | Defines the API summary of stored publication dates and rates. |
+| Depends On  | FEATURE-AppServer.md, DATABASE.md |
+| Provides    | GET /stats |
+| Consumes    | create_app(), rates repository operations |
+
+## Questions
+
+- None.
+
+## Purpose
+
+`GET /stats` reports the number of publication dates and stored rates, plus the earliest and latest publication dates. Empty date bounds are null. Values come from repository queries.
+
+## Database Interface
+
+- `FEATURE-RATE-005` — read: list stored rates - supplies: — - returns: `date`, `currency`, `rate`
+
+## Programmatic Acceptance
+
+=== AC stats-derive-from-store ===
+Intent: The statistics endpoint reflects rates inserted through the repository.
+Requires: python-package=fastapi; scope=test
+Requires: python-package=httpx2; scope=test
+
+from app_server.testing import web_client
+from persistence.testing import db_session
+
+first_date = &quot;2099-07-01&quot;
+second_date = &quot;2099-07-02&quot;
+currency = &quot;QAG&quot;
+
+with db_session() as db:
+    before_rows = db.rates.list()
+    before_dates = {row.date for row in before_rows}
+    db.rates.upsert(date=first_date, currency=currency, rate=&quot;7.1&quot;)
+    db.rates.upsert(date=second_date, currency=currency, rate=&quot;7.2&quot;)
+    after_rows = db.rates.list()
+    expected_dates = before_dates | {first_date, second_date}
+    expected_rate_count = len(before_rows) + 2
+
+client = web_client()
+response = client.get(&quot;/stats&quot;)
+assert response.status_code == 200
+body = response.json()
+assert body[&quot;dates&quot;] == len(expected_dates)
+assert body[&quot;rates&quot;] == expected_rate_count
+assert body[&quot;first&quot;] == min(expected_dates)
+assert body[&quot;last&quot;] == max(expected_dates)
+=== END AC stats-derive-from-store ===
+
+=== AC stats-empty-store ===
+Intent: The statistics endpoint reports null date bounds when the rates store is empty.
+Requires: python-package=fastapi; scope=test
+Requires: python-package=httpx2; scope=test
+
+from app_server.testing import web_client
+from persistence.testing import db_session
+
+with db_session() as db:
+    rows = db.rates.list()
+    if rows:
+        from cli.testing import cli_runner
+        code, stdout, stderr = cli_runner(&quot;init&quot;)
+        assert code == 0
+
+client = web_client()
+response = client.get(&quot;/stats&quot;)
+assert response.status_code == 200
+body = response.json()
+assert body[&quot;dates&quot;] == 0
+assert body[&quot;rates&quot;] == 0
+assert body[&quot;first&quot;] is None
+assert body[&quot;last&quot;] is None
+=== END AC stats-empty-store ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Derive all reported values from the rates repository.
+- Do not store or compute rates as floating-point values.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-Currencies.md ===
+# FEATURE: Currency Listing
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | Defines the API listing currencies with stored rates. |
+| Depends On  | FEATURE-AppServer.md, DATABASE.md |
+| Provides    | GET /currencies |
+| Consumes    | create_app(), rates repository operations |
+
+## Questions
+
+- None.
+
+## Purpose
+
+`GET /currencies` returns EUR as the base and the currencies with at least one stored rate, sorted in ascending order.
+
+## Database Interface
+
+- `FEATURE-RATE-005` — read: list stored rates - supplies: — - returns: `date`, `currency`, `rate`
+
+## Programmatic Acceptance
+
+=== AC currencies-list-sorted ===
+Intent: The endpoint lists currencies present in the store in ascending order.
+Requires: python-package=fastapi; scope=test
+Requires: python-package=httpx2; scope=test
+
+from app_server.testing import web_client
+from persistence.testing import db_session
+
+date = &quot;2099-08-01&quot;
+currencies = [&quot;QAZ&quot;, &quot;QAA&quot;, &quot;QAM&quot;]
+
+with db_session() as db:
+    for index, currency in enumerate(currencies):
+        db.rates.upsert(date=date, currency=currency, rate=str(index + 1))
+    expected = sorted({row.currency for row in db.rates.list()})
+
+client = web_client()
+response = client.get(&quot;/currencies&quot;)
+assert response.status_code == 200
+body = response.json()
+assert body[&quot;currencies&quot;] == expected
+assert body[&quot;currencies&quot;] == sorted(body[&quot;currencies&quot;])
+assert all(currency in body[&quot;currencies&quot;] for currency in currencies)
+=== END AC currencies-list-sorted ===
+
+=== AC currencies-base ===
+Intent: The endpoint identifies EUR as the base currency.
+Cite: sources/INSTRUCTIONS.md:59
+Requires: python-package=fastapi; scope=test
+Requires: python-package=httpx2; scope=test
+
+from app_server.testing import web_client
+
+client = web_client()
+response = client.get(&quot;/currencies&quot;)
+assert response.status_code == 200
+assert response.json()[&quot;base&quot;] == &quot;EUR&quot;
+=== END AC currencies-base ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Include only currencies with at least one stored rate.
+- Return currency codes in ascending order.
+=== END ARTIFACT===
+</pre></article>
+</main>
+</body>
+</html>

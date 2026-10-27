@@ -1,0 +1,10 @@
+RESULT: SUCCESS
+
+FILES CHANGED:
+- None
+
+SUMMARY:
+The existing `/rates/latest` route returns 404 when the configured store is empty, and the store currently has zero rows. The offline suite passes: `sh bin/test.sh` completed with 29 tests passing. I made no changes.
+
+BLOCKERS:
+- None

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>build/FxRates/tests/test_load.py</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>build/FxRates/tests/test_load.py</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../build/FxRates/tests/test_load.py">Raw file</a></div></header>
+<article class="doc"><pre>&quot;&quot;&quot;CSV loading validates the complete input before changing stored rates.&quot;&quot;&quot;
+
+from pathlib import Path
+
+import pytest
+
+from cli.testing import cli_runner
+from persistence.testing import db_session
+
+
+def test_load_accepts_header_only_and_reports_zero_rows(tmp_path: Path) -&gt; None:
+    source = tmp_path / &quot;empty.csv&quot;
+    source.write_text(&quot;Date,USD,\n&quot;, encoding=&quot;utf-8&quot;)
+    code, output, _ = cli_runner(&quot;load&quot;, str(source))
+    assert code == 0
+    assert [line.split(&quot;,&quot;) for line in output.splitlines()] == [[&quot;dates&quot;, &quot;rates&quot;], [&quot;0&quot;, &quot;0&quot;]]
+
+
+@pytest.mark.parametrize(&quot;contents&quot;, [
+    &quot;Date,usd\\n2099-01-01,1\\n&quot;,
+    &quot;Date,USD,USD\\n2099-01-01,1,2\\n&quot;,
+    &quot;Date,USD\\n2099-01-01,0\\n&quot;,
+    &quot;Date,USD\\n2099-02-30,1\\n&quot;,
+    &quot;Date,USD\\n2099-01-01,1\\n2099-01-01,2\\n&quot;,
+])
+def test_invalid_csv_does_not_partially_write(contents: str, tmp_path: Path) -&gt; None:
+    with db_session() as db:
+        db.rates.upsert(date=&quot;2099-01-01&quot;, currency=&quot;QAT&quot;, rate=&quot;7.00&quot;)
+    before = [(row.date, row.currency, row.rate) for row in _rates_on(&quot;2099-01-01&quot;)]
+    source = tmp_path / &quot;invalid.csv&quot;
+    source.write_text(contents.replace(&quot;\\n&quot;, &quot;\n&quot;), encoding=&quot;utf-8&quot;)
+    code, _, _ = cli_runner(&quot;load&quot;, str(source))
+    after = [(row.date, row.currency, row.rate) for row in _rates_on(&quot;2099-01-01&quot;)]
+    assert code == 3
+    assert after == before
+
+
+def _rates_on(day: str):
+    with db_session() as db:
+        return db.rates.by_date(date=day)
+</pre></article>
+</main>
+</body>
+</html>

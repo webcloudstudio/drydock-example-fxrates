@@ -1,6 +1,0 @@
-Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
-plan verify: FxRates
-  43 acceptance criteria in 17 files: every one can run
-  ⚠  FEATURE-Convert.md [convert-route-returns-computed-values]: expects "f'{expected_rate:.6f}'", a value re-typed rather than derived from the input or read back from the system
-  ⚠  FEATURE-Convert.md [convert-route-returns-computed-values]: expects "f'{expected_result:.2f}'", a value re-typed rather than derived from the input or read back from the system
-  ⚠  FEATURE-History.md [history-route-returns-bounded-summary]: expects "f'{expected_mean:.6f}'", a value re-typed rather than derived from the input or read back from the system

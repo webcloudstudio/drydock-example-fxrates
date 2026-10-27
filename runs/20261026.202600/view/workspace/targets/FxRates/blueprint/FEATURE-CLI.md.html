@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-CLI.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-CLI.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-CLI.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: CLI Foundation</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261026 V1</td></tr><tr><td>Description</td><td>Establishes the root executable and the published in-process CLI entry point.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Provide the application-root executable <code>./fxrates</code>, the <code>cli.main(argv: list[str] | None = None) -&gt; int</code> entry point, and the <code>cli.testing.cli_runner(*args)</code> helper. Feature stories own command behavior and its implementation.</p>
+<h2>Interface</h2>
+<ul><li><code>./fxrates &lt;command&gt;</code> invokes <code>cli.main</code>.</li><li><code>cli.testing.cli_runner(*args)</code> returns <code>(exit_code, stdout, stderr)</code> without spawning a process.</li><li>Diagnostics are written to standard error.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC cli-foundation-interfaces ===<br>Intent: The CLI entry point and in-process runner expose the published callable interfaces. from cli import main from cli.testing import cli_runner import inspect</p>
+<p>assert callable(main) assert inspect.signature(main).parameters[&quot;argv&quot;].default is None result = cli_runner() assert isinstance(result, tuple) assert len(result) == 3 assert isinstance(result[0], int) assert isinstance(result[1], str) assert isinstance(result[2], str) === END AC cli-foundation-interfaces ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Place an executable named <code>fxrates</code> at the application root.</li><li>Keep command diagnostics on standard error.</li><li>Command-specific behavior and error statuses are implemented by their owning stories.</li></ul></article>
+</main>
+</body>
+</html>

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/prompt_outputs/20261027.160740.974Z_fxrates_build_claude.output.txt</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/prompt_outputs/20261027.160740.974Z_fxrates_build_claude.output.txt</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/prompt_outputs/20261027.160740.974Z_fxrates_build_claude.output.txt">Raw file</a></div></header>
+<article class="doc"><pre>I&#x27;ll start by inspecting the build directory and the current state of the project.The first dump was truncated, so I&#x27;ll read the CLI, ECB, and test files individually.The fetch story needs a new `fxrates_app/fetch.py`, a `fetch` handler in `cli/`, and tests. Before writing, I&#x27;ll check the persistence API for transaction and session support, and the git history for how earlier blocks were structured.The persistence library has no transaction operation, and `load` already documents that each replace commits on its own. I&#x27;ll mirror `load`&#x27;s path and call that out. First, a baseline run of the existing suite:Baseline is 154 passing. Now I&#x27;ll write the download seam, the handler, and the registration. To avoid duplicating `load`&#x27;s store-and-report code, I&#x27;ll pull it into a shared function in `load_command.py`, which keeps `fetch` on the same path.Next, the tests. I&#x27;ll include the four declared acceptance checks verbatim in behavior, plus tests for the error paths and idempotence the step requires. Each shares a rolled-back transaction, the same way `test_load.py` does, so no test commits to the store.Two failures, both from a bug in my test helper rather than the handler. `csv_text` already appends the trailing comma, and I also passed a `&quot;&quot;` in the header, so the header got an extra empty currency and was correctly rejected (exit 3). I&#x27;ll drop the stray `&quot;&quot;` from those headers.All 167 tests pass, and `bin/test.sh` exits 0. I&#x27;ll confirm the set of files I touched.RESULT: SUCCESS
+
+FILES CHANGED:
+- fxrates_app/fetch.py
+- cli/fetch_command.py
+- cli/__init__.py
+- cli/load_command.py
+- tests/test_fetch.py
+
+SUMMARY:
+- `fxrates_app/fetch.py` adds `download_archive(url)`, a `urllib` download with a 30-second timeout. It is the only network call, and tests replace it at `fxrates_app.fetch.download_archive`.
+- `cli/fetch_command.py` registers `fetch`. It calls the download through the module attribute, opens the zip, reads `eurofxref-hist.csv`, and runs it through `parse_history`. Then it stores and reports through the same path as `load`.
+- Exit codes: download failure (OSError, timeout, or HTTP protocol error) exits 1. Non-zip bytes or a missing member exits 1. A rejected member exits 3. Nothing is stored on any failure. `fetch --help` exits 0 without downloading, and extra arguments are a usage error (exit 2) from the existing validation.
+- `cli/load_command.py`: the store-and-report code moved into `store_and_report(rates)` so `load` and `fetch` share it. Behavior of `load` is unchanged.
+- `cli/__init__.py` imports `fetch_command` so the handler registers.
+- `tests/test_fetch.py` contains the four declared acceptance checks (loads archive, download failure, bad archive, rejected member), plus tests for the ECB URL seam, timeout and protocol errors, non-UTF-8 member, idempotence, help, and usage. Every test uses the shared rolled-back transaction fixture, and the network stays blocked by the existing conftest.
+
+Verification:
+- `.venv/bin/pytest -q tests/test_fetch.py`: 13 passed.
+- `.venv/bin/pytest -q` (full suite): 167 passed (baseline was 154).
+- `sh bin/test.sh`: exit 0.
+
+Decisions for you to review:
+- Step 4 of the spec mentions &quot;one transaction of upserts&quot;, but the persistence library has no transaction operation. `load` already documents that each replace commits on its own, so `fetch` does the same. A store failure partway through a valid file is not rolled back. Validation still runs before any write.
+- The ECB URL and the 30-second timeout are constants in `fxrates_app/fetch.py`. The spec leaves the timeout to the builder.
+- I did not run `sources/run.sh`. It is the terminal-story grader and runs once, last.
+- I did not commit, per the build rules.</pre></article>
+</main>
+</body>
+</html>

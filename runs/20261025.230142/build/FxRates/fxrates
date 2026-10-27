@@ -1,8 +1,0 @@
-#!/usr/bin/env python3
-"""Root executable for FxRates."""
-
-import sys
-
-from cli import main
-
-sys.exit(main())

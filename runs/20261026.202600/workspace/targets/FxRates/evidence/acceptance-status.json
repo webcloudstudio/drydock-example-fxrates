@@ -1,0 +1,186 @@
+{
+  "criteria": {
+    "architecture-service-boundary": {
+      "status": "VALID",
+      "error_code": "baseline-red",
+      "code_sha256": "afa11c6e2b915aa3caa730656c6f08c24fa7207a6de3617321d67cf76c310fc0",
+      "updated_at": "2026-10-26T20:32:34+00:00",
+      "detail": ""
+    },
+    "cli-operational-errors": {
+      "status": "VALID",
+      "error_code": "baseline-red",
+      "code_sha256": "23b67cb82160412aad326a3fc83de85504520189cd5b1d3188dc424c2a0aa673",
+      "updated_at": "2026-10-26T20:38:49+00:00",
+      "detail": ""
+    },
+    "cli-usage-errors": {
+      "status": "VALID",
+      "error_code": "baseline-red",
+      "code_sha256": "29e9aeb80e55428ec073673b948c7304cd307863d18e4c1e52f7b58c109cc6b0",
+      "updated_at": "2026-10-26T20:38:49+00:00",
+      "detail": ""
+    },
+    "convert-decimal-and-rounding": {
+      "status": "VALID",
+      "error_code": "baseline-red",
+      "code_sha256": "a494d971b8ddf15101f8f1596b8a1fa78db610c1b63f4135e130959c18293e3b",
+      "updated_at": "2026-10-26T20:38:49+00:00",
+      "detail": ""
+    },
+    "convert-validation-and-unknown-currency": {
+      "status": "VALID",
+      "error_code": "baseline-red",
+      "code_sha256": "5a0c3a4b810ca6cb07509427fffe31f0f9c273480cde95f5b2ff196c333b4ce9",
+      "updated_at": "2026-10-26T20:38:49+00:00",
+      "detail": ""
+    },
+    "currencies-base": {
+      "status": "VALID",
+      "error_code": "baseline-red",
+      "code_sha256": "92e3f7703d21ec9b14865d77cad5f12047f78058171639d1d3e1f594b8d78ee9",
+      "updated_at": "2026-10-26T20:38:49+00:00",
+      "detail": ""
+    },
+    "currencies-list-sorted": {
+      "status": "VALID",
+      "error_code": "baseline-red",
+      "code_sha256": "07add64f6c47d431203f7a9dd6fc3d043fccb2878bca5be19a743245ac420e6d",
+      "updated_at": "2026-10-26T20:38:49+00:00",
+      "detail": ""
+    },
+    "fetch-stubbed-failure": {
+      "status": "VALID",
+      "error_code": "baseline-red",
+      "code_sha256": "b1a9f5b5a6d5917e0aa2d83203dfff541fcae9e1a25985f477a80b79c4085811",
+      "updated_at": "2026-10-26T20:51:40+00:00",
+      "detail": ""
+    },
+    "fetch-stubbed-success": {
+      "status": "VALID",
+      "error_code": "baseline-red",
+      "code_sha256": "adae59a07e39a0422aef557cd62de5a8eab04d09ab4ab379c20ce42bce7b0e63",
+      "updated_at": "2026-10-26T20:51:40+00:00",
+      "detail": ""
+    },
+    "grader-complete": {
+      "status": "VALID",
+      "error_code": "baseline-red",
+      "code_sha256": "7a2cd7dc984b67ce2d5e52d0d35d65091ed2efa3a89b6bcedacca63811e97d84",
+      "updated_at": "2026-10-26T21:07:44+00:00",
+      "detail": ""
+    },
+    "health-method": {
+      "status": "VALID",
+      "error_code": "baseline-red",
+      "code_sha256": "4cd9d67c163e81ff09da03a52e5db78af5d8e60fcd4d9ae5ea5827d62e544fce",
+      "updated_at": "2026-10-26T20:38:49+00:00",
+      "detail": ""
+    },
+    "health-response": {
+      "status": "VALID",
+      "error_code": "baseline-red",
+      "code_sha256": "dc1c743973b931cab02aafc39aa74e1612868102a8c4029ec0fe934fc7a1fce7",
+      "updated_at": "2026-10-26T20:38:49+00:00",
+      "detail": ""
+    },
+    "history-empty-range-and-errors": {
+      "status": "VALID",
+      "error_code": "baseline-red",
+      "code_sha256": "cf8112339c3ba8537a5b55db39df2810fa23e7b6b91d4ed77bf197745cf021de",
+      "updated_at": "2026-10-26T20:38:49+00:00",
+      "detail": ""
+    },
+    "history-range-and-statistics": {
+      "status": "VALID",
+      "error_code": "baseline-red",
+      "code_sha256": "a666f67886e5f527b9e8036adc525de034e076a14396ca35212b311f68d1edd1",
+      "updated_at": "2026-10-26T20:38:49+00:00",
+      "detail": ""
+    },
+    "init-clears-store": {
+      "status": "VALID",
+      "error_code": "baseline-red",
+      "code_sha256": "cf705ee0829b4a167df0aa67a7f9f3066bb0c5de442400b6a283ab46b0cc197a",
+      "updated_at": "2026-10-26T20:38:49+00:00",
+      "detail": ""
+    },
+    "init-rejects-extra-arguments": {
+      "status": "VALID",
+      "error_code": "baseline-red",
+      "code_sha256": "175d53a412ca8ea90a5dc98ba53e96cac08eb9c4c82af43e57cec4b701b04cd6",
+      "updated_at": "2026-10-26T20:38:49+00:00",
+      "detail": ""
+    },
+    "latest-rates-empty": {
+      "status": "VALID",
+      "error_code": "existing-behavior",
+      "code_sha256": "0617615f4e760bb8b78fbce4422609efef726934e285bdfd891e820bdf222f58",
+      "updated_at": "2026-10-26T20:38:49+00:00",
+      "detail": ""
+    },
+    "latest-rates-response": {
+      "status": "VALID",
+      "error_code": "baseline-red",
+      "code_sha256": "b2e34cf42b72e445b535d7073ef195c7bbf95918eb1ee6869f8587e7bfc53076",
+      "updated_at": "2026-10-26T20:38:49+00:00",
+      "detail": ""
+    },
+    "load-rejects-atomically": {
+      "status": "VALID",
+      "error_code": "baseline-red",
+      "code_sha256": "2b683b284da027c34a4a0ba9009b016feb2f9e9447af2ca209476738ef80f48c",
+      "updated_at": "2026-10-26T20:38:49+00:00",
+      "detail": ""
+    },
+    "load-replaces-published-text": {
+      "status": "VALID",
+      "error_code": "baseline-red",
+      "code_sha256": "a9494384b62dc9cc765eeef77f9e6b315f300c07741c0a5fa76ae8b8e199414e",
+      "updated_at": "2026-10-26T20:38:49+00:00",
+      "detail": ""
+    },
+    "load-valid-file": {
+      "status": "VALID",
+      "error_code": "baseline-red",
+      "code_sha256": "a0dc85a34b99292b7b364d35f2753eb4ca96fcb12d514d5db05ad4434a4bb761",
+      "updated_at": "2026-10-26T20:38:49+00:00",
+      "detail": ""
+    },
+    "rates-effective-date": {
+      "status": "VALID",
+      "error_code": "baseline-red",
+      "code_sha256": "d65449d2ece60f17dea38f3f6002d2c5919d16901d0d29d0763974d1fc93e209",
+      "updated_at": "2026-10-26T20:38:49+00:00",
+      "detail": ""
+    },
+    "rates-errors": {
+      "status": "VALID",
+      "error_code": "baseline-red",
+      "code_sha256": "1f54e56297a43ed65c3aa4ec8af6fc006859b62272792abbdce552c43b2a6d42",
+      "updated_at": "2026-10-26T20:38:49+00:00",
+      "detail": ""
+    },
+    "stats-derive-from-store": {
+      "status": "VALID",
+      "error_code": "baseline-red",
+      "code_sha256": "ed29046403734ced91fceb22c40bfa189816e1dcc8749092a3731335adea3a6e",
+      "updated_at": "2026-10-26T20:38:49+00:00",
+      "detail": ""
+    },
+    "stats-empty-store": {
+      "status": "VALID",
+      "error_code": "baseline-red",
+      "code_sha256": "201cebb8929db1e8d4a933c829cf72f94b3dd003babe16c88ae29542184052e2",
+      "updated_at": "2026-10-26T20:38:49+00:00",
+      "detail": ""
+    },
+    "test-suite-passes": {
+      "status": "VALID",
+      "error_code": "existing-behavior",
+      "code_sha256": "b038523c4dafd0ce57ce46928ad482ec944fd66a8b662d9ae808bbaba91b7e61",
+      "updated_at": "2026-10-26T20:55:53+00:00",
+      "detail": ""
+    }
+  }
+}

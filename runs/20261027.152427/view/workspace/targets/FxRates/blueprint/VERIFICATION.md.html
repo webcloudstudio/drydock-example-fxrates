@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/VERIFICATION.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/VERIFICATION.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/VERIFICATION.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Release Verification</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261027 V1</td></tr><tr><td>Description</td><td>The supplied grader sources/run.sh passes end to end against the completed fxrates application.</td></tr><tr><td>Depends On</td><td>FEATURE-InitCommand.md, FEATURE-CommandHelp.md, FEATURE-OfflineTestRun.md, FEATURE-LoadVisibility.md, FEATURE-Fetch.md, FEATURE-Currencies.md, FEATURE-RatesLatest.md, FEATURE-ConvertErrors.md, FEATURE-HistoryErrors.md</td></tr><tr><td>Provides</td><td>release verification</td></tr><tr><td>Consumes</td><td>fxrates init, fxrates load, fxrates serve, GET /health, GET /stats, GET /currencies, GET /rates/{date}, GET /rates/latest, GET /convert, GET /history/{code}</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Assembly and intent only. Every behavior is implemented by earlier stories. This story runs the supplied grader <code>sources/run.sh</code>, unmodified and unfiltered, from the application root. The script&#x27;s exit status is the verdict: it loads the supplied ECB files, starts <code>fxrates serve</code> on a free local port, and makes 35 checks of command output and HTTP status and JSON body.</p>
+<h2>Behavior</h2>
+<ul><li>The grader and its data files under <code>sources/</code> are read-only scoring assets and are never</li></ul>
+<p>modified, regenerated, or substituted.</p>
+<ul><li>Application code never reads <code>sources/run.sh</code> or the supplied data files.</li><li>A nonzero exit means a check failed; the printed <code>FAIL</code> lines identify it.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC grader-passes ===<br>Intent: The complete supplied grader exits zero, which means every one of its checks passed against the built application.<br>Suite: full<br>Requires: executable=sh; scope=test<br>Requires: executable=python3; scope=test</p>
+<p>import subprocess import sys</p>
+<p>result = subprocess.run( [&quot;sh&quot;, &quot;sources/run.sh&quot;], capture_output=True, text=True, timeout=900, ) print(result.stdout) print(result.stderr, file=sys.stderr) assert result.returncode == 0 === END AC grader-passes ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Do not modify, rewrite, regenerate, or substitute any file under <code>sources/</code>.</li><li>Do not filter, skip, or reinterpret any check in <code>sources/run.sh</code>.</li><li>The only verdict is the grader&#x27;s exit status.</li></ul></article>
+</main>
+</body>
+</html>

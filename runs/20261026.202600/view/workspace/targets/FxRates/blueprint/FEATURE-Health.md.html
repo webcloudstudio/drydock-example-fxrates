@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-Health.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-Health.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-Health.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Health Endpoint</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261026 V1</td></tr><tr><td>Description</td><td>Defines the service health endpoint.</td></tr><tr><td>Depends On</td><td>FEATURE-AppServer.md</td></tr><tr><td>Provides</td><td>GET /health</td></tr><tr><td>Consumes</td><td>create_app()</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p><code>GET /health</code> provides a lightweight check that the API is responding.</p>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC health-response ===<br>Intent: The health endpoint responds successfully with the documented JSON body.<br>Cite: sources/INSTRUCTIONS.md:57-58<br>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx2; scope=test</p>
+<p>from app_server.testing import web_client</p>
+<p>client = web_client() response = client.get(&quot;/health&quot;) assert response.status_code == 200 assert response.json() == {&quot;status&quot;: &quot;ok&quot;} === END AC health-response ===</p>
+<p>=== AC health-method ===<br>Intent: An unsupported method is refused by the health route.<br>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx2; scope=test</p>
+<p>from app_server.testing import web_client</p>
+<p>client = web_client() response = client.post(&quot;/health&quot;) assert response.status_code == 405 === END AC health-method ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>The endpoint returns JSON and does not depend on stored rates.</li></ul></article>
+</main>
+</body>
+</html>

@@ -1,6 +1,0 @@
-Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
-plan verify: FxRates
-  1 criterion cannot run as written
-  ✗  FEATURE-CLI-Load.md [load-rejected-file-is-atomic]: criterion launches a process and opens the store; a launched process cannot see the criterion's rolled-back transaction, so exercise stored behavior in-process through `web_client()` or `cli_runner()`, or drop the store setup
-  Run: drydock plan repair FxRates
-Target - committed project workspace git store

@@ -1,0 +1,10 @@
+RESULT: SUCCESS
+
+FILES CHANGED:
+- tests/test_api.py
+
+SUMMARY:
+Updated API tests to include pre-existing database rows when checking aggregate endpoints. `sh bin/test.sh` completed successfully: 29 passed.
+
+BLOCKERS:
+- None

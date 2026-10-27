@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>build/FxRates/app_server/main.py</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>build/FxRates/app_server/main.py</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../build/FxRates/app_server/main.py">Raw file</a></div></header>
+<article class="doc"><pre>from __future__ import annotations
+from datetime import date
+from decimal import Decimal, ROUND_HALF_EVEN
+import re
+from fastapi import FastAPI, HTTPException, Query
+from services import rates as service
+
+app=FastAPI(title=&#x27;FxRates&#x27;)
+def create_app() -&gt; FastAPI: return app
+
+def check_date(value: str):
+    if not service.valid_date(value): raise HTTPException(422, &#x27;invalid date&#x27;)
+
+def effective(requested):
+    rows=service.through(requested)
+    return rows[0].date if rows else None
+
+def rate_map(d): return {r.currency:r.rate for r in service.by_date(d)}
+@app.get(&#x27;/health&#x27;)
+def health(): return {&#x27;status&#x27;:&#x27;ok&#x27;}
+@app.get(&#x27;/currencies&#x27;)
+def currencies(): return {&#x27;base&#x27;:&#x27;EUR&#x27;,&#x27;currencies&#x27;:sorted({r.currency for r in service.all_rows()})}
+@app.get(&#x27;/stats&#x27;)
+def stats():
+    rows=service.all_rows(); dates={r.date for r in rows}
+    return {&#x27;dates&#x27;:len(dates),&#x27;rates&#x27;:len(rows),&#x27;first&#x27;:min(dates) if dates else None,&#x27;last&#x27;:max(dates) if dates else None}
+@app.get(&#x27;/rates/latest&#x27;)
+def latest():
+    rows=service.all_rows()
+    if not rows: raise HTTPException(404)
+    d=max(r.date for r in rows)
+    return {&#x27;date&#x27;:d,&#x27;requested&#x27;:&#x27;latest&#x27;,&#x27;base&#x27;:&#x27;EUR&#x27;,&#x27;rates&#x27;:rate_map(d)}
+@app.get(&#x27;/rates/{requested}&#x27;)
+def rates(requested: str):
+    check_date(requested); d=effective(requested)
+    if d is None: raise HTTPException(404)
+    return {&#x27;date&#x27;:d,&#x27;requested&#x27;:requested,&#x27;base&#x27;:&#x27;EUR&#x27;,&#x27;rates&#x27;:rate_map(d)}
+@app.get(&#x27;/history/{code}&#x27;)
+def currency_history(code: str, start: str|None=None, end: str|None=None):
+    if start: check_date(start)
+    if end: check_date(end)
+    all_points=service.history(code,None,None)
+    if not all_points: raise HTTPException(404)
+    points=service.history(code,start,end)
+    vals=[Decimal(p.rate) for p in points]
+    return {&#x27;currency&#x27;:code,&#x27;base&#x27;:&#x27;EUR&#x27;,&#x27;count&#x27;:len(points),&#x27;min&#x27;:min(points,key=lambda p:Decimal(p.rate)).rate if points else None,&#x27;max&#x27;:max(points,key=lambda p:Decimal(p.rate)).rate if points else None,&#x27;mean&#x27;:f&#x27;{(sum(vals,Decimal(0))/len(vals)).quantize(Decimal(&quot;0.000001&quot;),rounding=ROUND_HALF_EVEN):.6f}&#x27; if vals else None,&#x27;points&#x27;:[{&#x27;date&#x27;:p.date,&#x27;rate&#x27;:p.rate} for p in points]}
+@app.get(&#x27;/convert&#x27;)
+def convert(source: str=Query(alias=&#x27;from&#x27;), target: str=Query(alias=&#x27;to&#x27;), amount: str=Query(), requested: str|None=Query(default=None,alias=&#x27;date&#x27;)):
+    if not re.fullmatch(r&#x27;[0-9]+(?:\.[0-9]+)?&#x27;,amount): raise HTTPException(422)
+    if requested is not None: check_date(requested)
+    rows=service.all_rows()
+    d=(effective(requested) if requested else max((r.date for r in rows),default=None))
+    if d is None: raise HTTPException(404)
+    mapping=rate_map(d)
+    if source!=&#x27;EUR&#x27; and source not in mapping or target!=&#x27;EUR&#x27; and target not in mapping: raise HTTPException(404)
+    a=Decimal(amount); src=Decimal(1) if source==&#x27;EUR&#x27; else Decimal(mapping[source]); dst=Decimal(1) if target==&#x27;EUR&#x27; else Decimal(mapping[target])
+    ratio=dst/src; result=a*dst/src
+    return {&#x27;date&#x27;:d,&#x27;from&#x27;:source,&#x27;to&#x27;:target,&#x27;amount&#x27;:amount,&#x27;rate&#x27;:f&#x27;{ratio.quantize(Decimal(&quot;0.000001&quot;),rounding=ROUND_HALF_EVEN):.6f}&#x27;,&#x27;result&#x27;:f&#x27;{result.quantize(Decimal(&quot;0.01&quot;),rounding=ROUND_HALF_EVEN):.2f}&#x27;}
+</pre></article>
+</main>
+</body>
+</html>

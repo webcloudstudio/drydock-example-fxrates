@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>build/FxRates/tests/test_web.py</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>build/FxRates/tests/test_web.py</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../build/FxRates/tests/test_web.py">Raw file</a></div></header>
+<article class="doc"><pre>&quot;&quot;&quot;Application factory, module-level app, router registry, and the web_client fixture.&quot;&quot;&quot;
+
+from __future__ import annotations
+
+import pytest
+from fastapi import APIRouter, FastAPI
+from fastapi.testclient import TestClient
+
+from app_server import routes
+from app_server import testing as app_testing
+from app_server.main import app, create_app
+
+
+def test_create_app_returns_a_fastapi_instance() -&gt; None:
+    assert isinstance(create_app(), FastAPI)
+
+
+def test_create_app_returns_a_new_instance_each_call() -&gt; None:
+    assert create_app() is not create_app()
+
+
+def test_module_level_app_is_a_fastapi_instance() -&gt; None:
+    assert isinstance(app, FastAPI)
+
+
+def test_router_registry_is_an_apirouter() -&gt; None:
+    assert isinstance(routes.router, APIRouter)
+
+
+def test_routes_on_the_registry_are_served_by_created_apps(monkeypatch: pytest.MonkeyPatch) -&gt; None:
+    registry = APIRouter()
+
+    @registry.get(&quot;/probe&quot;)
+    def probe() -&gt; dict[str, bool]:
+        return {&quot;ok&quot;: True}
+
+    monkeypatch.setattr(routes, &quot;router&quot;, registry)
+
+    response = TestClient(create_app()).get(&quot;/probe&quot;)
+
+    assert response.status_code == 200
+    assert response.json() == {&quot;ok&quot;: True}
+
+
+def test_web_client_returns_a_testclient_wrapping_a_fastapi_app() -&gt; None:
+    client = app_testing.web_client()
+
+    assert isinstance(client, TestClient)
+    assert isinstance(client.app, FastAPI)
+
+
+def test_web_client_fixture_wraps_a_fastapi_app(web_client) -&gt; None:
+    assert isinstance(web_client, TestClient)
+    assert isinstance(web_client.app, FastAPI)
+
+
+def test_openapi_document_is_served_as_json(web_client) -&gt; None:
+    response = web_client.get(&quot;/openapi.json&quot;)
+
+    assert response.status_code == 200
+    assert response.json()[&quot;openapi&quot;].startswith(&quot;3.&quot;)
+
+
+def test_docs_page_is_served(web_client) -&gt; None:
+    response = web_client.get(&quot;/docs&quot;)
+
+    assert response.status_code == 200
+
+
+def test_unknown_path_returns_not_found(web_client) -&gt; None:
+    response = web_client.get(&quot;/no-such-path&quot;)
+
+    assert response.status_code == 404
+</pre></article>
+</main>
+</body>
+</html>

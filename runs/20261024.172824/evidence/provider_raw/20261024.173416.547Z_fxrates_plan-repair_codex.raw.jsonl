@@ -1,4 +1,0 @@
-{"type":"thread.started","thread_id":"01a16efa-418b-7c20-b5a1-4abb3aff8250"}
-{"type":"turn.started"}
-{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"=== AC ARCHITECTURE.md :: architecture-imports ===\nIntent: The declared application entry points and test clients are importable.\n\nfrom app_server.main import create_app, app\nfrom app_server.testing import web_client\nfrom cli import main\nfrom cli.testing import cli_runner\n\nassert callable(create_app)\nassert app is not None\nassert callable(web_client)\nassert callable(main)\nassert callable(cli_runner)\n=== END AC ARCHITECTURE.md :: architecture-imports ==="}}
-{"type":"turn.completed","usage":{"input_tokens":17280,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":99,"reasoning_output_tokens":0}}

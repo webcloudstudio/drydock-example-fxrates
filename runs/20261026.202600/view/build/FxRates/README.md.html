@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>build/FxRates/README.md</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>build/FxRates/README.md</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../build/FxRates/README.md">Raw file</a></div></header>
+<article class="doc"><h1>drydock FxRates Uat Case</h1>
+<p>Drydock uat - FxRates is the web-service kit and the first to exercise FastAPI. The source is an original brief for a currency rates service: a command line loads the European Central Bank euro reference rate history into SQLite, and a FastAPI JSON API serves rates by date (resolved to the latest publication on or before it), conversions between any two currencies with exact decimal rounding, and a currency&#x27;s history. The supplied grader, sources/run.sh, loads real ECB files for January 2025 plus two February dates, starts the server on a free local port, and makes 35 checks of command output and HTTP status and JSON body. Run with drydock uat FxRates. Source Repo: none, the brief is original to this kit; data from the ECB euro foreign exchange reference rates.</p>
+<h2>Intent</h2>
+<p>Build a currency rates service, an executable named <code>fxrates</code> at the application root, as described in <code>sources/INSTRUCTIONS.md</code>. A command line loads the ECB euro reference rate history into SQLite, and a FastAPI JSON API serves the rates on a date, conversions between any two currencies, and a currency&#x27;s history with minimum, maximum, and mean.</p>
+<p>Correctness is measured by <code>sources/run.sh</code>: it loads the supplied ECB files, starts the server on a free local port, and makes 35 checks of command output and HTTP status and JSON body. The goal is every check passing.</p>
+<h2>What It Does</h2>
+<p>Provide the shared FastAPI application entry point used by <code>uvicorn app_server.main:app</code> and by in-process acceptance checks.</p>
+<p>Give every command a consistent failure contract. Failed commands write no standard output and one diagnostic line to standard error.</p>
+<p>Provide the application-root executable <code>./fxrates</code>, the <code>cli.main(argv: list[str] | None = None) -&gt; int</code> entry point, and the <code>cli.testing.cli_runner(*args)</code> helper. Feature stories own command behavior and its implementation.</p>
+<p>Convert an amount from one currency to another using ECB rates, with EUR as the base currency.</p>
+<p><code>GET /currencies</code> returns EUR as the base and the currencies with at least one stored rate, sorted in ascending order.</p>
+<p><code>./fxrates fetch</code> downloads <code>https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist.zip</code>, extracts <code>eurofxref-hist.csv</code>, and passes that file through the same validation, persistence, and reporting workflow as <code>./fxrates load</code>.</p>
+<p>A download failure returns status 1, writes no standard output, and emits a diagnostic to standard error. Automated tests replace the download with a stub and do not access the network.</p>
+<p>Run the supplied grader after all implementation and project test work is complete. The grader&#x27;s exit status is the release verification result.</p>
+<p><code>GET /health</code> provides a lightweight check that the API is responding.</p>
+<p>Return a currency&#x27;s publication points and min, max, and mean statistics over an optional inclusive date range.</p>
+<p><code>fxrates init</code> resets the rates store to an empty state. It takes no arguments, prints nothing on success, and uses the persistence boundary.</p>
+<p>Return all stored rates for the latest publication date, identifying the request as <code>latest</code>.</p>
+<p><code>./fxrates load &lt;csv&gt;</code> reads an ECB history file, validates the entire file before its first database write, then stores every rate other than <code>N/A</code>. A valid rate replaces the stored value for the same publication date and currency. On success, print CSV output with header <code>dates,rates</code> and one data row containing the number of dates with at least one rate and the number of rates stored from this file.</p>
+<p>Return the ECB rates for a requested date using the latest available publication on or before that date.</p>
+<p><code>GET /stats</code> reports the number of publication dates and stored rates, plus the earliest and latest publication dates. Empty date bounds are null. Values come from repository queries.</p>
+<p>Provide a project-owned automated suite that runs locally without network access and exercises the command-line and HTTP product behavior against a real temporary database.</p>
+<h2>Stack</h2>
+<p>Python</p>
+<h2>Setup and Running</h2>
+<p><strong>Before first run:</strong></p>
+<ul><li>Confirm the repository has the expected remote with <code>git remote -v</code>; add <code>origin</code> if the startup guard requires it.</li><li>Run <code>git status --short</code> and commit or intentionally stash local changes before deployment-oriented runs.</li></ul>
+<p><strong>Install dependencies:</strong></p>
+<pre><code>uv sync</code></pre>
+<h2>Verification</h2>
+<pre><code>bash bin/test.sh</code></pre>
+<h2>Next Steps</h2>
+<ul><li>Complete the first-run checks above.</li><li>Run <code>bash bin/test.sh</code> before making release or deployment changes.</li></ul></article>
+</main>
+</body>
+</html>

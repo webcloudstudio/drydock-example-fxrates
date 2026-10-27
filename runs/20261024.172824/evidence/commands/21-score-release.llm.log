@@ -1,4 +1,0 @@
---- llm 1/1 · score release · codex gpt-6-luna · 20261024.175929.316Z-7625643b ---
-2026-10-24 13:59:29 EDT  Calling CODEX/gpt-6-luna (score release)...
-  Completed CODEX/gpt-6-luna (score release)  rc=0
-    elapsed=1m 35.7s   cached=251,648 (88% hit)   uncached=32,795   out=3,648   tps=38.1

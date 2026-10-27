@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>build/FxRates/tests/test_rates_repository.py</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>build/FxRates/tests/test_rates_repository.py</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../build/FxRates/tests/test_rates_repository.py">Raw file</a></div></header>
+<article class="doc"><pre>&quot;&quot;&quot;Repository contract checks use the provisioned store and rollback fixture.&quot;&quot;&quot;
+
+from persistence.testing import db_session
+
+
+def test_upsert_replaces_rate_text() -&gt; None:
+    with db_session() as db:
+        saved = db.rates.upsert(date=&quot;2099-01-02&quot;, currency=&quot;QAA&quot;, rate=&quot;1.234&quot;)
+        replaced = db.rates.upsert(date=&quot;2099-01-02&quot;, currency=&quot;QAA&quot;, rate=&quot;1.235&quot;)
+        rows = db.rates.by_date(date=&quot;2099-01-02&quot;)
+        assert (saved.rate, replaced.rate) == (&quot;1.234&quot;, &quot;1.235&quot;)
+        assert [row.rate for row in rows if row.currency == &quot;QAA&quot;] == [&quot;1.235&quot;]
+
+
+def test_by_date_filters_and_sorts_currencies() -&gt; None:
+    with db_session() as db:
+        db.rates.upsert(date=&quot;2099-02-03&quot;, currency=&quot;QAZ&quot;, rate=&quot;2.50&quot;)
+        db.rates.upsert(date=&quot;2099-02-03&quot;, currency=&quot;QAB&quot;, rate=&quot;2.51&quot;)
+        rows = db.rates.by_date(date=&quot;2099-02-03&quot;)
+        assert [row.currency for row in rows if row.date == &quot;2099-02-03&quot;] == [&quot;QAB&quot;, &quot;QAZ&quot;]
+
+
+def test_publications_through_are_descending() -&gt; None:
+    with db_session() as db:
+        db.rates.upsert(date=&quot;2099-03-01&quot;, currency=&quot;QAC&quot;, rate=&quot;3&quot;)
+        db.rates.upsert(date=&quot;2099-03-02&quot;, currency=&quot;QAC&quot;, rate=&quot;4&quot;)
+        rows = db.rates.publications_through(requested_date=&quot;2099-03-02&quot;)
+        dates = list(dict.fromkeys(row.date for row in rows if row.date &gt;= &quot;2099-03-01&quot;))
+        assert dates[:2] == [&quot;2099-03-02&quot;, &quot;2099-03-01&quot;]
+
+
+def test_history_uses_inclusive_bounds_and_order() -&gt; None:
+    with db_session() as db:
+        for date, rate in ((&quot;2099-04-01&quot;, &quot;1&quot;), (&quot;2099-04-02&quot;, &quot;2&quot;),
+                           (&quot;2099-04-03&quot;, &quot;3&quot;), (&quot;2099-04-04&quot;, &quot;4&quot;)):
+            db.rates.upsert(date=date, currency=&quot;QAD&quot;, rate=rate)
+        rows = db.rates.history(currency=&quot;QAD&quot;, start_date=&quot;2099-04-02&quot;, end_date=&quot;2099-04-03&quot;)
+        assert [(row.date, row.rate) for row in rows] == [
+            (&quot;2099-04-02&quot;, &quot;2&quot;), (&quot;2099-04-03&quot;, &quot;3&quot;)
+        ]
+
+
+def test_list_includes_stored_published_text() -&gt; None:
+    with db_session() as db:
+        db.rates.upsert(date=&quot;2099-05-06&quot;, currency=&quot;QAE&quot;, rate=&quot;5.006&quot;)
+        assert any((row.date, row.currency, row.rate) == (&quot;2099-05-06&quot;, &quot;QAE&quot;, &quot;5.006&quot;)
+                   for row in db.rates.list())
+
+
+def test_init_clears_rates_through_repository() -&gt; None:
+    from services.rates import initialize
+
+    with db_session() as db:
+        db.rates.upsert(date=&quot;2099-11-12&quot;, currency=&quot;QAR&quot;, rate=&quot;1.25&quot;)
+        db.rates.upsert(date=&quot;2099-11-13&quot;, currency=&quot;QAS&quot;, rate=&quot;2.5&quot;)
+        initialize(db)
+        assert db.rates.list() == []
+</pre></article>
+</main>
+</body>
+</html>

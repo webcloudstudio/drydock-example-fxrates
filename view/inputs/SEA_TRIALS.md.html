@@ -28,8 +28,10 @@
 <p>Type: behavioral<br>Required: yes<br>Criterion: If a request has a malformed date or amount or lacks a required parameter, then the application shall respond 422; if it names an unknown currency, then it shall respond 404.<br>Testability: deterministic<br>Consequence: blocks<br>Verification: proof<br>Pattern: unwanted</p>
 <h2>st-008: Persistence goes through the shipped library</h2>
 <p>Type: technical<br>Required: yes<br>Criterion: The application shall reach the database only through the shipped persistence library, selected by DATABASE_URL, with rates stored as text and never as floating point.<br>Testability: judgeable<br>Consequence: scores<br>Verification: llm<br>Pattern: ubiquitous</p>
-<h2>st-009: Tests never use the network</h2>
-<p>Type: technical<br>Required: yes<br>Criterion: The application&#x27;s automated tests shall exercise fetch through a stubbed download and shall not open a network connection.<br>Testability: judgeable<br>Consequence: scores<br>Verification: llm<br>Pattern: ubiquitous</p></article>
+<h2>st-009: Tests run offline</h2>
+<p>Type: technical<br>Required: yes<br>Criterion: The application&#x27;s bin/test.sh shall exit zero when run with network access denied.<br>Testability: deterministic<br>Consequence: blocks<br>Verification: proof<br>Command: [&quot;unshare&quot;, &quot;-rn&quot;, &quot;sh&quot;, &quot;bin/test.sh&quot;]<br>Pattern: ubiquitous</p>
+<h2>st-010: Fetch is tested through a stubbed download</h2>
+<p>Type: technical<br>Required: yes<br>Criterion: The application&#x27;s automated tests shall run fetch against a stubbed download, covering a successful load and a failed download that exits 1.<br>Testability: judgeable<br>Consequence: blocks<br>Verification: llm<br>Pattern: ubiquitous</p></article>
 </main>
 </body>
 </html>

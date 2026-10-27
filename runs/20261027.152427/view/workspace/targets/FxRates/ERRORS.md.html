@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/ERRORS.md</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/ERRORS.md</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../workspace/targets/FxRates/ERRORS.md">Raw file</a></div></header>
+<article class="doc"><h1>BIG ERRORS — action required</h1>
+<ul><li>Command: <code>build</code></li><li>Phase: managed state verification</li><li>State: Error</li><li>Timestamp: 2026-10-27T17:11:26+00:00</li><li>Execution ID: 20261027.170854.522Z-c29cd1c4</li><li>Challenge Execution ID: -</li><li>Classification: managed-state violation</li><li>Evidence / logs: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261027.152427/workspace/targets/FxRates/evidence/block-16.md</li></ul>
+<h2>Diagnostic</h2>
+<p>Managed SQLite state changed during agent execution. Retained pre-call snapshot: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261027.152427/workspace/targets/FxRates/evidence/managed-state/sqlite-e5ov3t78/app.db. Review and restore through the persistence owner before continuing; no automatic overwrite or reprovisioning was performed.</p>
+<h2>Recovery</h2>
+<p>Review persistence evidence and restore the configured store through DATABASE story <code>database</code>. Preserve existing data and any retained managed-state snapshot; provisioning an empty store is not data recovery. Managed SQLite state changed during agent execution. Retained pre-call snapshot: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261027.152427/workspace/targets/FxRates/evidence/managed-state/sqlite-e5ov3t78/app.db. Review and restore through the persistence owner before continuing; no automatic overwrite or reprovisioning was performed. After the store is restored and verified, run: drydock build FxRates</p></article>
+</main>
+</body>
+</html>

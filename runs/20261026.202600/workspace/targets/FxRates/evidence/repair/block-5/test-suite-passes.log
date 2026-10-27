@@ -1,0 +1,38 @@
+timestamp=2026-10-26T16:58:08-0400
+arguments=
+working_directory=/mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.202600/build/FxRates
+F............................                                            [100%]
+=================================== FAILURES ===================================
+___________________ test_health_currencies_stats_and_latest ____________________
+
+client_with_rates = <starlette.testclient.TestClient object at 0x7d1ca2876ed0>
+
+    def test_health_currencies_stats_and_latest(client_with_rates):
+        client = client_with_rates
+        assert client.get("/health").json() == {"status": "ok"}
+        currencies = client.get("/currencies")
+        assert currencies.status_code == 200
+>       assert currencies.json()["currencies"] == ["QAX", "QAY"]
+E       AssertionError: assert ['QAX', 'QAY', 'USD'] == ['QAX', 'QAY']
+E         
+E         Left contains one more item: 'USD'
+E         Use -v to get more diff
+
+tests/test_api.py:34: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_api.py::test_health_currencies_stats_and_latest - Assertion...
+1 failed, 28 passed in 15.86s
+completed=2026-10-26T16:58:33-0400 status=1
+
+--- stderr ---
+--- drydock: progress ---
+cases: pass=28 fail=1 total=29 from=result.stdout
+--- drydock: end progress ---
+--- drydock: values at failure ---
+  result = CompletedProcess(args=['sh', 'bin/test.sh'], returncode=1, stdout='timestamp=2026-10-26T16:58:08-0400\narguments=\nworking_directory=/mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.202600/build/FxRates\nF............................                                            [100%]\n=================================== FAILURES ===================================\n___________________ … (+946 chars)
+--- drydock: end values ---
+Traceback (most recent call last):
+  File "test-suite-passes.py", line 10, in <module>
+    assert result.returncode == 0
+           ^^^^^^^^^^^^^^^^^^^^^^
+AssertionError

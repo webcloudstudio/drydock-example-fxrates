@@ -1,2 +1,0 @@
-error: build failed for FxRates: 13 step(s)
-  ingest_001 — closed/failed: programmatic acceptance failed: history-route-empty-range, date-resolves-to-effective-publication, latest-rates-route-works, euro-conversion-uses-implicit-unit-rate

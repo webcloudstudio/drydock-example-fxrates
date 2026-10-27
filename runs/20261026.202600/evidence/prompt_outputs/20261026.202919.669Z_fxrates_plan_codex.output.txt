@@ -1,0 +1,172 @@
+=== BEGIN ARTIFACT FEATURE-CLI-Errors.md ===
+# FEATURE: CLI Errors
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | Defines command-line usage and operational error behavior for fxrates. |
+| Depends On  | FEATURE-CLI.md |
+| Provides    | CLI usage and error exit behavior |
+| Consumes    | ./fxrates |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Give every command a consistent failure contract. Failed commands write no standard output and one diagnostic line to standard error.
+
+## Behavior
+
+- Unknown commands, incorrect argument counts, and a non-integer `serve --port` value exit with status 2.
+- A file that cannot be read exits with status 1.
+- A CSV rejected by the load validator exits with status 3.
+- Keep failure messages on standard error; their wording is not part of the contract.
+
+## Programmatic Acceptance
+
+=== AC cli-usage-errors ===
+Intent: Usage errors return status 2 and produce no standard output.
+
+from cli.testing import cli_runner
+
+for args in (("frobnicate",), ("load",), ("serve", "--port", "notaport")):
+    code, stdout, stderr = cli_runner(*args)
+    assert code == 2
+    assert stdout == ""
+    assert stderr
+=== END AC cli-usage-errors ===
+
+=== AC cli-operational-errors ===
+Intent: File read failures return status 1 and rejected CSV files return status 3.
+
+from cli.testing import cli_runner
+
+missing_path = "sources/absent-for-cli-error-check.csv"
+code, stdout, stderr = cli_runner("load", missing_path)
+assert code == 1
+assert stdout == ""
+assert stderr
+
+code, stdout, stderr = cli_runner("load", "sources/eurofxref-hist_bad.csv")
+assert code == 3
+assert stdout == ""
+assert stderr
+=== END AC cli-operational-errors ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Keep diagnostics on standard error.
+- Do not emit standard output for failed commands.
+- Preserve the distinct exit statuses for usage, operational, and rejected-file failures.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-Tests.md ===
+# FEATURE: Offline Automated Tests
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | Defines the offline pytest suite and its POSIX test launcher. |
+| Depends On  | FEATURE-CLI.md, FEATURE-AppServer.md, FEATURE-Load.md, FEATURE-Fetch.md, FEATURE-Init.md, FEATURE-Health.md, FEATURE-Stats.md, FEATURE-Currencies.md, FEATURE-Rates.md, FEATURE-LatestRates.md, FEATURE-Convert.md, FEATURE-History.md, FEATURE-CLI-Errors.md |
+| Provides    | bin/test.sh |
+| Consumes    | ./fxrates, cli.testing.cli_runner(), app_server.testing.web_client(), rates repository operations |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Provide a project-owned automated suite that runs locally without network access and exercises the command-line and HTTP product behavior against a real temporary database.
+
+## Behavior
+
+- `bin/test.sh` is a POSIX-compatible launcher, runs pytest from the application root, and exits zero only when the full suite passes.
+- The suite covers each command, CSV validation and atomicity rules, each API endpoint, effective-date lookup, decimal rounding, and error statuses.
+- Fetch tests stub the download operation. Include both a successful archive download and load and an operational download failure returning status 1.
+- Use `cli.testing.cli_runner()` for in-process CLI behavior and `app_server.testing.web_client()` for API behavior.
+- Keep tests deterministic and offline; do not make network calls.
+
+## Programmatic Acceptance
+
+=== AC test-suite-passes ===
+Intent: The project's test launcher completes successfully.
+Requires: executable=sh; scope=test
+
+import subprocess
+
+result = subprocess.run(
+    ["sh", "bin/test.sh"],
+    capture_output=True,
+    text=True,
+)
+print(result.stdout)
+print(result.stderr)
+assert result.returncode == 0
+=== END AC test-suite-passes ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Keep the suite offline and stub fetch downloads.
+- Run the suite from the application root through the POSIX-compatible launcher.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-Grader.md ===
+# FEATURE: Complete Grader Verification
+
+| Field       | Value |
+|-------------|-------|
+| Version     | 20261026 V1 |
+| Description | Defines the terminal verification of the supplied FxRates grader. |
+| Depends On  | ARCHITECTURE.md, DATABASE.md, FEATURE-AppServer.md, FEATURE-CLI.md, FEATURE-Load.md, FEATURE-Fetch.md, FEATURE-Init.md, FEATURE-Health.md, FEATURE-Stats.md, FEATURE-Currencies.md, FEATURE-Rates.md, FEATURE-LatestRates.md, FEATURE-Convert.md, FEATURE-History.md, FEATURE-CLI-Errors.md, FEATURE-Tests.md |
+| Provides    | complete supplied grader verification |
+| Consumes    | sources/run.sh |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Run the supplied grader after all implementation and project test work is complete. The grader's exit status is the release verification result.
+
+## Verification
+
+- Invoke the staged `sources/run.sh` from the application root without modifying or filtering it.
+- Treat its exit status as the sole acceptance verdict.
+
+## Programmatic Acceptance
+
+=== AC grader-complete ===
+Intent: The complete supplied grader passes.
+Suite: full
+
+import subprocess
+
+result = subprocess.run(
+    ["sh", "sources/run.sh"],
+    capture_output=True,
+    text=True,
+)
+print(result.stdout)
+print(result.stderr)
+assert result.returncode == 0
+=== END AC grader-complete ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Keep `sources/run.sh` and all supplied scoring assets unchanged.
+- Run the full grader only as terminal project verification.
+=== END ARTIFACT ===

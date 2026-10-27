@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-Currencies.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-Currencies.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-Currencies.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Currencies</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261027 V1</td></tr><tr><td>Description</td><td><code>GET /currencies</code> lists the base currency and every currency with a stored rate, ascending.</td></tr><tr><td>Depends On</td><td>FEATURE-ServeHealth.md, FEATURE-LoadStore.md</td></tr><tr><td>Provides</td><td>GET /currencies</td></tr><tr><td>Consumes</td><td>rates.list_currencies, app_server.create_app</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Tell a caller which currency codes the service can quote.</p>
+<h2>Route</h2>
+<p><code>GET /currencies</code> returns status 200 with <code>{&quot;base&quot;: &quot;EUR&quot;, &quot;currencies&quot;: [&lt;code&gt;, ...]}</code>.</p>
+<ul><li><code>currencies</code> holds each currency with at least one stored rate, once, in ascending order.</li><li>EUR is the base and is not listed among the currencies.</li><li>When no rate is stored, <code>currencies</code> is the empty list and <code>base</code> is still <code>EUR</code>.</li></ul>
+<p>The service calls <code>rates.list_currencies</code> without <code>since</code> and removes duplicates.</p>
+<h2>Database Interface</h2>
+<ul><li><code>FEATURE-RATE-005</code> — read: list stored currency codes - supplies: — - returns: <code>currency</code></li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC currencies-lists-stored ===<br>Intent: The currency list equals the distinct stored codes read back through the repository, ascending, includes the seeded codes, and omits EUR.<br>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx2; scope=test</p>
+<p>from app_server.testing import web_client from persistence.testing import db_session</p>
+<p>d = &quot;1900-11-01&quot; seeded = [&quot;ZZC&quot;, &quot;ZZA&quot;, &quot;ZZB&quot;]</p>
+<p>with db_session() as db: for i, code in enumerate(seeded): db.rates.replace_rate(date=d, currency=code, rate=str(i + 1)) expected = sorted({r.currency for r in db.rates.list_currencies()}) client = web_client() response = client.get(&quot;/currencies&quot;) assert response.status_code == 200 body = response.json() assert body[&quot;base&quot;] == &quot;EUR&quot; assert body[&quot;currencies&quot;] == expected assert body[&quot;currencies&quot;] == sorted(set(body[&quot;currencies&quot;])) for code in seeded: assert code in body[&quot;currencies&quot;] assert &quot;EUR&quot; not in body[&quot;currencies&quot;] === END AC currencies-lists-stored ===</p>
+<p>=== AC currencies-body-shape ===<br>Intent: The body carries exactly base and currencies, currencies is a list, and it is empty exactly when no rate is stored.<br>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx2; scope=test</p>
+<p>from app_server.testing import web_client from persistence.testing import db_session</p>
+<p>with db_session() as db: stored = db.rates.list_currencies() client = web_client() response = client.get(&quot;/currencies&quot;) assert response.status_code == 200 body = response.json() assert set(body) == {&quot;base&quot;, &quot;currencies&quot;} assert isinstance(body[&quot;currencies&quot;], list) if not stored: assert body[&quot;currencies&quot;] == [] else: assert len(body[&quot;currencies&quot;]) &gt;= 1 === END AC currencies-body-shape ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>No currency code is hardcoded; the list comes from a query.</li><li>The route reaches the store only through the generated persistence package.</li></ul></article>
+</main>
+</body>
+</html>

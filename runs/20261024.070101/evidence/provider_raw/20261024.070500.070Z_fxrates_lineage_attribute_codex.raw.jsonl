@@ -1,4 +1,0 @@
-{"type":"thread.started","thread_id":"01a16cba-22ca-7942-82e5-4dbb5b5cdfda"}
-{"type":"turn.started"}
-{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"<unattached story=\"architecture\"/>\n<unattached story=\"database\"/>\n<unattached story=\"cli_init\"/>\n<unattached story=\"cli_load\"/>\n<unattached story=\"api_currencies\"/>\n<unattached story=\"api_health_stats\"/>\n<unattached story=\"api_rates\"/>\n<unattached story=\"api_history\"/>\n<unattached story=\"api_convert\"/>\n<unattached story=\"cli_serve\"/>\n<unattached story=\"cli_fetch\"/>\n<unattached story=\"cli_errors\"/>\n<unattached story=\"api_validation\"/>\n<unattached story=\"verification\"/>"}}
-{"type":"turn.completed","usage":{"input_tokens":14448,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":215,"reasoning_output_tokens":97}}

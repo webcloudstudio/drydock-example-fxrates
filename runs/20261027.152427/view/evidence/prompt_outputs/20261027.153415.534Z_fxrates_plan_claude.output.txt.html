@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/prompt_outputs/20261027.153415.534Z_fxrates_plan_claude.output.txt</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/prompt_outputs/20261027.153415.534Z_fxrates_plan_claude.output.txt</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/prompt_outputs/20261027.153415.534Z_fxrates_plan_claude.output.txt">Raw file</a></div></header>
+<article class="doc"><pre>=== BEGIN ARTIFACT FEATURE-RatesLatest.md ===
+# FEATURE: Rates Latest
+
+| Field | Value |
+|-------|-------|
+| Version | 20261027 V1 |
+| Description | GET /rates/latest returns the rates of the latest publication date with requested set to &quot;latest&quot;. |
+| Depends On | FEATURE-RatesByDate.md, DATABASE.md |
+| Provides | GET /rates/latest |
+| Consumes | GET /rates/{date}, rates repository operations |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Serve the most recent publication without the caller knowing its date.
+
+## Behavior
+
+- `GET /rates/latest` finds the latest publication date overall with `rates.list_on_or_before` called without `as_of`; the first row is the latest date.
+- The 200 body has the same shape as `/rates/{date}`: `date`, `requested`, `base` &quot;EUR&quot;, and `rates` mapping each stored currency to its stored rate text. `requested` is the string `&quot;latest&quot;`.
+- When nothing is stored the response is 404.
+- The route is registered before `/rates/{date}` so `latest` is never parsed as a malformed date (which would yield 422).
+
+## Database Interface
+
+- None — persistence is owned by DATABASE.md.
+
+## Programmatic Acceptance
+
+=== AC latest-body ===
+Intent: With a seeded publication later than any real one, /rates/latest returns that date, requested &quot;latest&quot;, base EUR, and exactly the seeded rate texts.
+Requires: executable=python3; scope=test
+Requires: python-package=fastapi; scope=test
+Requires: python-package=httpx2; scope=test
+
+from persistence.testing import db_session
+from app_server.testing import web_client
+
+older = &quot;2999-01-01&quot;
+newest = &quot;2999-01-05&quot;
+rates = {&quot;ZZA&quot;: &quot;1.2500&quot;, &quot;ZZB&quot;: &quot;0.943&quot;}
+
+with db_session() as db:
+    db.rates.replace_rate(date=older, currency=&quot;ZZA&quot;, rate=&quot;9.9&quot;)
+    for code, text in rates.items():
+        db.rates.replace_rate(date=newest, currency=code, rate=text)
+    client = web_client()
+    response = client.get(&quot;/rates/latest&quot;)
+    assert response.status_code == 200
+    body = response.json()
+    assert body[&quot;date&quot;] == newest
+    assert body[&quot;requested&quot;] == &quot;latest&quot;
+    assert body[&quot;base&quot;] == &quot;EUR&quot;
+    assert body[&quot;rates&quot;] == rates
+=== END AC latest-body ===
+
+=== AC latest-not-parsed-as-date ===
+Intent: The literal path segment latest is routed to the latest handler and never rejected as a malformed date (422).
+Requires: executable=python3; scope=test
+Requires: python-package=fastapi; scope=test
+Requires: python-package=httpx2; scope=test
+
+from persistence.testing import db_session
+from app_server.testing import web_client
+
+d = &quot;2999-02-01&quot;
+
+with db_session() as db:
+    db.rates.replace_rate(date=d, currency=&quot;ZZA&quot;, rate=&quot;3&quot;)
+    client = web_client()
+    response = client.get(&quot;/rates/latest&quot;)
+    assert response.status_code == 200
+    bad = client.get(&quot;/rates/not-a-date&quot;)
+    assert bad.status_code == 422
+=== END AC latest-not-parsed-as-date ===
+
+=== AC latest-matches-by-date ===
+Intent: /rates/latest and /rates/{date} for the latest date return identical rates and date, differing only in requested.
+Requires: executable=python3; scope=test
+Requires: python-package=fastapi; scope=test
+Requires: python-package=httpx2; scope=test
+
+from persistence.testing import db_session
+from app_server.testing import web_client
+
+d = &quot;2999-03-01&quot;
+
+with db_session() as db:
+    db.rates.replace_rate(date=d, currency=&quot;ZZA&quot;, rate=&quot;4.5&quot;)
+    db.rates.replace_rate(date=d, currency=&quot;ZZB&quot;, rate=&quot;5.25&quot;)
+    client = web_client()
+    latest = client.get(&quot;/rates/latest&quot;)
+    assert latest.status_code == 200
+    dated = client.get(&quot;/rates/&quot; + d)
+    assert dated.status_code == 200
+    a = latest.json()
+    b = dated.json()
+    assert a[&quot;date&quot;] == b[&quot;date&quot;]
+    assert a[&quot;rates&quot;] == b[&quot;rates&quot;]
+    assert a[&quot;requested&quot;] == &quot;latest&quot;
+    assert b[&quot;requested&quot;] == d
+=== END AC latest-matches-by-date ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Rates are returned as the stored text, never as floating point.
+- No rate, date, or count is hardcoded; every value comes from a query.
+- `/rates/latest` must be registered before `/rates/{date}`.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-LoadVisibility.md ===
+# FEATURE: Load Visibility
+
+| Field | Value |
+|-------|-------|
+| Version | 20261027 V1 |
+| Description | A completed load is visible to the next API request, and a rejected load changes nothing a request can see. |
+| Depends On | FEATURE-LoadStore.md, FEATURE-Stats.md, DATABASE.md |
+| Provides | load visibility contract |
+| Consumes | fxrates load, GET /stats |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Loads happen while the server runs. This integration story proves the API reads committed state on every request and that a load is applied as one transaction.
+
+## Behavior
+
+- The API opens its store per request and caches no rows or connection state that could hide a later commit.
+- `load` validates the whole file, then writes inside one transaction, so a reader sees the rates from before the load or from after it, never part of it.
+- A rejected load (exit 3) leaves `/stats` unchanged.
+
+## Database Interface
+
+- None — persistence is owned by DATABASE.md.
+
+## Programmatic Acceptance
+
+=== AC load-visible-to-stats ===
+Intent: After a successful load of one new date with two currencies, /stats reports one more date and two more rates than before, and last equals the loaded date.
+Requires: executable=python3; scope=test
+Requires: python-package=fastapi; scope=test
+Requires: python-package=httpx2; scope=test
+
+import csv
+import os
+import tempfile
+from cli.testing import cli_runner
+from app_server.testing import web_client
+
+d = &quot;2999-12-30&quot;
+rows = [[&quot;Date&quot;, &quot;ZZA&quot;, &quot;ZZB&quot;, &quot;&quot;], [d, &quot;1.5&quot;, &quot;2.25&quot;, &quot;&quot;]]
+
+client = web_client()
+before = client.get(&quot;/stats&quot;)
+assert before.status_code == 200
+b = before.json()
+
+with tempfile.TemporaryDirectory() as tmp:
+    path = os.path.join(tmp, &quot;load.csv&quot;)
+    with open(path, &quot;w&quot;, newline=&quot;&quot;) as handle:
+        csv.writer(handle, lineterminator=&quot;\n&quot;).writerows(rows)
+    code, out, err = cli_runner(&quot;load&quot;, path)
+    assert code == 0
+
+after = client.get(&quot;/stats&quot;)
+assert after.status_code == 200
+a = after.json()
+assert a[&quot;dates&quot;] == b[&quot;dates&quot;] + 1
+assert a[&quot;rates&quot;] == b[&quot;rates&quot;] + 2
+assert a[&quot;last&quot;] == d
+=== END AC load-visible-to-stats ===
+
+=== AC rejected-load-invisible ===
+Intent: A file whose second row holds an invalid value is rejected with exit 3 and /stats is identical before and after.
+Requires: executable=python3; scope=test
+Requires: python-package=fastapi; scope=test
+Requires: python-package=httpx2; scope=test
+
+import csv
+import os
+import tempfile
+from cli.testing import cli_runner
+from app_server.testing import web_client
+
+rows = [
+    [&quot;Date&quot;, &quot;ZZA&quot;, &quot;&quot;],
+    [&quot;2999-11-02&quot;, &quot;1.5&quot;, &quot;&quot;],
+    [&quot;2999-11-01&quot;, &quot;1.5x&quot;, &quot;&quot;],
+]
+
+client = web_client()
+before = client.get(&quot;/stats&quot;)
+assert before.status_code == 200
+
+with tempfile.TemporaryDirectory() as tmp:
+    path = os.path.join(tmp, &quot;bad.csv&quot;)
+    with open(path, &quot;w&quot;, newline=&quot;&quot;) as handle:
+        csv.writer(handle, lineterminator=&quot;\n&quot;).writerows(rows)
+    code, out, err = cli_runner(&quot;load&quot;, path)
+    assert code == 3
+    assert out == &quot;&quot;
+
+after = client.get(&quot;/stats&quot;)
+assert after.status_code == 200
+assert after.json() == before.json()
+=== END AC rejected-load-invisible ===
+
+=== AC reload-leaves-stats ===
+Intent: Loading the same file twice leaves /stats unchanged by the second load, because replaced rows are not added.
+Requires: executable=python3; scope=test
+Requires: python-package=fastapi; scope=test
+Requires: python-package=httpx2; scope=test
+
+import csv
+import os
+import tempfile
+from cli.testing import cli_runner
+from app_server.testing import web_client
+
+rows = [[&quot;Date&quot;, &quot;ZZA&quot;, &quot;&quot;], [&quot;2999-10-01&quot;, &quot;7.5&quot;, &quot;&quot;]]
+
+client = web_client()
+with tempfile.TemporaryDirectory() as tmp:
+    path = os.path.join(tmp, &quot;again.csv&quot;)
+    with open(path, &quot;w&quot;, newline=&quot;&quot;) as handle:
+        csv.writer(handle, lineterminator=&quot;\n&quot;).writerows(rows)
+    code, out, err = cli_runner(&quot;load&quot;, path)
+    assert code == 0
+    first = client.get(&quot;/stats&quot;)
+    assert first.status_code == 200
+    code, out, err = cli_runner(&quot;load&quot;, path)
+    assert code == 0
+    second = client.get(&quot;/stats&quot;)
+    assert second.status_code == 200
+    assert second.json() == first.json()
+=== END AC reload-leaves-stats ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- A load never leaves a partly applied state visible to a request.
+- The API never caches stored rows between requests.
+- A rejected file writes nothing.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-CommandHelp.md ===
+# FEATURE: Command Help
+
+| Field | Value |
+|-------|-------|
+| Version | 20261027 V1 |
+| Description | Each fxrates command accepts --help, prints usage and a one-line summary to standard output, and exits 0. |
+| Depends On | FEATURE-InitCommand.md, FEATURE-LoadStore.md, FEATURE-Fetch.md, FEATURE-ServeHealth.md |
+| Provides | fxrates --help |
+| Consumes | fxrates init, fxrates load, fxrates fetch, fxrates serve |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Document every command&#x27;s usage from the command line itself.
+
+## Behavior
+
+- `fxrates &lt;command&gt; --help` for `init`, `load`, `fetch`, and `serve` prints a usage line and a one-line summary to standard output and exits 0.
+- Help is handled before the database is opened or a socket is bound, and before argument-count validation, so `load --help` needs no file argument.
+- Nothing is written to standard error.
+
+## Programmatic Acceptance
+
+=== AC help-per-command ===
+Intent: Each of the four commands exits 0 with non-empty standard output and empty standard error when given --help, including load without its file argument.
+Requires: executable=python3; scope=test
+
+from cli.testing import cli_runner
+
+for command in [&quot;init&quot;, &quot;load&quot;, &quot;fetch&quot;, &quot;serve&quot;]:
+    code, out, err = cli_runner(command, &quot;--help&quot;)
+    assert code == 0, command
+    assert out.strip() != &quot;&quot;, command
+    assert err == &quot;&quot;, command
+    assert command in out, command
+=== END AC help-per-command ===
+
+=== AC help-has-usage-and-summary ===
+Intent: Help output has at least two non-blank lines: a usage line and a one-line summary.
+Requires: executable=python3; scope=test
+
+from cli.testing import cli_runner
+
+for command in [&quot;init&quot;, &quot;load&quot;, &quot;fetch&quot;, &quot;serve&quot;]:
+    code, out, err = cli_runner(command, &quot;--help&quot;)
+    assert code == 0, command
+    lines = [line for line in out.splitlines() if line.strip()]
+    assert len(lines) &gt;= 2, command
+=== END AC help-has-usage-and-summary ===
+
+=== AC help-does-not-touch-rates ===
+Intent: init --help must not reset the store: a seeded rate is still there afterwards.
+Requires: executable=python3; scope=test
+
+from persistence.testing import db_session
+from cli.testing import cli_runner
+
+d = &quot;2999-09-01&quot;
+c = &quot;ZZA&quot;
+text = &quot;6.5&quot;
+
+with db_session() as db:
+    db.rates.replace_rate(date=d, currency=c, rate=text)
+    code, out, err = cli_runner(&quot;init&quot;, &quot;--help&quot;)
+    assert code == 0
+    rows = db.rates.list_currency_history(currency=c, start_date=d, end_date=d)
+    assert [r.rate for r in rows] == [text]
+=== END AC help-does-not-touch-rates ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- `--help` never opens the database or binds a socket.
+- Diagnostics, if any, go to standard error and are never compared.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-Convert.md ===
+# FEATURE: Convert
+
+| Field | Value |
+|-------|-------|
+| Version | 20261027 V1 |
+| Description | GET /convert converts an amount between two currencies with exact decimal arithmetic rounded half to even. |
+| Depends On | FEATURE-RatesByDate.md, DATABASE.md |
+| Provides | GET /convert |
+| Consumes | fxrates_app.rates.effective_date, rates repository operations |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Answer &quot;how much of currency B is this amount of currency A&quot; on a date, from stored ECB rates.
+
+## Behavior
+
+- Query parameters: `from`, `to`, `amount` matching `[0-9]+(\.[0-9]+)?`, and optional `date`.
+- Effective date: with `date`, `effective_date(date)`; without it, the latest publication date.
+- EUR has the implicit rate 1. Any other currency&#x27;s rate is read from the effective date&#x27;s rates.
+- `rate = rate(to) / rate(from)` computed with `decimal`, rounded half to even to six decimals, returned as a string with exactly six decimals.
+- `result = amount * rate(to) / rate(from)` computed exactly from the stored rates, not from the rounded `rate`, rounded half to even to two decimals, returned as a string with exactly two decimals.
+- `amount` is echoed as given, as a string. The body is `{date, from, to, amount, rate, result}`.
+- Same `from` and `to` gives rate `1.000000` and the amount rounded half to even to two decimals. Amount `0` gives `0.00`.
+- No floating point is used anywhere.
+
+## Database Interface
+
+- None — persistence is owned by DATABASE.md.
+
+## Programmatic Acceptance
+
+=== AC convert-two-currencies ===
+Intent: Converting ZZA to ZZB on a seeded date returns the effective date, a six-decimal rate and a two-decimal result derived with Decimal from the seeded rates, rounded half to even.
+Requires: executable=python3; scope=test
+Requires: python-package=fastapi; scope=test
+Requires: python-package=httpx2; scope=test
+
+from decimal import Decimal, ROUND_HALF_EVEN
+from persistence.testing import db_session
+from app_server.testing import web_client
+
+d = &quot;2999-01-01&quot;
+rate_from = &quot;1.0298&quot;
+rate_to = &quot;0.84453&quot;
+amount = &quot;100&quot;
+
+with db_session() as db:
+    db.rates.replace_rate(date=d, currency=&quot;ZZA&quot;, rate=rate_from)
+    db.rates.replace_rate(date=d, currency=&quot;ZZB&quot;, rate=rate_to)
+    client = web_client()
+    response = client.get(&quot;/convert&quot;, params={&quot;from&quot;: &quot;ZZA&quot;, &quot;to&quot;: &quot;ZZB&quot;, &quot;amount&quot;: amount, &quot;date&quot;: d})
+    assert response.status_code == 200
+    body = response.json()
+    expected_rate = (Decimal(rate_to) / Decimal(rate_from)).quantize(Decimal(&quot;0.000001&quot;), rounding=ROUND_HALF_EVEN)
+    expected_result = (Decimal(amount) * Decimal(rate_to) / Decimal(rate_from)).quantize(Decimal(&quot;0.01&quot;), rounding=ROUND_HALF_EVEN)
+    assert body[&quot;date&quot;] == d
+    assert body[&quot;from&quot;] == &quot;ZZA&quot;
+    assert body[&quot;to&quot;] == &quot;ZZB&quot;
+    assert body[&quot;amount&quot;] == amount
+    assert body[&quot;rate&quot;] == f&quot;{expected_rate:.6f}&quot;
+    assert body[&quot;result&quot;] == f&quot;{expected_result:.2f}&quot;
+=== END AC convert-two-currencies ===
+
+=== AC convert-eur-implicit-rate ===
+Intent: EUR to a stored currency uses rate 1 for EUR, and a stored currency to EUR divides by the stored rate; the effective date is the latest publication on or before a weekend-style gap date.
+Requires: executable=python3; scope=test
+Requires: python-package=fastapi; scope=test
+Requires: python-package=httpx2; scope=test
+
+from decimal import Decimal, ROUND_HALF_EVEN
+from persistence.testing import db_session
+from app_server.testing import web_client
+
+published = &quot;2999-02-01&quot;
+requested = &quot;2999-02-03&quot;
+rate_zza = &quot;161.77&quot;
+amount = &quot;250.25&quot;
+
+with db_session() as db:
+    db.rates.replace_rate(date=published, currency=&quot;ZZA&quot;, rate=rate_zza)
+    client = web_client()
+    out = client.get(&quot;/convert&quot;, params={&quot;from&quot;: &quot;EUR&quot;, &quot;to&quot;: &quot;ZZA&quot;, &quot;amount&quot;: amount, &quot;date&quot;: requested})
+    assert out.status_code == 200
+    body = out.json()
+    expected_rate = (Decimal(rate_zza) / Decimal(1)).quantize(Decimal(&quot;0.000001&quot;), rounding=ROUND_HALF_EVEN)
+    expected_result = (Decimal(amount) * Decimal(rate_zza)).quantize(Decimal(&quot;0.01&quot;), rounding=ROUND_HALF_EVEN)
+    assert body[&quot;date&quot;] == published
+    assert body[&quot;rate&quot;] == f&quot;{expected_rate:.6f}&quot;
+    assert body[&quot;result&quot;] == f&quot;{expected_result:.2f}&quot;
+    back = client.get(&quot;/convert&quot;, params={&quot;from&quot;: &quot;ZZA&quot;, &quot;to&quot;: &quot;EUR&quot;, &quot;amount&quot;: &quot;1000&quot;, &quot;date&quot;: requested})
+    assert back.status_code == 200
+    back_rate = (Decimal(1) / Decimal(rate_zza)).quantize(Decimal(&quot;0.000001&quot;), rounding=ROUND_HALF_EVEN)
+    back_result = (Decimal(&quot;1000&quot;) / Decimal(rate_zza)).quantize(Decimal(&quot;0.01&quot;), rounding=ROUND_HALF_EVEN)
+    assert back.json()[&quot;rate&quot;] == f&quot;{back_rate:.6f}&quot;
+    assert back.json()[&quot;result&quot;] == f&quot;{back_result:.2f}&quot;
+=== END AC convert-eur-implicit-rate ===
+
+=== AC convert-default-latest ===
+Intent: Without date the latest publication date is used: a seeded date later than any real one is the effective date.
+Requires: executable=python3; scope=test
+Requires: python-package=fastapi; scope=test
+Requires: python-package=httpx2; scope=test
+
+from persistence.testing import db_session
+from app_server.testing import web_client
+
+older = &quot;2999-03-01&quot;
+newest = &quot;2999-03-09&quot;
+
+with db_session() as db:
+    db.rates.replace_rate(date=older, currency=&quot;ZZA&quot;, rate=&quot;2&quot;)
+    db.rates.replace_rate(date=older, currency=&quot;ZZB&quot;, rate=&quot;3&quot;)
+    db.rates.replace_rate(date=newest, currency=&quot;ZZA&quot;, rate=&quot;2&quot;)
+    db.rates.replace_rate(date=newest, currency=&quot;ZZB&quot;, rate=&quot;5&quot;)
+    client = web_client()
+    response = client.get(&quot;/convert&quot;, params={&quot;from&quot;: &quot;ZZA&quot;, &quot;to&quot;: &quot;ZZB&quot;, &quot;amount&quot;: &quot;2.00&quot;})
+    assert response.status_code == 200
+    assert response.json()[&quot;date&quot;] == newest
+=== END AC convert-default-latest ===
+
+=== AC convert-same-currency-and-zero ===
+Intent: Same from and to gives rate 1.000000 and the amount rounded half to even (derived with Decimal from a tie amount); amount 0 gives 0.00.
+Requires: executable=python3; scope=test
+Requires: python-package=fastapi; scope=test
+Requires: python-package=httpx2; scope=test
+
+from decimal import Decimal, ROUND_HALF_EVEN
+from persistence.testing import db_session
+from app_server.testing import web_client
+
+d = &quot;2999-04-01&quot;
+tie = &quot;0.125&quot;
+zero = &quot;0&quot;
+
+with db_session() as db:
+    db.rates.replace_rate(date=d, currency=&quot;ZZA&quot;, rate=&quot;1.5&quot;)
+    client = web_client()
+    same = client.get(&quot;/convert&quot;, params={&quot;from&quot;: &quot;ZZA&quot;, &quot;to&quot;: &quot;ZZA&quot;, &quot;amount&quot;: tie, &quot;date&quot;: d})
+    assert same.status_code == 200
+    expected = (Decimal(tie) * Decimal(&quot;1.5&quot;) / Decimal(&quot;1.5&quot;)).quantize(Decimal(&quot;0.01&quot;), rounding=ROUND_HALF_EVEN)
+    assert same.json()[&quot;rate&quot;] == f&quot;{Decimal(1):.6f}&quot;
+    assert same.json()[&quot;result&quot;] == f&quot;{expected:.2f}&quot;
+    eur = client.get(&quot;/convert&quot;, params={&quot;from&quot;: &quot;EUR&quot;, &quot;to&quot;: &quot;EUR&quot;, &quot;amount&quot;: tie, &quot;date&quot;: d})
+    assert eur.status_code == 200
+    assert eur.json()[&quot;rate&quot;] == f&quot;{Decimal(1):.6f}&quot;
+    assert eur.json()[&quot;result&quot;] == f&quot;{expected:.2f}&quot;
+    zero_response = client.get(&quot;/convert&quot;, params={&quot;from&quot;: &quot;ZZA&quot;, &quot;to&quot;: &quot;EUR&quot;, &quot;amount&quot;: zero, &quot;date&quot;: d})
+    assert zero_response.status_code == 200
+    assert zero_response.json()[&quot;result&quot;] == f&quot;{Decimal(0):.2f}&quot;
+=== END AC convert-same-currency-and-zero ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- All arithmetic uses `decimal`; no floating point.
+- `result` is computed from the stored rates, never from the rounded `rate`.
+- Rounding is half to even; `rate` has exactly six decimals and `result` exactly two.
+- No rate, date, or value is hardcoded in application code.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT FEATURE-ConvertErrors.md ===
+# FEATURE: Convert Errors
+
+| Field | Value |
+|-------|-------|
+| Version | 20261027 V1 |
+| Description | GET /convert refuses unknown currencies and missing publications with 404 and bad or missing inputs with 422. |
+| Depends On | FEATURE-Convert.md |
+| Provides | convert error contract |
+| Consumes | GET /convert |
+
+## Questions
+
+- None.
+
+## Purpose
+
+Fix the failure statuses of `/convert`.
+
+## Behavior
+
+- 404: a currency other than EUR with no rate on the effective date; no publication on or before the requested date; no publication stored at all.
+- 422 (FastAPI request validation): missing `from`, `to`, or `amount`; `amount` not matching `[0-9]+(\.[0-9]+)?`; a malformed or impossible `date`.
+- Error-response bodies are not part of the contract.
+
+## Programmatic Acceptance
+
+=== AC convert-unknown-currency-404 ===
+Intent: A currency with no stored rate on the effective date answers 404, whichever side it is on.
+Requires: executable=python3; scope=test
+Requires: python-package=fastapi; scope=test
+Requires: python-package=httpx2; scope=test
+
+from persistence.testing import db_session
+from app_server.testing import web_client
+
+d = &quot;2999-05-01&quot;
+
+with db_session() as db:
+    db.rates.replace_rate(date=d, currency=&quot;ZZA&quot;, rate=&quot;1.5&quot;)
+    client = web_client()
+    to_unknown = client.get(&quot;/convert&quot;, params={&quot;from&quot;: &quot;ZZA&quot;, &quot;to&quot;: &quot;ZZX&quot;, &quot;amount&quot;: &quot;1&quot;, &quot;date&quot;: d})
+    assert to_unknown.status_code == 404
+    from_unknown = client.get(&quot;/convert&quot;, params={&quot;from&quot;: &quot;ZZX&quot;, &quot;to&quot;: &quot;ZZA&quot;, &quot;amount&quot;: &quot;1&quot;, &quot;date&quot;: d})
+    assert from_unknown.status_code == 404
+=== END AC convert-unknown-currency-404 ===
+
+=== AC convert-no-publication-404 ===
+Intent: A date earlier than every publication answers 404 even for stored currencies.
+Requires: executable=python3; scope=test
+Requires: python-package=fastapi; scope=test
+Requires: python-package=httpx2; scope=test
+
+from persistence.testing import db_session
+from app_server.testing import web_client
+
+with db_session() as db:
+    db.rates.replace_rate(date=&quot;2999-06-01&quot;, currency=&quot;ZZA&quot;, rate=&quot;1.5&quot;)
+    client = web_client()
+    response = client.get(&quot;/convert&quot;, params={&quot;from&quot;: &quot;ZZA&quot;, &quot;to&quot;: &quot;EUR&quot;, &quot;amount&quot;: &quot;10&quot;, &quot;date&quot;: &quot;0001-01-01&quot;})
+    assert response.status_code == 404
+=== END AC convert-no-publication-404 ===
+
+=== AC convert-validation-422 ===
+Intent: Missing parameters, a malformed amount, and malformed or impossible dates are all refused with 422.
+Requires: executable=python3; scope=test
+Requires: python-package=fastapi; scope=test
+Requires: python-package=httpx2; scope=test
+
+from app_server.testing import web_client
+
+client = web_client()
+base = {&quot;from&quot;: &quot;USD&quot;, &quot;to&quot;: &quot;GBP&quot;, &quot;amount&quot;: &quot;1&quot;}
+
+for missing in [&quot;from&quot;, &quot;to&quot;, &quot;amount&quot;]:
+    params = {k: v for k, v in base.items() if k != missing}
+    assert client.get(&quot;/convert&quot;, params=params).status_code == 422, missing
+
+for bad_amount in [&quot;abc&quot;, &quot;-1&quot;, &quot;1.&quot;, &quot;.5&quot;, &quot;1e3&quot;]:
+    params = dict(base, amount=bad_amount)
+    assert client.get(&quot;/convert&quot;, params=params).status_code == 422, bad_amount
+
+for bad_date in [&quot;2025-13-01&quot;, &quot;2025-01-31-x&quot;, &quot;yesterday&quot;]:
+    params = dict(base, date=bad_date)
+    assert client.get(&quot;/convert&quot;, params=params).status_code == 422, bad_date
+=== END AC convert-validation-422 ===
+
+## User Acceptance
+
+- None.
+
+## Guardrails
+
+- Validation statuses come from FastAPI request validation, not hand-built responses.
+- Error-response bodies and wording are never part of the contract.
+=== END ARTIFACT ===</pre></article>
+</main>
+</body>
+</html>

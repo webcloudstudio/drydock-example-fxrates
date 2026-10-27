@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-Fetch.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-Fetch.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-Fetch.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Fetch</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261027 V1</td></tr><tr><td>Description</td><td><code>fxrates fetch</code> downloads the ECB history archive, extracts the CSV, and loads it through the validated load path.</td></tr><tr><td>Depends On</td><td>FEATURE-LoadStore.md, FEATURE-LoadUnreadable.md</td></tr><tr><td>Provides</td><td>fxrates fetch, fxrates_app.fetch.download_archive</td></tr><tr><td>Consumes</td><td>fxrates load, fxrates_app.ecb.parse_history</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p><code>fxrates fetch</code> obtains the ECB euro reference rate history without a file argument. It downloads <code>https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist.zip</code>, extracts the member <code>eurofxref-hist.csv</code>, and loads that text exactly as <code>fxrates load</code> does.</p>
+<h2>Trigger</h2>
+<p>The command line: <code>./fxrates fetch</code>. It takes no arguments; a wrong argument count is a usage error (exit 2) handled by the shared validation.</p>
+<h2>Sequence</h2>
+<ol><li>Call <code>fxrates_app.fetch.download_archive(url)</code> for the ECB URL. It returns the archive bytes and</li></ol>
+<p>uses <code>urllib</code> with a builder-chosen timeout. It is the only function in the application that opens a network connection.</p>
+<ol><li>The handler must call it through the module attribute (<code>fxrates_app.fetch.download_archive(...)</code>),</li></ol>
+<p>never through a name imported into another module, so tests replace the single seam.</p>
+<ol><li>Open the bytes as a zip archive and read the member <code>eurofxref-hist.csv</code>.</li><li>Pass its text through the same parse, validate, and transactional store path used by <code>load</code></li></ol>
+<p>(<code>fxrates_app.ecb.parse_history</code>, then one transaction of upserts).</p>
+<ol><li>Print <code>dates,rates</code> then <code>&lt;dates&gt;,&lt;rates&gt;</code>, as <code>load</code> does, and exit 0.</li></ol>
+<h2>Exit codes</h2>
+<div class="scroll"><table><thead><tr><th>Condition</th><th>Exit</th><th>Stdout</th><th>Stderr</th><th>Stored</th></tr></thead><tbody><tr><td>Success</td><td>0</td><td><code>dates,rates</code> then counts</td><td>diagnostics only</td><td>the rates</td></tr><tr><td>Download fails or times out</td><td>1</td><td>empty</td><td>one line</td><td>nothing</td></tr><tr><td>Bytes are not a zip archive</td><td>1</td><td>empty</td><td>one line</td><td>nothing</td></tr><tr><td>Archive lacks <code>eurofxref-hist.csv</code></td><td>1</td><td>empty</td><td>one line</td><td>nothing</td></tr><tr><td>Member is a rejected file</td><td>3</td><td>empty</td><td>one line</td><td>nothing</td></tr></tbody></table></div>
+<h2>Database Interface</h2>
+<ul><li>None — persistence is owned by DATABASE.md and reached through the load path.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC fetch-loads-archive ===<br>Intent: With the download stubbed to return a zip holding the CSV, fetch exits 0, reports the date and rate counts, and stores each published rate text exactly.<br>Requires: executable=python3; scope=test</p>
+<p>import csv import io import zipfile from unittest import mock</p>
+<p>from cli.testing import cli_runner from persistence.testing import db_session</p>
+<p>d = &quot;1900-08-01&quot; ra = &quot;1.50&quot; rb = &quot;2.250&quot;</p>
+<p>buf = io.StringIO() w = csv.writer(buf, lineterminator=&quot;\n&quot;) w.writerow([&quot;Date&quot;, &quot;ZZA&quot;, &quot;ZZB&quot;, &quot;&quot;]) w.writerow([d, ra, rb, &quot;&quot;]) text = buf.getvalue()</p>
+<p>bio = io.BytesIO() with zipfile.ZipFile(bio, &quot;w&quot;) as z: z.writestr(&quot;eurofxref-hist.csv&quot;, text) data = bio.getvalue()</p>
+<p>with db_session() as db: with mock.patch(&quot;fxrates_app.fetch.download_archive&quot;, return_value=data): code, out, err = cli_runner(&quot;fetch&quot;) print(out) print(err) assert code == 0 lines = out.splitlines() assert lines[0] == &quot;dates,rates&quot; assert lines[1].split(&quot;,&quot;) == [str(1), str(2)] rows = {r.currency: r.rate for r in db.rates.list_for_date(date=d)} assert rows[&quot;ZZA&quot;] == ra assert rows[&quot;ZZB&quot;] == rb === END AC fetch-loads-archive ===</p>
+<p>=== AC fetch-download-failure ===<br>Intent: A failed download exits 1 with empty stdout and one stderr line, and stores nothing.<br>Requires: executable=python3; scope=test</p>
+<p>from unittest import mock</p>
+<p>from cli.testing import cli_runner from persistence.testing import db_session</p>
+<p>d = &quot;1900-08-02&quot;</p>
+<p>with db_session() as db: before = db.rates.list_all_keys() with mock.patch(&quot;fxrates_app.fetch.download_archive&quot;, side_effect=OSError(&quot;network down&quot;)): code, out, err = cli_runner(&quot;fetch&quot;) assert code == 1 assert out == &quot;&quot; assert len(err.strip().splitlines()) == 1 assert db.rates.list_for_date(date=d) == [] assert len(db.rates.list_all_keys()) == len(before) === END AC fetch-download-failure ===</p>
+<p>=== AC fetch-bad-archive ===<br>Intent: Bytes that are not a zip archive, and a zip without eurofxref-hist.csv, each exit 1 with empty stdout and store nothing.<br>Requires: executable=python3; scope=test</p>
+<p>import csv import io import zipfile from unittest import mock</p>
+<p>from cli.testing import cli_runner from persistence.testing import db_session</p>
+<p>d = &quot;1900-08-03&quot;</p>
+<p>buf = io.StringIO() w = csv.writer(buf, lineterminator=&quot;\n&quot;) w.writerow([&quot;Date&quot;, &quot;ZZA&quot;, &quot;&quot;]) w.writerow([d, &quot;1.5&quot;, &quot;&quot;])</p>
+<p>bio = io.BytesIO() with zipfile.ZipFile(bio, &quot;w&quot;) as z: z.writestr(&quot;other.csv&quot;, buf.getvalue()) wrong_member = bio.getvalue() not_a_zip = bytes(range(32))</p>
+<p>with db_session() as db: before = len(db.rates.list_all_keys()) for payload in (not_a_zip, wrong_member): with mock.patch(&quot;fxrates_app.fetch.download_archive&quot;, return_value=payload): code, out, err = cli_runner(&quot;fetch&quot;) assert code == 1 assert out == &quot;&quot; assert len(err.strip().splitlines()) == 1 assert db.rates.list_for_date(date=d) == [] assert len(db.rates.list_all_keys()) == before === END AC fetch-bad-archive ===</p>
+<p>=== AC fetch-rejected-member ===<br>Intent: A member that fails ECB validation exits 3 with empty stdout and writes nothing, even for rows preceding the invalid one.<br>Requires: executable=python3; scope=test</p>
+<p>import csv import io import zipfile from unittest import mock</p>
+<p>from cli.testing import cli_runner from persistence.testing import db_session</p>
+<p>good = &quot;1900-08-05&quot; bad = &quot;1900-08-04&quot;</p>
+<p>buf = io.StringIO() w = csv.writer(buf, lineterminator=&quot;\n&quot;) w.writerow([&quot;Date&quot;, &quot;ZZA&quot;, &quot;&quot;]) w.writerow([good, &quot;1.5&quot;, &quot;&quot;]) w.writerow([bad, &quot;0&quot;, &quot;&quot;])</p>
+<p>bio = io.BytesIO() with zipfile.ZipFile(bio, &quot;w&quot;) as z: z.writestr(&quot;eurofxref-hist.csv&quot;, buf.getvalue()) data = bio.getvalue()</p>
+<p>with db_session() as db: with mock.patch(&quot;fxrates_app.fetch.download_archive&quot;, return_value=data): code, out, err = cli_runner(&quot;fetch&quot;) assert code == 3 assert out == &quot;&quot; assert len(err.strip().splitlines()) == 1 assert db.rates.list_for_date(date=good) == [] assert db.rates.list_for_date(date=bad) == [] === END AC fetch-rejected-member ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>No test opens a network connection; the download is replaced at <code>fxrates_app.fetch.download_archive</code>.</li><li>A failing command writes nothing to standard output and one diagnostic line to standard error.</li><li>Rates are stored as the ECB&#x27;s published text and never as floating point.</li><li>The timeout is builder-chosen because the sources state none.</li></ul></article>
+</main>
+</body>
+</html>

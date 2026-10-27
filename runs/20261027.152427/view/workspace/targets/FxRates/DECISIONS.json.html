@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/DECISIONS.json</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/DECISIONS.json</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../workspace/targets/FxRates/DECISIONS.json">Raw file</a></div></header>
+<article class="doc"><pre>[
+  {
+    &quot;id&quot;: &quot;Q-001&quot;,
+    &quot;type&quot;: &quot;choice&quot;,
+    &quot;severity&quot;: &quot;low&quot;,
+    &quot;origin&quot;: &quot;plan&quot;,
+    &quot;blueprint&quot;: &quot;FEATURE-InitCommand.md&quot;,
+    &quot;story&quot;: &quot;cli-002-init&quot;,
+    &quot;status&quot;: &quot;recommended&quot;,
+    &quot;archived&quot;: false,
+    &quot;title&quot;: &quot;How init drops and recreates rates&quot;,
+    &quot;description&quot;: &quot;Application code may not run DDL or open a driver; schema is provisioned by the DATABASE step. Options: a declared reset operation that removes every row, or raw DROP/CREATE.&quot;,
+    &quot;options&quot;: [
+      {
+        &quot;value&quot;: &quot;reset-operation&quot;,
+        &quot;label&quot;: &quot;Declared repository reset removes all rows&quot;
+      },
+      {
+        &quot;value&quot;: &quot;raw-ddl&quot;,
+        &quot;label&quot;: &quot;Drop and recreate with DDL&quot;
+      }
+    ],
+    &quot;system_choice&quot;: &quot;reset-operation&quot;
+  },
+  {
+    &quot;id&quot;: &quot;Q-002&quot;,
+    &quot;type&quot;: &quot;text&quot;,
+    &quot;severity&quot;: &quot;low&quot;,
+    &quot;origin&quot;: &quot;plan&quot;,
+    &quot;blueprint&quot;: &quot;ARCHITECTURE.md&quot;,
+    &quot;story&quot;: &quot;foundation-python&quot;,
+    &quot;status&quot;: &quot;recommended&quot;,
+    &quot;archived&quot;: false,
+    &quot;title&quot;: &quot;Application package name&quot;,
+    &quot;description&quot;: &quot;Application modules live in the package fxrates_app (config, ecb, fetch, rates), alongside the reserved cli, app_server, and persistence packages.&quot;,
+    &quot;options&quot;: [],
+    &quot;system_choice&quot;: &quot;fxrates_app&quot;
+  },
+  {
+    &quot;id&quot;: &quot;Q-003&quot;,
+    &quot;type&quot;: &quot;text&quot;,
+    &quot;severity&quot;: &quot;low&quot;,
+    &quot;origin&quot;: &quot;plan&quot;,
+    &quot;blueprint&quot;: &quot;FEATURE-Fetch.md&quot;,
+    &quot;story&quot;: &quot;load-005-fetch&quot;,
+    &quot;status&quot;: &quot;recommended&quot;,
+    &quot;archived&quot;: false,
+    &quot;title&quot;: &quot;Stub seam for the ECB download&quot;,
+    &quot;description&quot;: &quot;fetch isolates the network behind fxrates_app.fetch.download_archive(url) so tests patch one function; the timeout is chosen by the builder because the sources state none.&quot;,
+    &quot;options&quot;: [],
+    &quot;system_choice&quot;: &quot;fxrates_app.fetch.download_archive is the only network call&quot;
+  },
+  {
+    &quot;id&quot;: &quot;Q-004&quot;,
+    &quot;type&quot;: &quot;text&quot;,
+    &quot;severity&quot;: &quot;low&quot;,
+    &quot;origin&quot;: &quot;plan&quot;,
+    &quot;blueprint&quot;: &quot;FEATURE-LoadValidation.md&quot;,
+    &quot;story&quot;: &quot;load-001-validate&quot;,
+    &quot;status&quot;: &quot;recommended&quot;,
+    &quot;archived&quot;: false,
+    &quot;title&quot;: &quot;Validator exposed as a module function&quot;,
+    &quot;description&quot;: &quot;LOAD-001 delivers a parser/validator function; the load command that exits 3 is registered in LOAD-002, which also proves rejection end to end with the supplied bad file.&quot;,
+    &quot;options&quot;: [],
+    &quot;system_choice&quot;: &quot;fxrates_app.ecb.parse_history raises RejectedFile; load maps it to exit 3&quot;
+  },
+  {
+    &quot;id&quot;: &quot;Q-005&quot;,
+    &quot;type&quot;: &quot;text&quot;,
+    &quot;severity&quot;: &quot;low&quot;,
+    &quot;origin&quot;: &quot;plan&quot;,
+    &quot;blueprint&quot;: &quot;FEATURE-RatesByDate.md&quot;,
+    &quot;story&quot;: &quot;rates-004-rates-by-date&quot;,
+    &quot;status&quot;: &quot;recommended&quot;,
+    &quot;archived&quot;: false,
+    &quot;title&quot;: &quot;Static route ordering for /rates/latest&quot;,
+    &quot;description&quot;: &quot;/rates/latest must be matched before /rates/{date} so latest is not treated as a malformed date.&quot;,
+    &quot;options&quot;: [],
+    &quot;system_choice&quot;: &quot;Register /rates/latest before /rates/{date}&quot;
+  },
+  {
+    &quot;id&quot;: &quot;build-architecture.md-test-runner-invocation-and-pytest-placement&quot;,
+    &quot;type&quot;: &quot;text&quot;,
+    &quot;severity&quot;: &quot;low&quot;,
+    &quot;origin&quot;: &quot;build&quot;,
+    &quot;blueprint&quot;: &quot;ARCHITECTURE.md&quot;,
+    &quot;story&quot;: null,
+    &quot;status&quot;: &quot;recommended&quot;,
+    &quot;archived&quot;: false,
+    &quot;title&quot;: &quot;Test runner invocation and pytest placement&quot;,
+    &quot;description&quot;: &quot;Declared pytest in the uv dev dependency group rather than runtime dependencies, and bin/test.sh calls .venv/bin/pytest -q directly instead of sourcing activate (sourcing trips set -u in the venv activate script). Both keep the declared test_command pytest -q. Acceptable?&quot;,
+    &quot;options&quot;: [],
+    &quot;system_choice&quot;: &quot;Declared pytest in the uv dev dependency group rather than runtime dependencies, and bin/test.sh calls .venv/bin/pytest -q directly instead of sourcing activate (sourcing trips set -u in the venv activate script). Both keep the declared test_command pytest -q. Acceptable?&quot;
+  },
+  {
+    &quot;id&quot;: &quot;build-feature-clifoundation.md-launcher-working-directory&quot;,
+    &quot;type&quot;: &quot;text&quot;,
+    &quot;severity&quot;: &quot;low&quot;,
+    &quot;origin&quot;: &quot;build&quot;,
+    &quot;blueprint&quot;: &quot;FEATURE-CliFoundation.md&quot;,
+    &quot;story&quot;: null,
+    &quot;status&quot;: &quot;recommended&quot;,
+    &quot;archived&quot;: false,
+    &quot;title&quot;: &quot;Launcher working directory&quot;,
+    &quot;description&quot;: &quot;The fxrates launcher changes into the application root before running python -m cli, matching bin/test.sh and keeping the default data/app.db path stable. Relative file paths passed by callers therefore resolve against the root. Acceptable, or should the launcher preserve the caller&#x27;s cwd?&quot;,
+    &quot;options&quot;: [],
+    &quot;system_choice&quot;: &quot;The fxrates launcher changes into the application root before running python -m cli, matching bin/test.sh and keeping the default data/app.db path stable. Relative file paths passed by callers therefore resolve against the root. Acceptable, or should the launcher preserve the caller&#x27;s cwd?&quot;
+  },
+  {
+    &quot;id&quot;: &quot;build-feature-cliusageerrors.md-validate-signature-and-registry-check&quot;,
+    &quot;type&quot;: &quot;text&quot;,
+    &quot;severity&quot;: &quot;low&quot;,
+    &quot;origin&quot;: &quot;build&quot;,
+    &quot;blueprint&quot;: &quot;FEATURE-CliUsageErrors.md&quot;,
+    &quot;story&quot;: null,
+    &quot;status&quot;: &quot;recommended&quot;,
+    &quot;archived&quot;: false,
+    &quot;title&quot;: &quot;validate signature and registry check&quot;,
+    &quot;description&quot;: &quot;validate takes an optional registered collection so commands with a handler are accepted without importing the dispatcher (avoids a circular import). With no argument it behaves as validate(argv) in the spec. Is that acceptable, or should the registry check move into dispatcher.main?&quot;,
+    &quot;options&quot;: [],
+    &quot;system_choice&quot;: &quot;validate takes an optional registered collection so commands with a handler are accepted without importing the dispatcher (avoids a circular import). With no argument it behaves as validate(argv) in the spec. Is that acceptable, or should the registry check move into dispatcher.main?&quot;
+  },
+  {
+    &quot;id&quot;: &quot;build-feature-convert.md-unknown-currency-and-zero-stored-rate&quot;,
+    &quot;type&quot;: &quot;text&quot;,
+    &quot;severity&quot;: &quot;low&quot;,
+    &quot;origin&quot;: &quot;build&quot;,
+    &quot;blueprint&quot;: &quot;FEATURE-Convert.md&quot;,
+    &quot;story&quot;: null,
+    &quot;status&quot;: &quot;recommended&quot;,
+    &quot;archived&quot;: false,
+    &quot;title&quot;: &quot;Unknown currency and zero stored rate&quot;,
+    &quot;description&quot;: &quot;A currency with no stored rate on the effective date (not EUR) returns 404. A stored rate of zero returns 422 instead of a 500 from division by zero. The spec did not name either status. Is that acceptable?&quot;,
+    &quot;options&quot;: [],
+    &quot;system_choice&quot;: &quot;A currency with no stored rate on the effective date (not EUR) returns 404. A stored rate of zero returns 422 instead of a 500 from division by zero. The spec did not name either status. Is that acceptable?&quot;
+  },
+  {
+    &quot;id&quot;: &quot;build-feature-historyerrors.md-check-order-for-an-unknown-currency-combined-with-a-malformed-bound&quot;,
+    &quot;type&quot;: &quot;text&quot;,
+    &quot;severity&quot;: &quot;low&quot;,
+    &quot;origin&quot;: &quot;build&quot;,
+    &quot;blueprint&quot;: &quot;FEATURE-HistoryErrors.md&quot;,
+    &quot;story&quot;: null,
+    &quot;status&quot;: &quot;recommended&quot;,
+    &quot;archived&quot;: false,
+    &quot;title&quot;: &quot;Check order for an unknown currency combined with a malformed bound&quot;,
+    &quot;description&quot;: &quot;Bound validation (422) runs before the currency lookup (404), so a request with both an unknown code and a malformed bound answers 422. The spec does not state which applies first. Is that acceptable, or should unknown currency take precedence?&quot;,
+    &quot;options&quot;: [],
+    &quot;system_choice&quot;: &quot;Bound validation (422) runs before the currency lookup (404), so a request with both an unknown code and a malformed bound answers 422. The spec does not state which applies first. Is that acceptable, or should unknown currency take precedence?&quot;
+  },
+  {
+    &quot;id&quot;: &quot;build-feature-historypoints.md-response-fields-for-this-block&quot;,
+    &quot;type&quot;: &quot;text&quot;,
+    &quot;severity&quot;: &quot;low&quot;,
+    &quot;origin&quot;: &quot;build&quot;,
+    &quot;blueprint&quot;: &quot;FEATURE-HistoryPoints.md&quot;,
+    &quot;story&quot;: null,
+    &quot;status&quot;: &quot;recommended&quot;,
+    &quot;archived&quot;: false,
+    &quot;title&quot;: &quot;Response fields for this block&quot;,
+    &quot;description&quot;: &quot;The response carries currency, base, count, and points. count is included because the history acceptance criterion asserts it. min, max, and mean are omitted and left for FEATURE-HistoryStats. Is that acceptable?&quot;,
+    &quot;options&quot;: [],
+    &quot;system_choice&quot;: &quot;The response carries currency, base, count, and points. count is included because the history acceptance criterion asserts it. min, max, and mean are omitted and left for FEATURE-HistoryStats. Is that acceptable?&quot;
+  },
+  {
+    &quot;id&quot;: &quot;build-feature-loadvalidation.md-empty-input-and-header-only-files&quot;,
+    &quot;type&quot;: &quot;text&quot;,
+    &quot;severity&quot;: &quot;low&quot;,
+    &quot;origin&quot;: &quot;build&quot;,
+    &quot;blueprint&quot;: &quot;FEATURE-LoadValidation.md&quot;,
+    &quot;story&quot;: null,
+    &quot;status&quot;: &quot;recommended&quot;,
+    &quot;archived&quot;: false,
+    &quot;title&quot;: &quot;Empty input and header-only files&quot;,
+    &quot;description&quot;: &quot;The spec does not say how to treat empty input. I reject empty text as having no header. A header-only file with no data rows is accepted and yields an empty list. Is that acceptable?&quot;,
+    &quot;options&quot;: [],
+    &quot;system_choice&quot;: &quot;The spec does not say how to treat empty input. I reject empty text as having no header. A header-only file with no data rows is accepted and yields an empty list. Is that acceptable?&quot;
+  },
+  {
+    &quot;id&quot;: &quot;build-feature-loadvalidation.md-repeated-currency-code-in-the-header&quot;,
+    &quot;type&quot;: &quot;text&quot;,
+    &quot;severity&quot;: &quot;low&quot;,
+    &quot;origin&quot;: &quot;build&quot;,
+    &quot;blueprint&quot;: &quot;FEATURE-LoadValidation.md&quot;,
+    &quot;story&quot;: null,
+    &quot;status&quot;: &quot;recommended&quot;,
+    &quot;archived&quot;: false,
+    &quot;title&quot;: &quot;Repeated currency code in the header&quot;,
+    &quot;description&quot;: &quot;The spec does not cover duplicate header codes. I reject the file, because two columns with the same code would produce duplicate (date, currency) keys. Is that acceptable?&quot;,
+    &quot;options&quot;: [],
+    &quot;system_choice&quot;: &quot;The spec does not cover duplicate header codes. I reject the file, because two columns with the same code would produce duplicate (date, currency) keys. Is that acceptable?&quot;
+  },
+  {
+    &quot;id&quot;: &quot;build-schema-derived-indexes&quot;,
+    &quot;type&quot;: &quot;text&quot;,
+    &quot;severity&quot;: &quot;informational&quot;,
+    &quot;origin&quot;: &quot;build&quot;,
+    &quot;blueprint&quot;: &quot;DATABASE.md&quot;,
+    &quot;story&quot;: null,
+    &quot;status&quot;: &quot;recommended&quot;,
+    &quot;archived&quot;: false,
+    &quot;title&quot;: &quot;Indexes derived from the persistence declaration&quot;,
+    &quot;description&quot;: &quot;The rendered schema indexes rates(date); rates(currency, date). Each is implied by the declaration \u2014 a foreign key is looked up by its child column, and a read pattern&#x27;s Input fields are the predicate it filters on. Declare an `- INDEX (...)` bullet in DATABASE.md for any index this does not cover.&quot;,
+    &quot;options&quot;: [],
+    &quot;system_choice&quot;: &quot;rates(date); rates(currency, date)&quot;
+  }
+]
+</pre></article>
+</main>
+</body>
+</html>

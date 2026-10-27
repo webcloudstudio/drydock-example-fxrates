@@ -1,0 +1,65 @@
+{
+  "criteria": [
+    {
+      "id": "st-001",
+      "verdict": "MET",
+      "rationale": "The supplied grader exited zero against this tree.",
+      "evidence": ["sources/run.sh: outcome PASS, return code 0, 35 passed and 0 failed"]
+    },
+    {
+      "id": "st-002",
+      "verdict": "MET",
+      "rationale": "The shipped POSIX shell test runner exists and the offline test run exited zero.",
+      "evidence": ["bin/test.sh:1 uses #!/bin/sh", "offline command: sh bin/test.sh exited 0; 29 passed"]
+    },
+    {
+      "id": "st-003",
+      "verdict": "MET",
+      "rationale": "A probe confirmed rates are stored as published text, matching date and currency entries are replaced, and an invalid row leaves storage unchanged; the grader also confirmed invalid loads exit 3.",
+      "evidence": ["services/rates.py: load_file parses rows before writing and stores values through upsert", "persistence/schema.py: rates.upsert matches on date and currency", "probe: replacement preserved '2.00' and other rates; invalid input left stored rows unchanged", "sources/run.sh: A4 passed with expected exit 3"]
+    },
+    {
+      "id": "st-004",
+      "verdict": "MET",
+      "rationale": "The service health endpoint returned status 200 and the required JSON body.",
+      "evidence": ["app_server/main.py: health returns {'status':'ok'}", "probe: GET /health returned 200 with {'status': 'ok'}"]
+    },
+    {
+      "id": "st-005",
+      "verdict": "MET",
+      "rationale": "The grader confirmed effective-date lookups return the latest available publication on or before the requested date and return 404 when none exists.",
+      "evidence": ["sources/run.sh: H5 and L4 passed for dates after a publication", "sources/run.sh: H6 and H16 passed with 404 when no earlier publication exists", "app_server/main.py: effective uses publications_through"]
+    },
+    {
+      "id": "st-006",
+      "verdict": "MET",
+      "rationale": "The grader's known conversion and history answers passed, and the application uses Decimal with half-even rounding.",
+      "evidence": ["sources/run.sh: H9–H12 and H17–H18 passed", "app_server/main.py: conversion and history calculations use Decimal and ROUND_HALF_EVEN"]
+    },
+    {
+      "id": "st-007",
+      "verdict": "MET",
+      "rationale": "The grader confirmed malformed dates, amounts, and missing parameters receive 422, while unknown currencies receive 404.",
+      "evidence": ["sources/run.sh: H7, H13–H15, H16, and H21 passed with their expected statuses", "app_server/main.py: request validation raises HTTPException with the specified statuses"]
+    },
+    {
+      "id": "st-008",
+      "verdict": "MET",
+      "rationale": "Application database access goes through the shipped persistence API selected from DATABASE_URL, and rates are declared and passed as text values.",
+      "evidence": ["services/rates.py: database access uses open_database(database_dsn())", "config/__init__.py: database_dsn selects DATABASE_URL", "persistence/schema.py: rates.upsert accepts and returns rate as str", "services/rates.py: load_file passes the published rate string to upsert", "application modules contain no direct database driver access"]
+    },
+    {
+      "id": "st-009",
+      "verdict": "MET",
+      "rationale": "The test runner exited zero with network access denied.",
+      "evidence": ["offline command: unshare -rn sh bin/test.sh exited 0; 29 passed"]
+    },
+    {
+      "id": "st-010",
+      "verdict": "MET",
+      "rationale": "Automated tests stub the download and cover both a successful fetch and a failed download that exits 1.",
+      "evidence": ["tests/test_fetch.py: success test patches urllib.request.urlopen and asserts loaded rates", "tests/test_fetch.py: failure test patches urlopen to raise OSError and asserts exit code 1", "offline command: test suite passed"]
+    }
+  ],
+  "improvements": []
+}

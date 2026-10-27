@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>build/FxRates/tests/test_api.py</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>build/FxRates/tests/test_api.py</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../build/FxRates/tests/test_api.py">Raw file</a></div></header>
+<article class="doc"><pre>&quot;&quot;&quot;HTTP behavior against criterion-owned records in the configured application store.&quot;&quot;&quot;
+
+import pytest
+
+from app_server.testing import web_client
+from services.rates import all_rows, db
+
+
+@pytest.fixture
+def client_with_rates():
+    records = [
+        (&quot;2098-12-01&quot;, &quot;QAX&quot;, &quot;2.00&quot;),
+        (&quot;2098-12-03&quot;, &quot;QAX&quot;, &quot;4.00&quot;),
+        (&quot;2098-12-01&quot;, &quot;QAY&quot;, &quot;3.00&quot;),
+    ]
+    baseline = all_rows()
+    with db() as store:
+        for day, code, rate in records:
+            store.rates.upsert(date=day, currency=code, rate=rate)
+    client = web_client()
+    try:
+        yield client, baseline
+    finally:
+        client.close()
+        with db() as store:
+            for day, code, _ in records:
+                store.rates.delete(date=day, currency=code)
+
+
+def test_health_currencies_stats_and_latest(client_with_rates):
+    client, baseline = client_with_rates
+    assert client.get(&quot;/health&quot;).json() == {&quot;status&quot;: &quot;ok&quot;}
+    currencies = client.get(&quot;/currencies&quot;)
+    assert currencies.status_code == 200
+    assert currencies.json()[&quot;currencies&quot;] == sorted({row.currency for row in baseline} | {&quot;QAX&quot;, &quot;QAY&quot;})
+    stats = client.get(&quot;/stats&quot;).json()
+    expected = {(row.date, row.currency): row.rate for row in baseline}
+    expected.update({(&quot;2098-12-01&quot;, &quot;QAX&quot;): &quot;2.00&quot;, (&quot;2098-12-03&quot;, &quot;QAX&quot;): &quot;4.00&quot;, (&quot;2098-12-01&quot;, &quot;QAY&quot;): &quot;3.00&quot;})
+    dates = {day for day, _ in expected}
+    assert stats == {&quot;dates&quot;: len(dates), &quot;rates&quot;: len(expected), &quot;first&quot;: min(dates), &quot;last&quot;: max(dates)}
+    latest_date = max(dates)
+    latest_rates = {currency: rate for (day, currency), rate in expected.items() if day == latest_date}
+    assert client.get(&quot;/rates/latest&quot;).json() == {&quot;date&quot;: latest_date, &quot;requested&quot;: &quot;latest&quot;, &quot;base&quot;: &quot;EUR&quot;, &quot;rates&quot;: latest_rates}
+
+
+def test_effective_date_selects_latest_publication_not_after_request(client_with_rates):
+    response = client_with_rates[0].get(&quot;/rates/2098-12-02&quot;)
+    assert response.status_code == 200
+    assert response.json() == {
+        &quot;date&quot;: &quot;2098-12-01&quot;, &quot;requested&quot;: &quot;2098-12-02&quot;, &quot;base&quot;: &quot;EUR&quot;,
+        &quot;rates&quot;: {&quot;QAX&quot;: &quot;2.00&quot;, &quot;QAY&quot;: &quot;3.00&quot;},
+    }
+
+
+def test_conversion_uses_decimal_and_half_even_rounding(client_with_rates):
+    response = client_with_rates[0].get(&quot;/convert&quot;, params={&quot;from&quot;: &quot;QAX&quot;, &quot;to&quot;: &quot;QAY&quot;, &quot;amount&quot;: &quot;1.005&quot;, &quot;date&quot;: &quot;2098-12-01&quot;})
+    assert response.status_code == 200
+    assert response.json()[&quot;rate&quot;] == &quot;1.500000&quot;
+    assert response.json()[&quot;result&quot;] == &quot;1.51&quot;
+
+
+def test_history_bounds_and_empty_range(client_with_rates):
+    client = client_with_rates[0]
+    body = client.get(&quot;/history/QAX&quot;, params={&quot;start&quot;: &quot;2098-12-01&quot;, &quot;end&quot;: &quot;2098-12-03&quot;}).json()
+    assert body[&quot;count&quot;] == 2
+    assert body[&quot;points&quot;] == [{&quot;date&quot;: &quot;2098-12-01&quot;, &quot;rate&quot;: &quot;2.00&quot;}, {&quot;date&quot;: &quot;2098-12-03&quot;, &quot;rate&quot;: &quot;4.00&quot;}]
+    assert body[&quot;mean&quot;] == &quot;3.000000&quot;
+    empty = client.get(&quot;/history/QAX&quot;, params={&quot;start&quot;: &quot;2098-12-04&quot;}).json()
+    assert (empty[&quot;count&quot;], empty[&quot;min&quot;], empty[&quot;max&quot;], empty[&quot;mean&quot;], empty[&quot;points&quot;]) == (0, None, None, None, [])
+
+
+@pytest.mark.parametrize((&quot;path&quot;, &quot;status&quot;), [
+    (&quot;/rates/2098-02-30&quot;, 422), (&quot;/rates/2097-01-01&quot;, 404),
+    (&quot;/history/ZZZ&quot;, 404), (&quot;/history/QAX?start=2098-13-01&quot;, 422),
+    (&quot;/convert?from=QAX&amp;to=NOX&amp;amount=1&quot;, 404),
+    (&quot;/convert?from=QAX&amp;to=QAY&quot;, 422),
+    (&quot;/convert?from=QAX&amp;to=QAY&amp;amount=NaN&quot;, 422),
+])
+def test_api_error_statuses(client_with_rates, path, status):
+    response = client_with_rates[0].get(path)
+    assert response.status_code == status
+</pre></article>
+</main>
+</body>
+</html>

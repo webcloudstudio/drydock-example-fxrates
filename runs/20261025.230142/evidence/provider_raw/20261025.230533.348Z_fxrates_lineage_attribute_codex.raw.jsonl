@@ -1,4 +1,0 @@
-{"type":"thread.started","thread_id":"01a1754f-e89e-7ed0-bfec-cc691762636b"}
-{"type":"turn.started"}
-{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"<requirement name=\"reject-invalid-history-rate\" stories=\"load_history\">\n2025-02-03,1.0x,159.01,\n</requirement>\n<unattached story=\"architecture\"/>\n<unattached story=\"database\"/>\n<unattached story=\"api-foundation\"/>\n<unattached story=\"cli-foundation\"/>\n<unattached story=\"load_init\"/>\n<unattached story=\"api_reference\"/>\n<unattached story=\"api_rates\"/>\n<unattached story=\"api_convert\"/>\n<unattached story=\"api_history\"/>\n<unattached story=\"api_serve\"/>\n<unattached story=\"load_fetch\"/>\n<unattached story=\"api_errors\"/>\n<unattached story=\"release_verification\"/>"}}
-{"type":"turn.completed","usage":{"input_tokens":15402,"cached_input_tokens":14080,"cache_write_input_tokens":0,"output_tokens":499,"reasoning_output_tokens":352}}

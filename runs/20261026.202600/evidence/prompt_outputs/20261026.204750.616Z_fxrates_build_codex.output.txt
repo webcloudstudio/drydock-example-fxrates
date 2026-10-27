@@ -1,0 +1,14 @@
+RESULT: SUCCESS
+
+FILES CHANGED:
+- persistence/schema.py
+- services/rates.py
+- tests/test_rates_repository.py
+
+SUMMARY:
+Added a keyed rate delete operation and updated `init` to clear rows through the persistence boundary. Added a rollback-fixture test for initialization. The focused repository suite passed: 6 tests.
+
+Restart required — run the start script or equivalent.
+
+BLOCKERS:
+- None

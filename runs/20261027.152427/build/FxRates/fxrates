@@ -1,0 +1,9 @@
+#!/bin/sh
+# fxrates — application launcher. Activates .venv when present and hands the arguments to the
+# cli package. It holds no command logic; every command is dispatched by cli.main.
+ROOT="$(cd "$(dirname "$0")" && pwd)"
+cd "$ROOT"
+if [ -f "$ROOT/.venv/bin/activate" ]; then
+    . "$ROOT/.venv/bin/activate"
+fi
+exec python -m cli "$@"

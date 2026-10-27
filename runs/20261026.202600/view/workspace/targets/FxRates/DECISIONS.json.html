@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/DECISIONS.json</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/DECISIONS.json</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../workspace/targets/FxRates/DECISIONS.json">Raw file</a></div></header>
+<article class="doc"><pre>[
+  {
+    &quot;id&quot;: &quot;Q-001&quot;,
+    &quot;type&quot;: &quot;choice&quot;,
+    &quot;severity&quot;: &quot;material&quot;,
+    &quot;origin&quot;: &quot;plan&quot;,
+    &quot;blueprint&quot;: &quot;ARCHITECTURE.md&quot;,
+    &quot;story&quot;: &quot;architecture&quot;,
+    &quot;status&quot;: &quot;recommended&quot;,
+    &quot;archived&quot;: false,
+    &quot;title&quot;: &quot;Application module boundaries&quot;,
+    &quot;description&quot;: &quot;The sources require a CLI, FastAPI API, service behavior, and generated persistence boundary but do not prescribe module names or layering. The plan assigns a CLI package, app_server package, service layer, and generated persistence package with parsing, HTTP, and database responsibilities kept at their specified boundaries.&quot;,
+    &quot;options&quot;: [
+      {
+        &quot;value&quot;: &quot;single&quot;,
+        &quot;label&quot;: &quot;Keep all product behavior in one module&quot;
+      },
+      {
+        &quot;value&quot;: &quot;layered&quot;,
+        &quot;label&quot;: &quot;Separate CLI, API, service, and persistence responsibilities&quot;
+      }
+    ],
+    &quot;system_choice&quot;: &quot;layered&quot;
+  },
+  {
+    &quot;id&quot;: &quot;Q-002&quot;,
+    &quot;type&quot;: &quot;choice&quot;,
+    &quot;severity&quot;: &quot;material&quot;,
+    &quot;origin&quot;: &quot;plan&quot;,
+    &quot;blueprint&quot;: &quot;DATABASE.md&quot;,
+    &quot;story&quot;: &quot;database&quot;,
+    &quot;status&quot;: &quot;recommended&quot;,
+    &quot;archived&quot;: false,
+    &quot;title&quot;: &quot;Repository operation surface&quot;,
+    &quot;description&quot;: &quot;The sources mandate persistence through the generated library but do not specify repository method names. The plan declares focused operations for rate upsert, effective-date lookup, date-rate retrieval, statistics, currency listing, and bounded history so feature code does not issue raw SQL.&quot;,
+    &quot;options&quot;: [
+      {
+        &quot;value&quot;: &quot;focused&quot;,
+        &quot;label&quot;: &quot;Declare focused typed repository operations&quot;
+      },
+      {
+        &quot;value&quot;: &quot;generic&quot;,
+        &quot;label&quot;: &quot;Use a generic query operation&quot;
+      }
+    ],
+    &quot;system_choice&quot;: &quot;focused&quot;
+  },
+  {
+    &quot;id&quot;: &quot;build-schema-derived-indexes&quot;,
+    &quot;type&quot;: &quot;text&quot;,
+    &quot;severity&quot;: &quot;informational&quot;,
+    &quot;origin&quot;: &quot;build&quot;,
+    &quot;blueprint&quot;: &quot;DATABASE.md&quot;,
+    &quot;story&quot;: null,
+    &quot;status&quot;: &quot;recommended&quot;,
+    &quot;archived&quot;: false,
+    &quot;title&quot;: &quot;Indexes derived from the persistence declaration&quot;,
+    &quot;description&quot;: &quot;The rendered schema indexes rates(date); rates(currency, date). Each is implied by the declaration \u2014 a foreign key is looked up by its child column, and a read pattern&#x27;s Input fields are the predicate it filters on. Declare an `- INDEX (...)` bullet in DATABASE.md for any index this does not cover.&quot;,
+    &quot;options&quot;: [],
+    &quot;system_choice&quot;: &quot;rates(date); rates(currency, date)&quot;
+  }
+]
+</pre></article>
+</main>
+</body>
+</html>

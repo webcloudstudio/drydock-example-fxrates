@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/evidence/block-4.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/evidence/block-4.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/evidence/block-4.md">Raw file</a></div></header>
+<article class="doc"><h1>Evidence: Block 4 · Service (block-4)</h1>
+<ul><li>block type: block</li><li>date: 2026-10-26</li><li>resulting state: closed/verified</li><li>story points (combined assembled cost): 5396</li><li>execution id: 20261026.205207.220Z-4de0908d</li></ul>
+<h2>Stories built</h2>
+<ul><li>Download and load the ECB history archive. (fetch) [story]</li></ul>
+<h2>Acceptance tooling authorization</h2>
+<ul><li>FEATURE-Fetch.md#fetch-stubbed-success: python-package=fastapi; scope=test; authorization=existing Target environment</li><li>FEATURE-Fetch.md#fetch-stubbed-success: python-package=httpx2; scope=test; authorization=existing Target environment</li></ul>
+<h2>Stacked context</h2>
+<ul><li>stack: python_compact.md (SP 601)</li><li>compass: COMPASS.md (SP 752)</li><li>implements: FEATURE-Fetch.md (SP 645)</li><li>context: ARCHITECTURE_compact.md (SP 142)</li><li>context: DATABASE_compact.md (SP 146)</li><li>stack: common_compact.md (SP 1079)</li><li>stack: sqlite_compact.md (SP 1943)</li></ul>
+<h2>Build directory changes</h2>
+<ul><li>cli/<strong>init</strong>.py</li><li>cli/commands.py</li><li>data/app.db-shm</li><li>data/app.db-wal</li><li>data/logs/test_2026-10-26_165237.log</li><li>services/rates.py</li><li>tests/test_fetch.py</li></ul>
+<h2>Pre-build acceptance observation</h2>
+<ul><li>RED: fetch-stubbed-success (FEATURE-Fetch.md)</li></ul>
+<p>intent: Fetch loads the CSV from a stubbed ECB archive and reports its fixture-derived counts. return code: 1 stderr: --- drydock: values at failure --- code = 2 --- drydock: end values --- Traceback (most recent call last): File &quot;fetch-stubbed-success.py&quot;, line 28, in &lt;module&gt; assert code == 0 ^^^^^^^^^ AssertionError</p>
+<ul><li>RED: fetch-stubbed-failure (FEATURE-Fetch.md)</li></ul>
+<p>intent: A failed stubbed download returns the operational failure status without standard output. return code: 1 stderr: --- drydock: values at failure --- code = 2 --- drydock: end values --- Traceback (most recent call last): File &quot;fetch-stubbed-failure.py&quot;, line 7, in &lt;module&gt; assert code == 1 ^^^^^^^^^ AssertionError</p>
+<h2>Post-build programmatic acceptance</h2>
+<ul><li>PASS: fetch-stubbed-success (FEATURE-Fetch.md)</li></ul>
+<p>intent: Fetch loads the CSV from a stubbed ECB archive and reports its fixture-derived counts. target interpreter: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.202600/build/FxRates/.venv/bin/python provisioning: not required return code: 0</p>
+<ul><li>PASS: fetch-stubbed-failure (FEATURE-Fetch.md)</li></ul>
+<p>intent: A failed stubbed download returns the operational failure status without standard output. target interpreter: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.202600/build/FxRates/.venv/bin/python provisioning: not required return code: 0</p>
+<h2>Build summary</h2>
+<p>RESULT: SUCCESS</p>
+<p>FILES CHANGED:</p>
+<ul><li>cli/<strong>init</strong>.py</li><li>cli/commands.py</li><li>services/rates.py</li><li>tests/test_fetch.py</li></ul>
+<p>SUMMARY: Added <code>fxrates fetch</code> to download the ECB archive, extract <code>eurofxref-hist.csv</code>, and process it through the existing loader. Added offline tests for successful loading and download failure. <code>sh bin/test.sh</code> passed: 12 tests.</p>
+<p>BLOCKERS:</p>
+<ul><li>None</li></ul></article>
+</main>
+</body>
+</html>

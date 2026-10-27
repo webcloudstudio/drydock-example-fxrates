@@ -1,0 +1,11 @@
+
+
+--- stderr ---
+--- drydock: values at failure ---
+  code = 1
+--- drydock: end values ---
+Traceback (most recent call last):
+  File "stats-empty-store.py", line 9, in <module>
+    assert code == 0
+           ^^^^^^^^^
+AssertionError

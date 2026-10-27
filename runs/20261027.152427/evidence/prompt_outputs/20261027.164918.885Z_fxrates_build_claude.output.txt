@@ -1,0 +1,21 @@
+I'll start by inspecting the build directory and the current state of the code.The convert error paths already exist, so this block is mostly the history summary. Before editing, I'll establish a baseline by running the existing suite through the declared runner.Baseline is green: 285 passed. The convert error contract is already implemented, and the history route lacks `min`, `max`, and `mean`. I'll add the statistics as a service function over the returned points, so the route only parses input and calls the service.The tuple handling in `history_summary` is more awkward than it needs to be. I'll simplify it to key on the points directly.Now the tests. The four history-statistics acceptance checks become named tests, plus boundary cases (empty, one point, a bound-filtered set). I'll follow the existing fixture pattern in `test_history_points.py`.Next, a convert-error file that mirrors the declared checks. The existing `test_convert.py` covers the `to`-side and most validation cases; this adds the `from`-side unknown-currency check and the publication-before-date check using the spec's exact inputs.Now I'll run the two new test files and the existing history and convert suites, then the full suite through the declared runner.Both stories are implemented and the full suite passes: 313 tests, up from 285, with the runner exiting 0.
+
+I did not run `sh sources/run.sh`; it is the terminal story and this block is not the last one.
+
+RESULT: SUCCESS
+
+FILES CHANGED:
+- fxrates_app/history.py
+- app_server/routes.py
+- tests/test_history_stats.py
+- tests/test_convert_errors.py
+
+SUMMARY:
+- **convert-002-convert-errors:** The `/convert` error paths were already in place: 404 for unknown currencies and missing publications, and 422 for missing parameters, a bad amount, or a bad date. I added `tests/test_convert_errors.py` to cover the declared checks, including the `from`-side unknown-currency case that the existing tests did not exercise. No application code changed for this story.
+- **hist-002-summary:** `fxrates_app/history.py` gains `history_summary(points)`, which returns `count`, `min`, `max`, and `mean`. Min and max compare as `Decimal` and return the stored text unchanged. Mean is quantized half-even to six decimals and written with six decimals. With no points, count is 0 and the other three are `None`. `app_server/routes.py` merges that summary into the `/history/{code}` response; `points` is unchanged.
+- **Tests:** `tests/test_history_stats.py` contains named tests for the four declared AC cases (count, min/max, half-even ties at both seventh-decimal cases, and the bounded and empty cases). It also covers trailing zeros in stored text, a single point, and the response key set.
+- **Choices I made:** The statistics are a service function over the returned points rather than inline in the route, so the route only parses input and calls services. The tests compute expected values with `Decimal` from the seeded texts and also hardcode the two tie results.
+
+Checks run:
+- Targeted: `.venv/bin/pytest -q` on the four files covering history and convert: 75 passed.
+- Full: `sh bin/test.sh`: 313 passed, exit 0.

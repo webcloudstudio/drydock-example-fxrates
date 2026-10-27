@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-HistoryStats.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-HistoryStats.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-HistoryStats.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: History Statistics</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261027 V1</td></tr><tr><td>Description</td><td>GET /history/{code} reports count, min, max, and mean over the points it returns.</td></tr><tr><td>Depends On</td><td>FEATURE-HistoryPoints.md</td></tr><tr><td>Provides</td><td>history statistics</td></tr><tr><td>Consumes</td><td>GET /history/{code}</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Add the summary fields <code>count</code>, <code>min</code>, <code>max</code>, and <code>mean</code> to the <code>/history/{code}</code> response, computed over exactly the points the response lists.</p>
+<h2>Behavior</h2>
+<ul><li><code>count</code> is the number of points.</li><li><code>min</code> and <code>max</code> are the stored text, as JSON strings, of the smallest and largest rate by numeric</li></ul>
+<p>value (compared as <code>Decimal</code>, never as text or float). The returned text is the stored text unchanged: <code>0.943</code> stays <code>0.943</code>.</p>
+<ul><li><code>mean</code> is the exact arithmetic mean of the point rates, computed with <code>decimal</code>, rounded half to</li></ul>
+<p>even to six decimal places and written with exactly six decimals, as a JSON string.</p>
+<ul><li>With no points, <code>count</code> is <code>0</code> and <code>min</code>, <code>max</code>, and <code>mean</code> are all <code>null</code>; <code>points</code> is <code>[]</code>.</li><li>Statistics cover only the points inside the requested bounds.</li></ul>
+<h2>Database Interface</h2>
+<ul><li>None — persistence is owned by FEATURE-HistoryPoints.md.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC history-stats-min-max-count ===<br>Intent: Count, min, and max are derived from the seeded rate texts by Decimal value, and min and max keep the stored text unchanged.<br>Requires: executable=python3; scope=test<br>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx2; scope=test</p>
+<p>from decimal import Decimal</p>
+<p>from app_server.testing import web_client from persistence.testing import db_session</p>
+<p>code = &quot;ZZH&quot; rates = { &quot;1900-12-01&quot;: &quot;0.9453&quot;, &quot;1900-12-02&quot;: &quot;0.943&quot;, &quot;1900-12-03&quot;: &quot;0.9441&quot;, &quot;1900-12-04&quot;: &quot;10.5&quot;, &quot;1900-12-05&quot;: &quot;9.75&quot;, }</p>
+<p>with db_session() as db: for d, r in rates.items(): db.rates.replace_rate(date=d, currency=code, rate=r) client = web_client() resp = client.get(f&quot;/history/{code}&quot;) assert resp.status_code == 200 body = resp.json() texts = list(rates.values()) assert body[&quot;count&quot;] == len(texts) assert body[&quot;min&quot;] == min(texts, key=Decimal) assert body[&quot;max&quot;] == max(texts, key=Decimal) === END AC history-stats-min-max-count ===</p>
+<p>=== AC history-stats-mean-half-even ===<br>Intent: Mean is the exact mean rounded half to even at six decimals and printed with six decimals; the two cases are exact ties at the seventh decimal, so they distinguish half-even from half-up.<br>Requires: executable=python3; scope=test<br>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx2; scope=test</p>
+<p>from decimal import Decimal, ROUND_HALF_EVEN</p>
+<p>from app_server.testing import web_client from persistence.testing import db_session</p>
+<p>cases = { &quot;ZZM&quot;: {&quot;1901-01-01&quot;: &quot;1.000000&quot;, &quot;1901-01-02&quot;: &quot;1.000001&quot;}, &quot;ZZN&quot;: {&quot;1901-01-01&quot;: &quot;1.000001&quot;, &quot;1901-01-02&quot;: &quot;1.000002&quot;}, }</p>
+<p>with db_session() as db: for code, rates in cases.items(): for d, r in rates.items(): db.rates.replace_rate(date=d, currency=code, rate=r) client = web_client() for code, rates in cases.items(): resp = client.get(f&quot;/history/{code}&quot;) assert resp.status_code == 200 body = resp.json() total = sum(Decimal(r) for r in rates.values()) mean = (total / len(rates)).quantize(Decimal(&quot;0.000001&quot;), rounding=ROUND_HALF_EVEN) assert body[&quot;mean&quot;] == f&quot;{mean:.6f}&quot; === END AC history-stats-mean-half-even ===</p>
+<p>=== AC history-stats-bounded ===<br>Intent: Statistics cover only the points inside the requested bounds, not the whole stored history.<br>Requires: executable=python3; scope=test<br>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx2; scope=test</p>
+<p>from decimal import Decimal, ROUND_HALF_EVEN</p>
+<p>from app_server.testing import web_client from persistence.testing import db_session</p>
+<p>code = &quot;ZZH&quot; rates = { &quot;1901-02-01&quot;: &quot;100&quot;, &quot;1901-02-02&quot;: &quot;1.5&quot;, &quot;1901-02-03&quot;: &quot;2.25&quot;, &quot;1901-02-04&quot;: &quot;0.5&quot;, } start = &quot;1901-02-02&quot; end = &quot;1901-02-03&quot;</p>
+<p>with db_session() as db: for d, r in rates.items(): db.rates.replace_rate(date=d, currency=code, rate=r) client = web_client() resp = client.get(f&quot;/history/{code}&quot;, params={&quot;start&quot;: start, &quot;end&quot;: end}) assert resp.status_code == 200 body = resp.json() inside = [rates[d] for d in sorted(rates) if start &lt;= d &lt;= end] assert body[&quot;count&quot;] == len(inside) assert body[&quot;min&quot;] == min(inside, key=Decimal) assert body[&quot;max&quot;] == max(inside, key=Decimal) mean = (sum(Decimal(r) for r in inside) / len(inside)).quantize( Decimal(&quot;0.000001&quot;), rounding=ROUND_HALF_EVEN ) assert body[&quot;mean&quot;] == f&quot;{mean:.6f}&quot; === END AC history-stats-bounded ===</p>
+<p>=== AC history-stats-empty ===<br>Intent: A history with no points in range reports count 0 and null statistics with an empty points list, still as a 200.<br>Requires: executable=python3; scope=test<br>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx2; scope=test</p>
+<p>from app_server.testing import web_client from persistence.testing import db_session</p>
+<p>code = &quot;ZZH&quot; stored = &quot;1901-03-01&quot; after = &quot;1901-04-01&quot;</p>
+<p>with db_session() as db: db.rates.replace_rate(date=stored, currency=code, rate=&quot;4&quot;) client = web_client() resp = client.get(f&quot;/history/{code}&quot;, params={&quot;start&quot;: after}) assert resp.status_code == 200 body = resp.json() assert body[&quot;count&quot;] == 0 assert body[&quot;min&quot;] is None assert body[&quot;max&quot;] is None assert body[&quot;mean&quot;] is None assert body[&quot;points&quot;] == [] === END AC history-stats-empty ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Statistics use <code>decimal</code> exclusively; no floating-point arithmetic or comparison.</li><li><code>min</code> and <code>max</code> return stored text, never a re-formatted value.</li><li>Rounding is half to even.</li></ul></article>
+</main>
+</body>
+</html>

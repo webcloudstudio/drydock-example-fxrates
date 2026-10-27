@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>build/FxRates/fxrates_app/fetch.py</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>build/FxRates/fxrates_app/fetch.py</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../build/FxRates/fxrates_app/fetch.py">Raw file</a></div></header>
+<article class="doc"><pre>&quot;&quot;&quot;ECB history archive download: the single function in the application that opens a network connection.
+
+`download_archive` returns the bytes of the ECB history zip. The fetch command calls it through this
+module attribute, so a test replaces this one seam and never reaches the network.
+&quot;&quot;&quot;
+
+from __future__ import annotations
+
+import urllib.request
+
+ECB_ARCHIVE_URL = &quot;https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist.zip&quot;
+TIMEOUT_SECONDS = 30.0
+
+
+def download_archive(url: str) -&gt; bytes:
+    &quot;&quot;&quot;Return the bytes served at `url`. A transport failure or timeout raises OSError.&quot;&quot;&quot;
+    with urllib.request.urlopen(url, timeout=TIMEOUT_SECONDS) as response:
+        return response.read()
+</pre></article>
+</main>
+</body>
+</html>

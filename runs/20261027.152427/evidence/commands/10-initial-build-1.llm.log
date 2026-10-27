@@ -1,0 +1,89 @@
+--- llm 1/15 · build · claude claude-haiku-5-5 · 20261027.154003.460Z-26552b9d ---
+  Claude session: start id=dbe47d00-8c07-4e45-9f7a-b3c364880647
+  Completed CLAUDE/claude-haiku-5-5 (build)  rc=0
+    elapsed=2m 14.1s   provider=2m 12.9s   turns=17   cached=353,650 (100% hit)   uncached=26   write 30,786   out=13,956   cost=$0.0167   tps=104.1
+  tokens: cached=353,650 (100% hit) · uncached=26 · write 30,786 · out=13,956 · cost=$0.0167
+
+--- llm 2/15 · build · claude claude-haiku-5-5 · 20261027.154317.899Z-0ce64104 ---
+  Claude session: start id=48327808-066a-458d-a62c-08a54b8d6603
+  Completed CLAUDE/claude-haiku-5-5 (build)  rc=0
+    elapsed=2m 7.2s   provider=2m 6.1s   turns=24   cached=442,713 (100% hit)   uncached=22   write 47,859   out=19,118   cost=$0.0236   tps=150.3
+  tokens: cached=442,713 (100% hit) · uncached=22 · write 47,859 · out=19,118 · cost=$0.0236
+
+--- llm 3/15 · build · claude claude-haiku-5-5 · 20261027.154630.706Z-4d50c4a8 ---
+  Claude session: start id=409882ef-86cd-486a-a205-589ae1ea33c4
+  Completed CLAUDE/claude-haiku-5-5 (build)  rc=0
+    elapsed=2m 18.9s   provider=2m 17.9s   turns=18   cached=793,241 (100% hit)   uncached=36   write 54,654   out=19,830   cost=$0.0288   tps=142.7
+  tokens: cached=793,241 (100% hit) · uncached=36 · write 54,654 · out=19,830 · cost=$0.0288
+
+--- llm 4/15 · build · claude claude-haiku-5-5 · 20261027.155024.560Z-6475a427 ---
+  Claude session: start id=ba8c8af1-6617-4509-8961-97fa0af8fb37
+  Completed CLAUDE/claude-haiku-5-5 (build)  rc=0
+    elapsed=2m 40.4s   provider=2m 38.5s   turns=16   cached=617,501 (100% hit)   uncached=32   write 48,022   out=14,167   cost=$0.0229   tps=88.3
+  tokens: cached=617,501 (100% hit) · uncached=32 · write 48,022 · out=14,167 · cost=$0.0229
+
+--- llm 5/15 · build · claude claude-haiku-5-5 · 20261027.155444.881Z-69d42135 ---
+  Claude session: start id=dd7ad2b8-e921-4885-8464-f8117504619f
+  Completed CLAUDE/claude-haiku-5-5 (build)  rc=0
+    elapsed=1m 17.2s   provider=1m 15.4s   turns=7   cached=143,210 (100% hit)   uncached=12   write 27,090   out=8,320   cost=$0.0110   tps=107.7
+  tokens: cached=143,210 (100% hit) · uncached=12 · write 27,090 · out=8,320 · cost=$0.0110
+
+--- llm 6/15 · build · claude claude-haiku-5-5 · 20261027.155829.052Z-00c30e97 ---
+  Claude session: start id=141f8bb5-aab7-48df-ab13-a44d261cb6c9
+  Completed CLAUDE/claude-haiku-5-5 (build)  rc=0
+    elapsed=2m 30.3s   provider=2m 28.2s   turns=19   cached=711,167 (100% hit)   uncached=30   write 59,757   out=16,853   cost=$0.0275   tps=112.1
+  tokens: cached=711,167 (100% hit) · uncached=30 · write 59,757 · out=16,853 · cost=$0.0275
+
+--- llm 7/15 · build · claude claude-haiku-5-5 · 20261027.160325.188Z-36792b52 ---
+  Claude session: start id=5765b63a-164e-4aad-9114-ce3c480e8ef6
+  Completed CLAUDE/claude-haiku-5-5 (build)  rc=0
+    elapsed=1m 26.5s   provider=1m 24.7s   turns=9   cached=267,929 (100% hit)   uncached=18   write 31,333   out=4,778   cost=$0.0113   tps=55.3
+  tokens: cached=267,929 (100% hit) · uncached=18 · write 31,333 · out=4,778 · cost=$0.0113
+
+--- llm 8/15 · build · claude claude-haiku-5-5 · 20261027.160740.974Z-48d43aa5 ---
+  Claude session: start id=cb08b2e3-109d-4e7e-b122-fe6bd5fd3439
+  Completed CLAUDE/claude-haiku-5-5 (build)  rc=0
+    elapsed=3m 39.9s   provider=3m 38.1s   turns=21   cached=573,343 (100% hit)   uncached=26   write 54,975   out=16,655   cost=$0.0251   tps=75.8
+  tokens: cached=573,343 (100% hit) · uncached=26 · write 54,975 · out=16,655 · cost=$0.0251
+
+--- llm 9/15 · build · claude claude-haiku-5-5 · 20261027.161413.795Z-d52acad2 ---
+  Claude session: start id=755561e9-8bc3-4f35-932f-0e5cab31e83f
+  Completed CLAUDE/claude-haiku-5-5 (build)  rc=0
+    elapsed=2m 16.5s   provider=2m 14.6s   turns=15   cached=550,964 (100% hit)   uncached=30   write 41,686   out=11,573   cost=$0.0196   tps=84.8
+  tokens: cached=550,964 (100% hit) · uncached=30 · write 41,686 · out=11,573 · cost=$0.0196
+
+--- llm 10/15 · build · claude claude-haiku-5-5 · 20261027.162116.999Z-665549b5 ---
+  Claude session: start id=883fea79-7688-4138-99a8-ce6a7fdf07b6
+  Completed CLAUDE/claude-haiku-5-5 (build)  rc=0
+    elapsed=4m 14.9s   provider=4m 12.9s   turns=33   cached=2,000,029 (100% hit)   uncached=66   write 73,033   out=29,717   cost=$0.0495   tps=116.6
+  tokens: cached=2,000,029 (100% hit) · uncached=66 · write 73,033 · out=29,717 · cost=$0.0495
+
+--- llm 11/15 · build · claude claude-haiku-5-5 · 20261027.163053.576Z-323a46ba ---
+  Claude session: start id=5565c188-00ff-47a2-9fda-b6e435524dad
+  Completed CLAUDE/claude-haiku-5-5 (build)  rc=0
+    elapsed=2m 53.6s   provider=2m 51.7s   turns=16   cached=591,503 (100% hit)   uncached=28   write 52,981   out=15,851   cost=$0.0244   tps=91.3
+  tokens: cached=591,503 (100% hit) · uncached=28 · write 52,981 · out=15,851 · cost=$0.0244
+
+--- llm 12/15 · build · claude claude-haiku-5-5 · 20261027.163945.512Z-b207149b ---
+  Claude session: start id=02287bb7-5dee-4304-8fa2-e6c3b7822ad6
+  Completed CLAUDE/claude-haiku-5-5 (build)  rc=0
+    elapsed=2m 41.6s   provider=2m 39.8s   turns=15   cached=634,999 (100% hit)   uncached=30   write 52,189   out=21,953   cost=$0.0278   tps=135.9
+  tokens: cached=634,999 (100% hit) · uncached=30 · write 52,189 · out=21,953 · cost=$0.0278
+
+--- llm 13/15 · build · claude claude-haiku-5-5 · 20261027.164918.885Z-a8a38bcd ---
+  Claude session: start id=3fc3a4bc-4a08-465a-8595-fa287f19e6d0
+  Completed CLAUDE/claude-haiku-5-5 (build)  rc=0
+    elapsed=2m 25.0s   provider=2m 23.2s   turns=13   cached=376,362 (100% hit)   uncached=20   write 44,597   out=11,642   cost=$0.0185   tps=80.3
+  tokens: cached=376,362 (100% hit) · uncached=20 · write 44,597 · out=11,642 · cost=$0.0185
+
+--- llm 14/15 · build · claude claude-haiku-5-5 · 20261027.165850.342Z-9b040970 ---
+  Claude session: start id=c1c64b1f-e2a7-4253-a495-f1dcc58ff085
+  Completed CLAUDE/claude-haiku-5-5 (build)  rc=0
+    elapsed=3m 34.9s   provider=3m 33.1s   turns=14   cached=472,509 (100% hit)   uncached=28   write 37,683   out=9,548   cost=$0.0170   tps=44.4
+  tokens: cached=472,509 (100% hit) · uncached=28 · write 37,683 · out=9,548 · cost=$0.0170
+
+--- llm 15/15 · build · claude claude-haiku-5-5 · 20261027.170854.522Z-c29cd1c4 ---
+  Claude session: start id=902bc6b4-3706-45b3-bd67-85d4de88534c
+  Completed CLAUDE/claude-haiku-5-5 (build)  rc=0
+    elapsed=2m 18.5s   provider=2m 17.2s   turns=12   cached=356,780 (100% hit)   uncached=20   write 48,833   out=10,313   cost=$0.0185   tps=74.5
+  tokens: cached=356,780 (100% hit) · uncached=20 · write 48,833 · out=10,313 · cost=$0.0185

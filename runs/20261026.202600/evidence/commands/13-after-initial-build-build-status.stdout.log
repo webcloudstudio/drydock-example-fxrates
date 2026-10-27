@@ -1,0 +1,30 @@
+Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
+Next: (no actionable steps — all done or blocked)
+
+Blueprint: FxRates
+Target: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.202600/workspace/targets/FxRates
+Rows: <state> <type>  <Name>  [<id>]   — pass [<id>] to --step
+Block: Build Block 1 · Foundational  [block-1]   — [built] story Define application modules and their ownership boundaries.  [architecture] — complete
+
+Block: Build Block 2 · Foundational  [block-2]   — 3/3 stories complete
+  [built]   story  Declare the rates schema and generated repository contract.  [database]
+  [built]   story  Establish the FastAPI application and test client.  [app_server]
+  [built]   story  Establish the fxrates executable and CLI entry point.  [cli]
+
+Block: Build Block 3 · Service  [block-3]   — 10/10 stories complete
+  [built]   story  Validate and load ECB CSV history files atomically.  [load]
+  [built]   story  Initialize an empty rates store.  [init]
+  [built]   story  List currencies that have stored rates.  [api_currencies]
+  [built]   story  Retrieve rates from the latest publication.  [api_latest]
+  [built]   story  Report stored rate statistics.  [api_stats]
+  [built]   story  Retrieve rates by effective date.  [api_rates]
+  [built]   story  Retrieve currency history and summary statistics.  [history]
+  [built]   story  Convert amounts between currencies.  [convert]
+  [built]   story  Serve the health endpoint.  [api_health]
+  [built]   story  Report CLI usage and operational errors.  [cli_errors]
+Block: Build Block 4 · Service  [block-4]   — [built] story Download and load the ECB history archive.  [fetch] — complete
+Block: Build Block 5 · Service  [block-5]   — [built] story Provide the offline pytest suite and test launcher.  [tests] — complete
+Block: Build Block 6 · Service  [block-6]   — [built] story Verify complete supplied grader conformance.  [grader] — complete
+
+Steps: 17 total — 0 done, 17 built (await verify), 0 in review, 0 pending, 0 blocked by questions, 0 failed (0% complete)
+Buildable now: (none)

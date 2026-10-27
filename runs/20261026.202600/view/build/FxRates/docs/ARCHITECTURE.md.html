@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>build/FxRates/docs/ARCHITECTURE.md</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>build/FxRates/docs/ARCHITECTURE.md</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../build/FxRates/docs/ARCHITECTURE.md">Raw file</a></div></header>
+<article class="doc"><h1>Application Architecture</h1>
+<h2>Module ownership</h2>
+<div class="scroll"><table><thead><tr><th>Module</th><th>Owns</th><th>Allowed dependencies</th></tr></thead><tbody><tr><td><code>cli</code></td><td>The <code>fxrates</code> executable, argument handling, command dispatch, and diagnostics.</td><td>Feature services, configuration</td></tr><tr><td><code>app_server</code></td><td>FastAPI application factory and HTTP route registration.</td><td>Feature services, configuration</td></tr><tr><td><code>services</code></td><td>ECB CSV validation and loading, fetching, store initialization, rate queries, and exact decimal calculations.</td><td><code>persistence</code>, configuration, standard library</td></tr><tr><td><code>persistence</code></td><td>Generated relational layer and shipped database library.</td><td>Database engine and schema</td></tr><tr><td><code>config</code></td><td>Resolving the database location.</td><td>Standard library</td></tr></tbody></table></div>
+<p>HTTP handlers call services. CLI commands call services. Services call generated persistence operations through the shipped persistence library. Only the persistence boundary reaches the database; application modules do not open database drivers directly.</p>
+<p>The load workflow validates the complete input file before its first write. Fetch extracts the archive CSV and uses the same validation and loading path. Rates remain ECB-published text in storage and responses; calculations use <code>decimal.Decimal</code>.</p>
+<h2>Technology roles</h2>
+<div class="scroll"><table><thead><tr><th>Technology</th><th>Role</th></tr></thead><tbody><tr><td>Python 3.11 or newer</td><td>Application, CLI, services, and tests</td></tr><tr><td>FastAPI</td><td>JSON HTTP API</td></tr><tr><td>uvicorn</td><td>Serves the API on <code>127.0.0.1</code></td></tr><tr><td>SQLite</td><td>Local rates store, accessed only through the shipped persistence library</td></tr><tr><td>pytest</td><td>Offline automated tests</td></tr><tr><td>FastAPI <code>TestClient</code></td><td>In-process API checks</td></tr></tbody></table></div>
+<p>Database location precedence is <code>DATABASE_URL</code>, then <code>DATABASE_PATH</code>, then <code>data/app.db</code>.</p></article>
+</main>
+</body>
+</html>

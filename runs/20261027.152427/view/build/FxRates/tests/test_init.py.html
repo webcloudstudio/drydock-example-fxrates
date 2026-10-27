@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>build/FxRates/tests/test_init.py</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>build/FxRates/tests/test_init.py</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../build/FxRates/tests/test_init.py">Raw file</a></div></header>
+<article class="doc"><pre>&quot;&quot;&quot;The `init` command: empties the rates store, prints nothing, exits 0.
+
+Seeds and reads back through the persistence library, and runs the command in-process through
+`cli_runner`. Stored state is read back through `db.rates` rather than inferred from output.
+
+`init` removes every row, so each test runs inside one acceptance transaction: the command and the
+read-back share one connection, and the transaction rolls back at the end. The configured store is
+never left changed.
+&quot;&quot;&quot;
+
+from __future__ import annotations
+
+from collections.abc import Iterator
+
+import pytest
+
+from persistence import db as persistence_db
+from persistence.testing import db_session
+
+
+@pytest.fixture(autouse=True)
+def rolled_back_transaction() -&gt; Iterator[None]:
+    &quot;&quot;&quot;Share one connection between the command and the test, then roll everything back.&quot;&quot;&quot;
+    persistence_db.begin_acceptance_transaction()
+    try:
+        yield
+    finally:
+        persistence_db.end_acceptance_transaction()
+
+
+def test_init_removes_seeded_rates_for_a_currency(cli_runner) -&gt; None:
+    currency = &quot;ZZI&quot;
+    date = &quot;1900-10-01&quot;
+    with db_session() as db:
+        db.rates.replace_rate(date=date, currency=currency, rate=&quot;1.10&quot;)
+        assert [r.date for r in db.rates.list_currency_history(currency=currency)] == [date]
+
+        code, _, _ = cli_runner(&quot;init&quot;)
+
+        assert code == 0
+        assert db.rates.list_currency_history(currency=currency) == []
+
+
+def test_init_removes_rates_across_many_dates(cli_runner) -&gt; None:
+    seeded = [(&quot;1900-10-02&quot;, &quot;ZZJ&quot;, &quot;1.1&quot;), (&quot;2025-01-02&quot;, &quot;ZZK&quot;, &quot;2.2&quot;), (&quot;9999-12-31&quot;, &quot;ZZL&quot;, &quot;3.3&quot;)]
+    with db_session() as db:
+        for date, currency, rate in seeded:
+            db.rates.replace_rate(date=date, currency=currency, rate=rate)
+
+        code, _, _ = cli_runner(&quot;init&quot;)
+
+        assert code == 0
+        assert db.rates.list_all_keys() == []
+
+
+def test_init_prints_nothing_to_stdout_or_stderr(cli_runner) -&gt; None:
+    with db_session() as db:
+        db.rates.replace_rate(date=&quot;1900-10-03&quot;, currency=&quot;ZZM&quot;, rate=&quot;4&quot;)
+
+        code, out, err = cli_runner(&quot;init&quot;)
+
+        assert code == 0
+        assert out == &quot;&quot;
+        assert err == &quot;&quot;
+
+
+def test_init_on_an_empty_store_succeeds_and_leaves_it_empty(cli_runner) -&gt; None:
+    with db_session() as db:
+        assert db.rates.list_all_keys() == []
+
+        code, out, _ = cli_runner(&quot;init&quot;)
+
+        assert code == 0
+        assert out == &quot;&quot;
+        assert db.rates.list_all_keys() == []
+
+
+def test_init_applied_twice_exits_zero_both_times_and_stays_empty(cli_runner) -&gt; None:
+    with db_session() as db:
+        db.rates.replace_rate(date=&quot;1900-10-04&quot;, currency=&quot;ZZN&quot;, rate=&quot;5&quot;)
+
+        first = cli_runner(&quot;init&quot;)
+        second = cli_runner(&quot;init&quot;)
+
+        assert first[0] == 0
+        assert second[0] == 0
+        assert first[1] == second[1] == &quot;&quot;
+        assert db.rates.list_all_keys() == []
+</pre></article>
+</main>
+</body>
+</html>

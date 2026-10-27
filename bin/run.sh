@@ -1,7 +1,8 @@
 #!/bin/sh
 # run.sh — FxRates grader. Do not filter, skip, or reinterpret.
 #
-# Runs ./fxrates against a fresh database: loads the supplied ECB files from the command line,
+# Runs ./fxrates against the configured, schema-provisioned test database.
+# Loads the supplied ECB files from the command line,
 # starts `./fxrates serve` on a free local port, and compares every command's exit code and
 # standard output, and every HTTP response's status and JSON body, with the known answer below.
 # JSON bodies are compared as values, so key order and whitespace do not matter. Standard error
@@ -18,11 +19,7 @@ APP=$(cd "${1:-.}" && pwd)
 if [ -f "$HERE/eurofxref-hist_2025-01.csv" ]; then DATA=$HERE; else DATA=$(cd "$HERE/../sources" && pwd); fi
 WORK=$(mktemp -d)
 BIN="$APP/fxrates"
-DATABASE_URL="$WORK/fxrates.db"
-export DATABASE_URL
 SERVER=""
-PORT=$(python3 -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')
-BASE="http://127.0.0.1:$PORT"
 
 stop_server() {
     if [ -n "$SERVER" ]; then
@@ -40,6 +37,34 @@ if [ ! -x "$BIN" ]; then
     echo "The deliverable is an executable named fxrates at the application root." >&2
     exit 1
 fi
+
+# Validate the configured store without creating a database or changing application DSNs.
+# The test store is owned by this grading run: init empties rates before fixture loading.
+if ! (cd "$APP" && python3 - <<'PY_STORE'
+import os
+from pathlib import Path
+import sqlite3
+import sys
+
+location = os.environ.get("DATABASE_URL") or os.environ.get("DATABASE_PATH") or "data/app.db"
+if location.startswith("sqlite://"):
+    location = location[len("sqlite://"):]
+try:
+    store = Path(location).expanduser().resolve()
+    with sqlite3.connect(store.as_uri() + "?mode=ro", uri=True) as db:
+        if db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='rates'").fetchone() is None:
+            raise RuntimeError("configured database has no rates table")
+except (OSError, sqlite3.Error, RuntimeError) as error:
+    print(f"error: grading requires the schema-provisioned test store at {location}: {error}", file=sys.stderr)
+    print("Provision the configured store through the DATABASE owner before grading; the grader does not create schema.", file=sys.stderr)
+    sys.exit(1)
+PY_STORE
+); then
+    exit 1
+fi
+
+PORT=$(python3 -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')
+BASE="http://127.0.0.1:$PORT"
 
 PASSED=0
 FAILED=0

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-Fetch.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-Fetch.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-Fetch.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: ECB History Fetch</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261026 V1</td></tr><tr><td>Description</td><td>Downloads and extracts the ECB history archive before loading its CSV through the shared loader.</td></tr><tr><td>Depends On</td><td>FEATURE-Load.md</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p><code>./fxrates fetch</code> downloads <code>https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist.zip</code>, extracts <code>eurofxref-hist.csv</code>, and passes that file through the same validation, persistence, and reporting workflow as <code>./fxrates load</code>.</p>
+<p>A download failure returns status 1, writes no standard output, and emits a diagnostic to standard error. Automated tests replace the download with a stub and do not access the network.</p>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC fetch-stubbed-success ===<br>Intent: Fetch loads the CSV from a stubbed ECB archive and reports its fixture-derived counts.<br>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx2; scope=test</p>
+<p>import csv import io import urllib.request import zipfile from unittest.mock import patch from cli.testing import cli_runner from persistence.testing import db_session</p>
+<p>buffer = io.BytesIO() with zipfile.ZipFile(buffer, &quot;w&quot;) as archive: archive.writestr(&quot;eurofxref-hist.csv&quot;, &quot;Date,USD,\n2099-06-01,1.25,\n&quot;) payload = buffer.getvalue()</p>
+<p>class Response: def read(self): return payload def <strong>enter</strong>(self): return self def <strong>exit</strong>(self, *args): return None</p>
+<p>with patch(&quot;urllib.request.urlopen&quot;, return_value=Response()): code, stdout, stderr = cli_runner(&quot;fetch&quot;)</p>
+<p>rows = list(csv.reader(stdout.splitlines())) with db_session() as db: stored = db.rates.by_date(date=&quot;2099-06-01&quot;) assert code == 0 assert rows[0] == [&quot;dates&quot;, &quot;rates&quot;] assert rows[1] == [&quot;1&quot;, &quot;1&quot;] assert len(stored) == 1 assert stored[0].currency == &quot;USD&quot; assert stored[0].rate == &quot;1.25&quot; === END AC fetch-stubbed-success ===</p>
+<p>=== AC fetch-stubbed-failure ===<br>Intent: A failed stubbed download returns the operational failure status without standard output. from unittest.mock import patch from cli.testing import cli_runner</p>
+<p>with patch(&quot;urllib.request.urlopen&quot;, side_effect=OSError(&quot;offline&quot;)): code, stdout, stderr = cli_runner(&quot;fetch&quot;)</p>
+<p>assert code == 1 assert stdout == &quot;&quot; === END AC fetch-stubbed-failure ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Extract the <code>eurofxref-hist.csv</code> member and use the shared loader&#x27;s validation and reporting behavior.</li><li>Never make network requests in automated tests; replace the download operation with a stub.</li><li>On download failure, return status 1 and write no standard output.</li></ul></article>
+</main>
+</body>
+</html>

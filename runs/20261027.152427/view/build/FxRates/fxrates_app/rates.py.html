@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>build/FxRates/fxrates_app/rates.py</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>build/FxRates/fxrates_app/rates.py</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../build/FxRates/fxrates_app/rates.py">Raw file</a></div></header>
+<article class="doc"><pre>&quot;&quot;&quot;Rates on a calendar day: the effective publication date and the rates published on it.
+
+The ECB publishes on working days only, so a request for any date resolves to the latest
+publication on or before it. Rates are returned as the stored text, never converted to a float.
+Reads go through `db.rates` only.
+&quot;&quot;&quot;
+
+from __future__ import annotations
+
+from persistence import Database
+
+from fxrates_app.config import open_store
+
+BASE = &quot;EUR&quot;
+
+
+def _effective(db: Database, day: str) -&gt; str | None:
+    &quot;&quot;&quot;Return the latest stored publication date on or before `day`, or None when none exists.&quot;&quot;&quot;
+    rows = db.rates.list_on_or_before(as_of=day)
+    return rows[0].date if rows else None
+
+
+def effective_date(d: str) -&gt; str | None:
+    &quot;&quot;&quot;Return the latest publication date on or before `d`, or None when no such date exists.&quot;&quot;&quot;
+    db = open_store()
+    try:
+        return _effective(db, d)
+    finally:
+        db.close()
+
+
+def _rates_of(db: Database, effective: str) -&gt; dict[str, str]:
+    &quot;&quot;&quot;Return {currency: stored rate text} for the publication on `effective`, base excluded.&quot;&quot;&quot;
+    rows = db.rates.list_for_date(date=effective)
+    return {row.currency: row.rate for row in rows if row.currency != BASE}
+
+
+def rates_on(requested: str) -&gt; tuple[str, dict[str, str]] | None:
+    &quot;&quot;&quot;Return (effective date, {currency: stored rate text}) for `requested`, or None.
+
+    None means no publication exists on or before `requested`. The base currency never appears in
+    the mapping.
+    &quot;&quot;&quot;
+    db = open_store()
+    try:
+        effective = _effective(db, requested)
+        if effective is None:
+            return None
+        rates = _rates_of(db, effective)
+    finally:
+        db.close()
+    return effective, rates
+
+
+def latest_rates() -&gt; tuple[str, dict[str, str]] | None:
+    &quot;&quot;&quot;Return (latest publication date, {currency: stored rate text}), or None when nothing is stored.
+
+    The latest date is the first row of `list_on_or_before` called without a bound.
+    &quot;&quot;&quot;
+    db = open_store()
+    try:
+        rows = db.rates.list_on_or_before()
+        if not rows:
+            return None
+        effective = rows[0].date
+        rates = _rates_of(db, effective)
+    finally:
+        db.close()
+    return effective, rates
+</pre></article>
+</main>
+</body>
+</html>

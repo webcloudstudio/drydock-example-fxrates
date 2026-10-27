@@ -1,4 +1,0 @@
---- llm 1/1 · build · codex gpt-6-luna · 20261024.145840.366Z-ba93a8f1 ---
-  Completed CODEX/gpt-6-luna (build)  rc=0
-    elapsed=35.8s   cached=144,640 (85% hit)   uncached=26,384   out=1,904   tps=53.1
-  tokens: cached=144,640 (85% hit) · uncached=26,384 · out=1,904

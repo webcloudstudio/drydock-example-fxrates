@@ -1,3 +1,0 @@
-2026-10-25 14:49:41 EDT  Calling CODEX/gpt-6-luna (plan · blueprint batch 1)...
-  Completed CODEX/gpt-6-luna (plan · blueprint batch 1)  rc=0
-    elapsed=23.6s   cached=11,520 (18% hit)   uncached=51,860   out=2,444   tps=103.4

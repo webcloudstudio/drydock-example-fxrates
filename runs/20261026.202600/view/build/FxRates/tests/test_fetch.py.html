@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>build/FxRates/tests/test_fetch.py</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>build/FxRates/tests/test_fetch.py</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../build/FxRates/tests/test_fetch.py">Raw file</a></div></header>
+<article class="doc"><pre>&quot;&quot;&quot;ECB archive fetch behavior, with the network fully stubbed.&quot;&quot;&quot;
+
+import io
+import zipfile
+from unittest.mock import patch
+
+from cli.testing import cli_runner
+from persistence.testing import db_session
+
+
+def _archive(csv_text: str) -&gt; bytes:
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, &quot;w&quot;) as archive:
+        archive.writestr(&quot;eurofxref-hist.csv&quot;, csv_text)
+    return buffer.getvalue()
+
+
+class _Response:
+    def __init__(self, payload: bytes):
+        self.payload = payload
+
+    def read(self) -&gt; bytes:
+        return self.payload
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        return None
+
+
+def test_fetch_loads_archive_csv_and_reports_counts() -&gt; None:
+    payload = _archive(&quot;Date,USD,\n2099-06-01,1.25,\n&quot;)
+    with patch(&quot;urllib.request.urlopen&quot;, return_value=_Response(payload)):
+        code, stdout, _ = cli_runner(&quot;fetch&quot;)
+    with db_session() as db:
+        stored = db.rates.by_date(date=&quot;2099-06-01&quot;)
+    assert code == 0
+    assert [line.split(&quot;,&quot;) for line in stdout.splitlines()] == [[&quot;dates&quot;, &quot;rates&quot;], [&quot;1&quot;, &quot;1&quot;]]
+    assert [(row.currency, row.rate) for row in stored] == [(&quot;USD&quot;, &quot;1.25&quot;)]
+
+
+def test_fetch_download_failure_has_no_stdout_and_fails() -&gt; None:
+    with patch(&quot;urllib.request.urlopen&quot;, side_effect=OSError(&quot;offline&quot;)):
+        code, stdout, stderr = cli_runner(&quot;fetch&quot;)
+    assert code == 1
+    assert stdout == &quot;&quot;
+    assert stderr
+</pre></article>
+</main>
+</body>
+</html>

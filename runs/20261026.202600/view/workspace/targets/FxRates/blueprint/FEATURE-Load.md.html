@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-Load.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-Load.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-Load.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: ECB CSV Loading</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261026 V1</td></tr><tr><td>Description</td><td>Validates and loads ECB history CSV files atomically while preserving published rate text.</td></tr><tr><td>Depends On</td><td>FEATURE-CLI.md, DATABASE.md</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p><code>./fxrates load &lt;csv&gt;</code> reads an ECB history file, validates the entire file before its first database write, then stores every rate other than <code>N/A</code>. A valid rate replaces the stored value for the same publication date and currency. On success, print CSV output with header <code>dates,rates</code> and one data row containing the number of dates with at least one rate and the number of rates stored from this file.</p>
+<h2>CSV Rules</h2>
+<ul><li>The first header field is <code>Date</code>; subsequent fields are three-letter uppercase currency codes. Ignore the final empty field produced by the ECB trailing comma.</li><li>Each row has a real, non-repeated <code>YYYY-MM-DD</code> date and exactly one value per currency, excluding the ignored trailing field.</li><li><code>N/A</code> denotes no rate and creates no stored row. Other values match <code>[0-9]+(\.[0-9]+)?</code> and are nonzero.</li><li>A malformed header or row, wrong field count, invalid or repeated date, or invalid rate rejects the file. Reject it before writing any row.</li><li>A file read failure is an operational failure. A rejected file and an operational failure produce no standard output; diagnostics go to standard error.</li></ul>
+<h2>Database Interface</h2>
+<ul><li><code>FEATURE-RATE-001</code> — write: store or replace a published rate - supplies: <code>date</code>, <code>currency</code>, <code>rate</code> - returns: <code>date</code>, <code>currency</code>, <code>rate</code></li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC load-valid-file ===<br>Intent: Loading the supplied January history succeeds and reports the fixture-derived date and rate counts. import csv from cli.testing import cli_runner</p>
+<p>path = &quot;sources/eurofxref-hist_2025-01.csv&quot; code, stdout, stderr = cli_runner(&quot;load&quot;, path) rows = list(csv.reader(stdout.splitlines())) assert code == 0 assert rows[0] == [&quot;dates&quot;, &quot;rates&quot;] assert rows[1] == [str(22), str(22 * 8)] === END AC load-valid-file ===</p>
+<p>=== AC load-rejects-atomically ===<br>Intent: A rejected CSV file leaves the rates it would otherwise have changed untouched. from cli.testing import cli_runner from persistence.testing import db_session</p>
+<p>date = &quot;2025-02-04&quot; currency = &quot;USD&quot; rate = &quot;9.876&quot;</p>
+<p>with db_session() as db: seeded = db.rates.upsert(date=date, currency=currency, rate=rate) assert seeded.rate == rate code, stdout, stderr = cli_runner(&quot;load&quot;, &quot;sources/eurofxref-hist_bad.csv&quot;) stored = db.rates.by_date(date=date) assert code == 3 assert stdout == &quot;&quot; assert any(row.currency == currency and row.rate == rate for row in stored) === END AC load-rejects-atomically ===</p>
+<p>=== AC load-replaces-published-text ===<br>Intent: Loading a valid file stores its rate text exactly and replaces a matching stored rate. from cli.testing import cli_runner from persistence.testing import db_session</p>
+<p>date = &quot;2025-01-31&quot; currency = &quot;USD&quot; published = &quot;1.0393&quot; prior = &quot;9.876&quot;</p>
+<p>with db_session() as db: seeded = db.rates.upsert(date=date, currency=currency, rate=prior) assert seeded.rate == prior code, stdout, stderr = cli_runner(&quot;load&quot;, &quot;sources/eurofxref-hist_2025-01.csv&quot;) stored = db.rates.by_date(date=date) found = next(row for row in stored if row.currency == currency) assert code == 0 assert found.rate == published === END AC load-replaces-published-text ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Check the entire file before its first write; a rejected file changes nothing.</li><li>Store published rate strings unchanged, omit <code>N/A</code>, and replace matching <code>(date, currency)</code> rows.</li><li>Access persistence only through the shipped library and generated relational layer.</li></ul></article>
+</main>
+</body>
+</html>

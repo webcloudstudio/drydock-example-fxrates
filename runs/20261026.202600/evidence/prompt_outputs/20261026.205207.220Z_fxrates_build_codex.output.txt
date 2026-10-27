@@ -1,0 +1,13 @@
+RESULT: SUCCESS
+
+FILES CHANGED:
+- cli/__init__.py
+- cli/commands.py
+- services/rates.py
+- tests/test_fetch.py
+
+SUMMARY:
+Added `fxrates fetch` to download the ECB archive, extract `eurofxref-hist.csv`, and process it through the existing loader. Added offline tests for successful loading and download failure. `sh bin/test.sh` passed: 12 tests.
+
+BLOCKERS:
+- None

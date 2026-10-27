@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/evidence/block-10.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/evidence/block-10.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/evidence/block-10.md">Raw file</a></div></header>
+<article class="doc"><h1>Evidence: Block 10 · Service (block-10)</h1>
+<ul><li>block type: block</li><li>date: 2026-10-27</li><li>resulting state: closed/verified</li><li>story points (combined assembled cost): 8985</li><li>execution id: 20261027.161413.795Z-d52acad2</li></ul>
+<h2>Stories built</h2>
+<ul><li><code>fxrates serve</code> listens on 127.0.0.1 and answers /health, /openapi.json, and /docs. (rates-001-serve-health) [story]</li></ul>
+<h2>Acceptance tooling authorization</h2>
+<ul><li>FEATURE-ServeHealth.md#serve-health-route: python-package=fastapi; scope=test; authorization=existing Target environment</li><li>FEATURE-ServeHealth.md#serve-health-route: python-package=httpx2; scope=test; authorization=existing Target environment</li><li>FEATURE-ServeHealth.md#serve-live-sigterm: executable=python3; scope=test; authorization=existing Target environment</li><li>FEATURE-ServeHealth.md#serve-live-sigterm: python-package=uvicorn; scope=test; authorization=existing Target environment</li><li>FEATURE-ServeHealth.md#serve-port-in-use: executable=python3; scope=test; authorization=existing Target environment</li><li>FEATURE-ServeHealth.md#serve-port-in-use: python-package=uvicorn; scope=test; authorization=existing Target environment</li></ul>
+<h2>Stacked context</h2>
+<ul><li>stack: python_compact.md (SP 921)</li><li>compass: COMPASS.md (SP 1152)</li><li>implements: FEATURE-ServeHealth.md (SP 1910)</li><li>context: ARCHITECTURE_compact.md (SP 386)</li><li>context: DATABASE_compact.md (SP 707)</li><li>stack: fastapi_compact.md (SP 1122)</li><li>stack: cli.md (SP 2689)</li></ul>
+<h2>Build directory changes</h2>
+<ul><li>app_server/routes.py</li><li>cli/<strong>init</strong>.py</li><li>cli/serve_command.py</li><li>data/app.db-shm</li><li>data/app.db-wal</li><li>tests/test_health.py</li><li>tests/test_serve.py</li></ul>
+<h2>Pre-build acceptance observation</h2>
+<ul><li>RED: serve-health-route (FEATURE-ServeHealth.md)</li></ul>
+<p>intent: The application answers GET /health with status 200 and the exact status body, and its OpenAPI description and interactive docs are served with status 200. return code: 1 stderr: --- drydock: values at failure --- response = &lt;Response [404 Not Found]&gt; --- drydock: end values --- Traceback (most recent call last): File &quot;serve-health-route.py&quot;, line 5, in &lt;module&gt; assert response.status_code == 200 ^^^^^^^^^^^^^^^^^^^^^^^^^^^ AssertionError</p>
+<ul><li>RED: serve-live-sigterm (FEATURE-ServeHealth.md)</li></ul>
+<p>intent: The serve command listens on 127.0.0.1 at the requested port, answers /health within a bounded wait, and exits 0 when it receives SIGTERM. return code: 1 stdout: error: command not available in this build: serve stderr: --- drydock: values at failure --- proc = &lt;Popen: returncode: 2 args: [&#x27;/mnt/c/Users/barlo/projects/drydock/uat/FxRate...&gt; --- drydock: end values --- Traceback (most recent call last): File &quot;serve-live-sigterm.py&quot;, line 34, in &lt;module&gt; assert proc.poll() is None, &quot;server exited before answering /health&quot; ^^^^^^^^^^^^^^^^^^^<br>AssertionError: server exited before answering /health</p>
+<ul><li>RED: serve-port-in-use (FEATURE-ServeHealth.md)</li></ul>
+<p>intent: When the requested port is already bound, serve exits 1 with empty stdout and one stderr line instead of serving. return code: 1 stdout: error: command not available in this build: serve stderr: --- drydock: values at failure --- proc = &lt;Popen: returncode: 2 args: [&#x27;/mnt/c/Users/barlo/projects/drydock/uat/FxRate...&gt; --- drydock: end values --- Traceback (most recent call last): File &quot;serve-port-in-use.py&quot;, line 21, in &lt;module&gt; assert proc.returncode == 1 ^^^^^^^^^^^^^^^^^^^^ AssertionError</p>
+<h2>Post-build programmatic acceptance</h2>
+<ul><li>PASS: serve-health-route (FEATURE-ServeHealth.md)</li></ul>
+<p>intent: The application answers GET /health with status 200 and the exact status body, and its OpenAPI description and interactive docs are served with status 200. target interpreter: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261027.152427/build/FxRates/.venv/bin/python provisioning: not required return code: 0</p>
+<ul><li>PASS: serve-live-sigterm (FEATURE-ServeHealth.md)</li></ul>
+<p>intent: The serve command listens on 127.0.0.1 at the requested port, answers /health within a bounded wait, and exits 0 when it receives SIGTERM. target interpreter: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261027.152427/build/FxRates/.venv/bin/python provisioning: not required return code: 0 stdout:<br>INFO:     127.0.0.1:46472 - &quot;GET /health HTTP/1.1&quot; 200 OK</p>
+<p>INFO:     Started server process [1589263]<br>INFO:     Waiting for application startup.<br>INFO:     Application startup complete.<br>INFO:     Uvicorn running on http://127.0.0.1:50849 (Press CTRL+C to quit)<br>INFO:     Shutting down<br>INFO:     Waiting for application shutdown.<br>INFO:     Application shutdown complete.<br>INFO:     Finished server process [1589263]</p>
+<ul><li>PASS: serve-port-in-use (FEATURE-ServeHealth.md)</li></ul>
+<p>intent: When the requested port is already bound, serve exits 1 with empty stdout and one stderr line instead of serving. target interpreter: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261027.152427/build/FxRates/.venv/bin/python provisioning: not required return code: 0 stdout: error: port 39103 on 127.0.0.1 is already in use</p>
+<h2>Build summary</h2>
+<p>The spec needs a <code>/health</code> route and a <code>serve</code> command. Uvicorn&#x27;s default signal capture re-raises SIGTERM after shutdown, which would end the process by signal rather than exit 0, so I&#x27;ll check that behavior with a real run after writing the command.Now the tests: the route through the in-process client, and the port-in-use path through <code>cli_runner</code>.The suite passes (182). Next I&#x27;ll run the two live acceptance checks from the spec against the real launcher, with the script kept outside the project.Both live checks pass. Checking the changed-file set before reporting.RESULT: SUCCESS</p>
+<p>FILES CHANGED:</p>
+<ul><li>app_server/routes.py</li><li>cli/<strong>init</strong>.py</li><li>cli/serve_command.py</li><li>tests/test_health.py</li><li>tests/test_serve.py</li></ul>
+<p>SUMMARY:</p>
+<ul><li><code>fxrates serve [--port n]</code> now runs uvicorn on <code>app_server.main:app</code>, bound to 127.0.0.1, default port 8000, in the foreground. SIGTERM or SIGINT stops it cleanly with exit 0.</li><li>Uvicorn&#x27;s default signal capture re-raises SIGTERM after shutdown, which would end the process by signal instead of exit 0. <code>serve</code> replaces that capture so the signal only asks the server to stop.</li><li>Before binding, <code>serve</code> probes the port. If it is taken, it prints one stderr line and exits 1 with empty stdout.</li><li><code>GET /health</code> returns <code>{&quot;status&quot;: &quot;ok&quot;}</code> and does not touch the database. <code>/openapi.json</code> and <code>/docs</code> remain enabled.</li><li><code>cli/__init__.py</code> imports the new module so the <code>serve</code> handler registers at import.</li></ul>
+<p>Checks run:</p>
+<ul><li><code>.venv/bin/pytest -q</code> in the build directory: 182 passed. This includes the new <code>tests/test_health.py</code> and <code>tests/test_serve.py</code>.</li><li>Live acceptance <code>serve-live-sigterm</code>, run by hand against <code>./fxrates serve --port &lt;free&gt;</code>: <code>/health</code> answered <code>{&quot;status&quot;: &quot;ok&quot;}</code>, SIGTERM gave exit 0, and clean shutdown was logged to stderr. PASS.</li><li>Live acceptance <code>serve-port-in-use</code>, run by hand with the port held: exit 1, empty stdout, one stderr line. PASS.</li><li><code>serve-health-route</code> is covered by <code>tests/test_health.py</code>, which uses the same client calls as the spec.</li></ul>
+<p>Choices I made:</p>
+<ul><li>The live SIGTERM path is not in the pytest suite. Starting a server in-process would need the socket connect that the suite blocks, so that check is the spec&#x27;s acceptance criterion instead.</li><li>The port probe sets SO_REUSEADDR, the same as uvicorn, so a port in TIME_WAIT is not reported as busy. A small race remains between the probe and uvicorn&#x27;s bind.</li><li><code>sh bin/test.sh</code> was not run. I ran <code>pytest -q</code> directly, which is the command it wraps.</li></ul></article>
+</main>
+</body>
+</html>

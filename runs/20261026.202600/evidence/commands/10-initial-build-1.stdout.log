@@ -1,0 +1,236 @@
+Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
+Build: FxRates
+scope: entire project
+frontier: architecture
+git: baseline FxRates 4aaaa881e183
+git: baseline FxRates 770485fc5161
+
+BLOCK block-1  name="Block 1 · Foundational"  calls_max=7
+  story=architecture  "Define application modules and their ownership boundaries."
+
+  [call 1/7]  kind=initial  llm=codex/gpt-6-luna
+    result=ok  rc=0  execution=20261026.203238.059Z-80768e74
+    status  1/1 checks passed
+      story=architecture  1/1 checks passed
+        check=architecture-service-boundary  PASS
+git: block-1 | python.md, ARCHITECTURE.md | call=1 | app=5d678c61284b target=7c6e302f9c35
+
+  DONE  story=architecture  state=closed/implemented  execution=20261026.203238.059Z-80768e74  elapsed=35.0s
+git: block-1 | python.md, ARCHITECTURE.md | step_completed | app=unchanged target=9ba8baa90677
+
+BLOCK block-2  name="Block 2 · Foundational"  calls_max=7
+  story=database  "Declare the rates schema and generated repository contract."
+  story=app_server  "Establish the FastAPI application and test client."
+  story=cli  "Establish the fxrates executable and CLI entry point."
+
+  [call 1/7]  kind=initial  llm=codex/gpt-6-luna
+    result=ok  rc=0  execution=20261026.203315.586Z-eea2c9ed
+    status  7/7 checks passed
+      story=database  5/5 checks passed
+        check=rates-upsert  PASS
+        check=rates-by-date  PASS
+        check=rates-publications-through  PASS
+        check=rates-history  PASS
+        check=rates-list  PASS
+      story=app_server  1/1 checks passed
+        check=app-server-factory  PASS
+      story=cli  1/1 checks passed
+        check=cli-foundation-interfaces  PASS
+git: block-2 | DATABASE.md, FEATURE-AppServer.md, FEATURE-CLI.md | call=1 | app=7c6722b63268 target=a8a0141df325
+
+  DONE  story=database  state=closed/implemented  execution=20261026.203315.586Z-eea2c9ed  elapsed=4m14s
+git: block-2 | DATABASE.md, FEATURE-AppServer.md, FEATURE-CLI.md | step_completed | app=unchanged target=c742d4321667
+WARNING: fastapi_compact.md is stale (fastapi.md changed) — using full file; run drydock rigging compact --include-file /mnt/c/Users/barlo/projects/drydock/Rigging/stack/fastapi.md
+
+BLOCK block-3  name="Block 3 · Service"  calls_max=7
+  story=load  "Validate and load ECB CSV history files atomically."
+  story=init  "Initialize an empty rates store."
+  story=api_currencies  "List currencies that have stored rates."
+  story=api_latest  "Retrieve rates from the latest publication."
+  story=api_stats  "Report stored rate statistics."
+  story=api_rates  "Retrieve rates by effective date."
+  story=history  "Retrieve currency history and summary statistics."
+  story=convert  "Convert amounts between currencies."
+  story=api_health  "Serve the health endpoint."
+  story=cli_errors  "Report CLI usage and operational errors."
+
+  [call 1/7]  kind=initial  llm=codex/gpt-6-luna
+    result=ok  rc=0  execution=20261026.203914.223Z-c325e8cf
+    status  18/21 checks passed
+      story=load  3/3 checks passed
+        check=load-valid-file  PASS
+        check=load-rejects-atomically  PASS
+        check=load-replaces-published-text  PASS
+      story=init  1/2 checks passed
+        check=init-clears-store  FAIL
+        check=init-rejects-extra-arguments  PASS
+      story=api_currencies  2/2 checks passed
+        check=currencies-list-sorted  PASS
+        check=currencies-base  PASS
+      story=api_latest  2/2 checks passed
+        check=latest-rates-response  PASS
+        check=latest-rates-empty  PASS
+      story=api_stats  2/2 checks passed
+        check=stats-derive-from-store  PASS
+        check=stats-empty-store  PASS
+      story=api_rates  2/2 checks passed
+        check=rates-effective-date  PASS
+        check=rates-errors  PASS
+      story=history  0/2 checks passed
+        check=history-range-and-statistics  FAIL
+        check=history-empty-range-and-errors  FAIL
+      story=convert  2/2 checks passed
+        check=convert-decimal-and-rounding  PASS
+        check=convert-validation-and-unknown-currency  PASS
+      story=api_health  2/2 checks passed
+        check=health-response  PASS
+        check=health-method  PASS
+      story=cli_errors  2/2 checks passed
+        check=cli-usage-errors  PASS
+        check=cli-operational-errors  PASS
+git: block-3 | FEATURE-Load.md, FEATURE-Init.md, FEATURE-Currencies.md, FEATURE-LatestRates.md, FEATURE-Stats.md, FEATURE-Rates.md, FEATURE-History.md, FEATURE-Convert.md, FEATURE-Health.md, FEATURE-CLI-Errors.md | call=1 | app=bf93f75db628 target=6f4fc75103b5
+
+  [call 2/7]  kind=repair(1/6)  llm=codex/gpt-6-luna
+    result=ok  rc=0  execution=20261026.204315.898Z-c5325729
+    status  20/21 checks passed
+      story=load  3/3 checks passed
+        check=load-valid-file  PASS
+        check=load-rejects-atomically  PASS
+        check=load-replaces-published-text  PASS
+      story=init  1/2 checks passed
+        check=init-clears-store  FAIL
+        check=init-rejects-extra-arguments  PASS
+      story=api_currencies  2/2 checks passed
+        check=currencies-list-sorted  PASS
+        check=currencies-base  PASS
+      story=api_latest  2/2 checks passed
+        check=latest-rates-response  PASS
+        check=latest-rates-empty  PASS
+      story=api_stats  2/2 checks passed
+        check=stats-derive-from-store  PASS
+        check=stats-empty-store  PASS
+      story=api_rates  2/2 checks passed
+        check=rates-effective-date  PASS
+        check=rates-errors  PASS
+      story=history  2/2 checks passed
+        check=history-range-and-statistics  PASS
+        check=history-empty-range-and-errors  PASS
+      story=convert  2/2 checks passed
+        check=convert-decimal-and-rounding  PASS
+        check=convert-validation-and-unknown-currency  PASS
+      story=api_health  2/2 checks passed
+        check=health-response  PASS
+        check=health-method  PASS
+      story=cli_errors  2/2 checks passed
+        check=cli-usage-errors  PASS
+        check=cli-operational-errors  PASS
+git: block-3 | FEATURE-Load.md, FEATURE-Init.md, FEATURE-Currencies.md, FEATURE-LatestRates.md, FEATURE-Stats.md, FEATURE-Rates.md, FEATURE-History.md, FEATURE-Convert.md, FEATURE-Health.md, FEATURE-CLI-Errors.md | call=2 | app=2241134f8625 target=c066f82dcb8a
+
+  [call 3/7]  kind=repair(2/6)  llm=codex/gpt-6-luna
+    result=ok  rc=0  execution=20261026.204750.616Z-f17235ce
+    status  21/21 checks passed
+      story=load  3/3 checks passed
+        check=load-valid-file  PASS
+        check=load-rejects-atomically  PASS
+        check=load-replaces-published-text  PASS
+      story=init  2/2 checks passed
+        check=init-clears-store  PASS
+        check=init-rejects-extra-arguments  PASS
+      story=api_currencies  2/2 checks passed
+        check=currencies-list-sorted  PASS
+        check=currencies-base  PASS
+      story=api_latest  2/2 checks passed
+        check=latest-rates-response  PASS
+        check=latest-rates-empty  PASS
+      story=api_stats  2/2 checks passed
+        check=stats-derive-from-store  PASS
+        check=stats-empty-store  PASS
+      story=api_rates  2/2 checks passed
+        check=rates-effective-date  PASS
+        check=rates-errors  PASS
+      story=history  2/2 checks passed
+        check=history-range-and-statistics  PASS
+        check=history-empty-range-and-errors  PASS
+      story=convert  2/2 checks passed
+        check=convert-decimal-and-rounding  PASS
+        check=convert-validation-and-unknown-currency  PASS
+      story=api_health  2/2 checks passed
+        check=health-response  PASS
+        check=health-method  PASS
+      story=cli_errors  2/2 checks passed
+        check=cli-usage-errors  PASS
+        check=cli-operational-errors  PASS
+git: block-3 | FEATURE-Load.md, FEATURE-Init.md, FEATURE-Currencies.md, FEATURE-LatestRates.md, FEATURE-Stats.md, FEATURE-Rates.md, FEATURE-History.md, FEATURE-Convert.md, FEATURE-Health.md, FEATURE-CLI-Errors.md | call=3 | app=2f110d486d43 target=0e103cffd6a9
+
+  DONE  story=load  state=closed/implemented  execution=20261026.204750.616Z-f17235ce  elapsed=14m02s
+git: block-3 | FEATURE-Load.md, FEATURE-Init.md, FEATURE-Currencies.md, FEATURE-LatestRates.md, FEATURE-Stats.md, FEATURE-Rates.md, FEATURE-History.md, FEATURE-Convert.md, FEATURE-Health.md, FEATURE-CLI-Errors.md | step_completed | app=unchanged target=32a959b5b6cd
+
+BLOCK block-4  name="Block 4 · Service"  calls_max=7
+  story=fetch  "Download and load the ECB history archive."
+
+  [call 1/7]  kind=initial  llm=codex/gpt-6-luna
+    result=ok  rc=0  execution=20261026.205207.220Z-4de0908d
+    status  2/2 checks passed
+      story=fetch  2/2 checks passed
+        check=fetch-stubbed-success  PASS
+        check=fetch-stubbed-failure  PASS
+git: block-4 | FEATURE-Fetch.md | call=1 | app=79f33bda762c target=e5b500db78be
+
+  DONE  story=fetch  state=closed/implemented  execution=20261026.205207.220Z-4de0908d  elapsed=3m55s
+git: block-4 | FEATURE-Fetch.md | step_completed | app=unchanged target=42b2640b0b1f
+
+BLOCK block-5  name="Block 5 · Service"  calls_max=7
+  story=tests  "Provide the offline pytest suite and test launcher."
+
+  [call 1/7]  kind=initial  llm=codex/gpt-6-luna
+    result=ok  rc=0  execution=20261026.205620.188Z-e68d76e3
+    status  0/1 checks passed
+      story=tests  0/1 checks passed
+        check=test-suite-passes  FAIL  cases=28/29 passed
+      Case counts are per check; scopes may overlap and are not additive.
+git: block-5 | FEATURE-Tests.md | call=1 | app=8cbb64586543 target=f0a7f6010a82
+
+  [call 2/7]  kind=repair(1/6)  llm=codex/gpt-6-luna
+    result=ok  rc=0  execution=20261026.205928.931Z-0de2b679
+    status  1/1 checks passed
+      story=tests  1/1 checks passed
+        check=test-suite-passes  PASS
+git: block-5 | FEATURE-Tests.md | call=2 | app=51a98e265397 target=e573a6f89789
+
+  [call 3/7]  kind=repair(2/6)  llm=codex/gpt-6-luna
+    result=ok  rc=0  execution=20261026.210343.826Z-3df6a277
+    status  1/1 checks passed
+      story=tests  1/1 checks passed
+        check=test-suite-passes  PASS
+git: block-5 | FEATURE-Tests.md | call=3 | app=unchanged target=7179d5184286
+
+  DONE  story=tests  state=closed/implemented  execution=20261026.210343.826Z-3df6a277  elapsed=11m43s
+git: block-5 | FEATURE-Tests.md | step_completed | app=unchanged target=6f1051295656
+
+BLOCK block-6  name="Block 6 · Service"  calls_max=7
+  story=grader  "Verify complete supplied grader conformance."
+
+  [call 1/7]  kind=initial  llm=codex/gpt-6-luna
+    result=ok  rc=0  execution=20261026.210812.212Z-ebb331a8
+    status  1/1 checks passed
+      story=grader  1/1 checks passed
+        check=grader-complete  PASS  cases=35/35 passed
+      Case counts are per check; scopes may overlap and are not additive.
+git: block-6 | FEATURE-Grader.md | call=1 | app=d84226756a51 target=4f8685a1d5c3
+
+  [call 2/7]  kind=repair(1/6)  llm=codex/gpt-6-luna
+    result=ok  rc=0  execution=20261026.211216.361Z-84af1a6b
+    status  1/1 checks passed
+      story=grader  1/1 checks passed
+        check=grader-complete  PASS  cases=35/35 passed  change=+0
+      Case counts are per check; scopes may overlap and are not additive.
+git: block-6 | FEATURE-Grader.md | call=2 | app=unchanged target=e5f8fd6f64df
+
+  DONE  story=grader  state=closed/implemented  execution=20261026.211216.361Z-84af1a6b  elapsed=8m41s
+git: block-6 | FEATURE-Grader.md | step_completed | app=unchanged target=4a433ca28716
+git: build complete FxRates 494b780a6779
+git: build complete FxRates 1723ba41512c
+
+result: 17 built, 0 failed, 0 unchanged
+elapsed: 44 minutes 8 seconds
+Target - committed project workspace git store

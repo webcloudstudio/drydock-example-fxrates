@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-DatabaseSelection.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-DatabaseSelection.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-DatabaseSelection.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Database Selection</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261027 V1</td></tr><tr><td>Description</td><td>Resolve the database location from DATABASE_URL, then DATABASE_PATH, then data/app.db, and open it through the persistence library.</td></tr><tr><td>Depends On</td><td>ARCHITECTURE.md, DATABASE.md</td></tr><tr><td>Provides</td><td>fxrates_app.config.database_path</td></tr><tr><td>Consumes</td><td>persistence.open_database</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Give every command and route one place that decides which SQLite file to use.</p>
+<h2>Interface</h2>
+<pre><code># fxrates_app/config.py
+def database_path() -&gt; str: ...
+def open_store() -&gt; Database: ...   # persistence.open_database(database_path())</code></pre>
+<p>Resolution order:</p>
+<ol><li><code>DATABASE_URL</code>, when set and nonempty; an optional <code>sqlite://</code> prefix is removed.</li><li><code>DATABASE_PATH</code>, when set and nonempty.</li><li><code>data/app.db</code>.</li></ol>
+<p>An empty value counts as unset. The function reads the environment at call time. Application code opens the store only through <code>persistence.open_database</code> and never imports a driver.</p>
+<h2>Database Interface</h2>
+<ul><li>None — persistence is owned by DATABASE.md.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC dbsel-url-wins-with-prefix ===<br>Intent: DATABASE_URL takes precedence over DATABASE_PATH and its sqlite:// prefix is removed.<br>Requires: executable=python3; scope=test</p>
+<p>from drydock_acceptance import database_environment from fxrates_app.config import database_path</p>
+<p>with database_environment(url=&quot;sqlite://primary.db&quot;, path=&quot;fallback.db&quot;) as root: assert str(database_path()) == str(root / &quot;primary.db&quot;) === END AC dbsel-url-wins-with-prefix ===</p>
+<p>=== AC dbsel-url-without-prefix ===<br>Intent: A DATABASE_URL without the prefix is used as the file name.<br>Requires: executable=python3; scope=test</p>
+<p>from drydock_acceptance import database_environment from fxrates_app.config import database_path</p>
+<p>with database_environment(url=&quot;plain.db&quot;, path=&quot;fallback.db&quot;) as root: assert str(database_path()) == str(root / &quot;plain.db&quot;) === END AC dbsel-url-without-prefix ===</p>
+<p>=== AC dbsel-path-fallback ===<br>Intent: With DATABASE_URL unset or empty, DATABASE_PATH is used.<br>Requires: executable=python3; scope=test</p>
+<p>from drydock_acceptance import database_environment from fxrates_app.config import database_path</p>
+<p>with database_environment(path=&quot;fallback.db&quot;) as root: assert str(database_path()) == str(root / &quot;fallback.db&quot;) with database_environment(url=&quot;&quot;, path=&quot;fallback.db&quot;) as root: assert str(database_path()) == str(root / &quot;fallback.db&quot;) === END AC dbsel-path-fallback ===</p>
+<p>=== AC dbsel-default-path ===<br>Intent: With both variables unset, or both empty, the default data/app.db applies.<br>Requires: executable=python3; scope=test</p>
+<p>from drydock_acceptance import database_environment from fxrates_app.config import database_path</p>
+<p>with database_environment(): assert str(database_path()) == &quot;data/app.db&quot; with database_environment(url=&quot;&quot;, path=&quot;&quot;): assert str(database_path()) == &quot;data/app.db&quot; === END AC dbsel-default-path ===</p>
+<p>=== AC dbsel-open-store ===<br>Intent: open_store opens the selected file through the persistence library without error.<br>Requires: executable=python3; scope=test</p>
+<p>from drydock_acceptance import database_environment from fxrates_app.config import open_store</p>
+<p>with database_environment(url=&quot;sqlite://opened.db&quot;) as root: db = open_store() assert db is not None === END AC dbsel-open-store ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Application code never imports a database driver; the store is reached only through <code>persistence.open_database</code>.</li><li>The resolution order is fixed: <code>DATABASE_URL</code>, then <code>DATABASE_PATH</code>, then <code>data/app.db</code>.</li></ul></article>
+</main>
+</body>
+</html>

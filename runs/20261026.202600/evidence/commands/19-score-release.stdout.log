@@ -1,0 +1,20 @@
+Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
+2026-10-26 17:20:01 EDT  Calling CODEX/gpt-6-luna (score release)...
+  Completed CODEX/gpt-6-luna (score release)  rc=0
+
+FxRates: PASSED — 10 of 10
+
+  st-001  MET       ["sh", "sources/run.sh"] exited 0; sources/run.sh: outcome PASS, return code 0, 35 passed and 0 failed
+  st-002  MET       bin/test.sh:1 uses #!/bin/sh; offline command: sh bin/test.sh exited 0; 29 passed
+  st-003  MET       services/rates.py: load_file parses rows before writing and stores values through upsert; persistence/schema.py: rates.upsert matches on date and currency; probe: replacement preserved '2.00' and other rates; invalid input left stored rows unchanged; sources/run.sh: A4 passed with expected exit 3
+  st-004  MET       app_server/main.py: health returns {'status':'ok'}; probe: GET /health returned 200 with {'status': 'ok'}
+  st-005  MET       sources/run.sh: H5 and L4 passed for dates after a publication; sources/run.sh: H6 and H16 passed with 404 when no earlier publication exists; app_server/main.py: effective uses publications_through
+  st-006  MET       sources/run.sh: H9–H12 and H17–H18 passed; app_server/main.py: conversion and history calculations use Decimal and ROUND_HALF_EVEN
+  st-007  MET       sources/run.sh: H7, H13–H15, H16, and H21 passed with their expected statuses; app_server/main.py: request validation raises HTTPException with the specified statuses
+  st-008  MET       services/rates.py: database access uses open_database(database_dsn()); config/__init__.py: database_dsn selects DATABASE_URL; persistence/schema.py: rates.upsert accepts and returns rate as str; services/rates.py: load_file passes the published rate string to upsert; application modules contain no direct database driver access
+  st-009  MET       ["unshare", "-rn", "sh", "bin/test.sh"] exited 0; offline command: unshare -rn sh bin/test.sh exited 0; 29 passed
+  st-010  MET       tests/test_fetch.py: success test patches urllib.request.urlopen and asserts loaded rates; tests/test_fetch.py: failure test patches urlopen to raise OSError and asserts exit code 1; offline command: test suite passed
+
+Scorecard: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.202600/workspace/targets/FxRates/SCORECARD.md
+Evidence: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.202600/workspace/targets/FxRates/evidence/score-release.json
+Target - committed project workspace git store

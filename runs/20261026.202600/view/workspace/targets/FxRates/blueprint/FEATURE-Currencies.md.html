@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-Currencies.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-Currencies.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-Currencies.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Currency Listing</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261026 V1</td></tr><tr><td>Description</td><td>Defines the API listing currencies with stored rates.</td></tr><tr><td>Depends On</td><td>FEATURE-AppServer.md, DATABASE.md</td></tr><tr><td>Provides</td><td>GET /currencies</td></tr><tr><td>Consumes</td><td>create_app(), rates repository operations</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p><code>GET /currencies</code> returns EUR as the base and the currencies with at least one stored rate, sorted in ascending order.</p>
+<h2>Database Interface</h2>
+<ul><li><code>FEATURE-RATE-005</code> — read: list stored rates - supplies: — - returns: <code>date</code>, <code>currency</code>, <code>rate</code></li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC currencies-list-sorted ===<br>Intent: The endpoint lists currencies present in the store in ascending order.<br>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx2; scope=test</p>
+<p>from app_server.testing import web_client from persistence.testing import db_session</p>
+<p>date = &quot;2099-08-01&quot; currencies = [&quot;QAZ&quot;, &quot;QAA&quot;, &quot;QAM&quot;]</p>
+<p>with db_session() as db: for index, currency in enumerate(currencies): db.rates.upsert(date=date, currency=currency, rate=str(index + 1)) expected = sorted({row.currency for row in db.rates.list()})</p>
+<p>client = web_client() response = client.get(&quot;/currencies&quot;) assert response.status_code == 200 body = response.json() assert body[&quot;currencies&quot;] == expected assert body[&quot;currencies&quot;] == sorted(body[&quot;currencies&quot;]) assert all(currency in body[&quot;currencies&quot;] for currency in currencies) === END AC currencies-list-sorted ===</p>
+<p>=== AC currencies-base ===<br>Intent: The endpoint identifies EUR as the base currency.<br>Cite: sources/INSTRUCTIONS.md:59<br>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx2; scope=test</p>
+<p>from app_server.testing import web_client</p>
+<p>client = web_client() response = client.get(&quot;/currencies&quot;) assert response.status_code == 200 assert response.json()[&quot;base&quot;] == &quot;EUR&quot; === END AC currencies-base ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Include only currencies with at least one stored rate.</li><li>Return currency codes in ascending order.</li></ul></article>
+</main>
+</body>
+</html>

@@ -1,0 +1,4 @@
+error: acceptance verification failed for FxRates: 3 of 33 criteria
+  init-clears-store  init  FEATURE-Init.md  — assertion: assert code == 0 → AssertionError
+  latest-rates-empty  api_latest  FEATURE-LatestRates.md  — assertion: assert web_client().get("/rates/latest").status_code == 404 → AssertionError
+  stats-empty-store  api_stats  FEATURE-Stats.md  — assertion: assert code == 0 → AssertionError

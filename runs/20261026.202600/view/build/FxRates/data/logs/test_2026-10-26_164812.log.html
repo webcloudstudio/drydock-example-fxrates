@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>build/FxRates/data/logs/test_2026-10-26_164812.log</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>build/FxRates/data/logs/test_2026-10-26_164812.log</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../build/FxRates/data/logs/test_2026-10-26_164812.log">Raw file</a></div></header>
+<article class="doc"><pre>timestamp=2026-10-26T16:48:12-04:00
+arguments=tests/test_rates_repository.py
+working_directory=/mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.202600/build/FxRates
+.....F                                                                   [100%]
+=================================== FAILURES ===================================
+__________________ test_init_clears_rates_through_repository ___________________
+
+    def test_init_clears_rates_through_repository() -&gt; None:
+        from services.rates import initialize
+    
+        with db_session() as db:
+            db.rates.upsert(date=&quot;2099-11-12&quot;, currency=&quot;QAR&quot;, rate=&quot;1.25&quot;)
+            db.rates.upsert(date=&quot;2099-11-13&quot;, currency=&quot;QAS&quot;, rate=&quot;2.5&quot;)
+            initialize()
+&gt;           assert db.rates.list() == []
+E           AssertionError: assert [RatesListOut..., rate=&#x27;2.5&#x27;)] == []
+E             
+E             Left contains 2 more items, first extra item: RatesListOutput(date=&#x27;2099-11-12&#x27;, currency=&#x27;QAR&#x27;, rate=&#x27;1.25&#x27;)
+E             Use -v to get more diff
+
+tests/test_rates_repository.py:57: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_rates_repository.py::test_init_clears_rates_through_repository
+1 failed, 5 passed in 8.48s
+</pre></article>
+</main>
+</body>
+</html>

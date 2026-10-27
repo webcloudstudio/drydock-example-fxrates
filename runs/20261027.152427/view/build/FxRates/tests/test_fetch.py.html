@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>build/FxRates/tests/test_fetch.py</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>build/FxRates/tests/test_fetch.py</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../build/FxRates/tests/test_fetch.py">Raw file</a></div></header>
+<article class="doc"><pre>&quot;&quot;&quot;The `fetch` command: downloads the ECB archive, extracts its CSV, and loads it as `load` does.
+
+Every test replaces `fxrates_app.fetch.download_archive`, the single network seam, so no test opens a
+connection. Each test runs the command in-process through `cli_runner` and reads the stored state back
+through `db.rates`, inside one acceptance transaction that rolls back at the end.
+&quot;&quot;&quot;
+
+from __future__ import annotations
+
+import csv
+import http.client
+import io
+import zipfile
+from collections.abc import Iterator
+from unittest import mock
+
+import pytest
+
+from fxrates_app import fetch
+from persistence import db as persistence_db
+from persistence.testing import db_session
+
+
+@pytest.fixture(autouse=True)
+def rolled_back_transaction() -&gt; Iterator[None]:
+    &quot;&quot;&quot;Share one connection between the command and the test, then roll everything back.&quot;&quot;&quot;
+    persistence_db.begin_acceptance_transaction()
+    try:
+        yield
+    finally:
+        persistence_db.end_acceptance_transaction()
+
+
+def csv_text(header: list[str], rows: list[list[str]]) -&gt; str:
+    &quot;&quot;&quot;Write CSV the way the ECB does: every line ends with a trailing comma.&quot;&quot;&quot;
+    buf = io.StringIO()
+    writer = csv.writer(buf, lineterminator=&quot;\n&quot;)
+    writer.writerow(header + [&quot;&quot;])
+    for row in rows:
+        writer.writerow(row + [&quot;&quot;])
+    return buf.getvalue()
+
+
+def zip_with(member: str, text: str) -&gt; bytes:
+    bio = io.BytesIO()
+    with zipfile.ZipFile(bio, &quot;w&quot;) as z:
+        z.writestr(member, text)
+    return bio.getvalue()
+
+
+def stored(db, currency: str) -&gt; list[tuple[str, str]]:
+    return [(r.date, r.rate) for r in db.rates.list_currency_history(currency=currency)]
+
+
+def test_fetch_loads_archive(cli_runner) -&gt; None:
+    d = &quot;1900-08-01&quot;
+    ra = &quot;1.50&quot;
+    rb = &quot;2.250&quot;
+    data = zip_with(&quot;eurofxref-hist.csv&quot;, csv_text([&quot;Date&quot;, &quot;ZZA&quot;, &quot;ZZB&quot;], [[d, ra, rb]]))
+
+    with db_session() as db:
+        with mock.patch(&quot;fxrates_app.fetch.download_archive&quot;, return_value=data):
+            code, out, err = cli_runner(&quot;fetch&quot;)
+        assert code == 0
+        lines = out.splitlines()
+        assert lines[0] == &quot;dates,rates&quot;
+        assert lines[1].split(&quot;,&quot;) == [str(1), str(2)]
+        rows = {r.currency: r.rate for r in db.rates.list_for_date(date=d)}
+        assert rows[&quot;ZZA&quot;] == ra
+        assert rows[&quot;ZZB&quot;] == rb
+
+
+def test_fetch_download_failure(cli_runner) -&gt; None:
+    d = &quot;1900-08-02&quot;
+
+    with db_session() as db:
+        before = db.rates.list_all_keys()
+        with mock.patch(&quot;fxrates_app.fetch.download_archive&quot;, side_effect=OSError(&quot;network down&quot;)):
+            code, out, err = cli_runner(&quot;fetch&quot;)
+        assert code == 1
+        assert out == &quot;&quot;
+        assert len(err.strip().splitlines()) == 1
+        assert db.rates.list_for_date(date=d) == []
+        assert len(db.rates.list_all_keys()) == len(before)
+
+
+def test_fetch_bad_archive(cli_runner) -&gt; None:
+    d = &quot;1900-08-03&quot;
+    wrong_member = zip_with(&quot;other.csv&quot;, csv_text([&quot;Date&quot;, &quot;ZZA&quot;], [[d, &quot;1.5&quot;]]))
+    not_a_zip = bytes(range(32))
+
+    with db_session() as db:
+        before = len(db.rates.list_all_keys())
+        for payload in (not_a_zip, wrong_member):
+            with mock.patch(&quot;fxrates_app.fetch.download_archive&quot;, return_value=payload):
+                code, out, err = cli_runner(&quot;fetch&quot;)
+            assert code == 1
+            assert out == &quot;&quot;
+            assert len(err.strip().splitlines()) == 1
+            assert db.rates.list_for_date(date=d) == []
+        assert len(db.rates.list_all_keys()) == before
+
+
+def test_fetch_rejected_member(cli_runner) -&gt; None:
+    good = &quot;1900-08-05&quot;
+    bad = &quot;1900-08-04&quot;
+    data = zip_with(
+        &quot;eurofxref-hist.csv&quot;,
+        csv_text([&quot;Date&quot;, &quot;ZZA&quot;], [[good, &quot;1.5&quot;], [bad, &quot;0&quot;]]),
+    )
+
+    with db_session() as db:
+        with mock.patch(&quot;fxrates_app.fetch.download_archive&quot;, return_value=data):
+            code, out, err = cli_runner(&quot;fetch&quot;)
+        assert code == 3
+        assert out == &quot;&quot;
+        assert len(err.strip().splitlines()) == 1
+        assert db.rates.list_for_date(date=good) == []
+        assert db.rates.list_for_date(date=bad) == []
+
+
+def test_fetch_downloads_the_ecb_archive_url_once(cli_runner) -&gt; None:
+    data = zip_with(&quot;eurofxref-hist.csv&quot;, csv_text([&quot;Date&quot;, &quot;ZZA&quot;], [[&quot;1900-09-01&quot;, &quot;1.5&quot;]]))
+
+    with mock.patch(&quot;fxrates_app.fetch.download_archive&quot;, return_value=data) as download:
+        code, _, _ = cli_runner(&quot;fetch&quot;)
+
+    assert code == 0
+    download.assert_called_once_with(
+        &quot;https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist.zip&quot;
+    )
+
+
+def test_fetch_timeout_exits_one_and_stores_nothing(cli_runner) -&gt; None:
+    with db_session() as db:
+        before = db.rates.list_all_keys()
+        with mock.patch(&quot;fxrates_app.fetch.download_archive&quot;, side_effect=TimeoutError(&quot;timed out&quot;)):
+            code, out, err = cli_runner(&quot;fetch&quot;)
+        assert code == 1
+        assert out == &quot;&quot;
+        assert len(err.strip().splitlines()) == 1
+        assert db.rates.list_all_keys() == before
+
+
+def test_fetch_protocol_error_exits_one(cli_runner) -&gt; None:
+    with mock.patch(
+        &quot;fxrates_app.fetch.download_archive&quot;,
+        side_effect=http.client.RemoteDisconnected(&quot;closed&quot;),
+    ):
+        code, out, err = cli_runner(&quot;fetch&quot;)
+
+    assert code == 1
+    assert out == &quot;&quot;
+    assert len(err.strip().splitlines()) == 1
+
+
+def test_fetch_member_that_is_not_utf8_exits_one_and_stores_nothing(cli_runner) -&gt; None:
+    bio = io.BytesIO()
+    with zipfile.ZipFile(bio, &quot;w&quot;) as z:
+        z.writestr(&quot;eurofxref-hist.csv&quot;, b&quot;Date,ZZA,\n\xff\xfe,1.5,\n&quot;)
+
+    with db_session() as db:
+        before = db.rates.list_all_keys()
+        with mock.patch(&quot;fxrates_app.fetch.download_archive&quot;, return_value=bio.getvalue()):
+            code, out, err = cli_runner(&quot;fetch&quot;)
+        assert code == 1
+        assert out == &quot;&quot;
+        assert len(err.strip().splitlines()) == 1
+        assert db.rates.list_all_keys() == before
+
+
+def test_fetch_twice_reports_the_same_counts_and_leaves_rates_unchanged(cli_runner) -&gt; None:
+    data = zip_with(
+        &quot;eurofxref-hist.csv&quot;,
+        csv_text([&quot;Date&quot;, &quot;ZZA&quot;, &quot;ZZB&quot;], [[&quot;1900-09-03&quot;, &quot;1.5&quot;, &quot;2.5&quot;], [&quot;1900-09-02&quot;, &quot;1.25&quot;, &quot;N/A&quot;]]),
+    )
+
+    with db_session() as db:
+        with mock.patch(&quot;fxrates_app.fetch.download_archive&quot;, return_value=data):
+            first = cli_runner(&quot;fetch&quot;)
+            once = db.rates.list_all_keys()
+            second = cli_runner(&quot;fetch&quot;)
+
+        assert first[0] == second[0] == 0
+        assert first[1] == second[1]
+        assert db.rates.list_all_keys() == once
+        assert stored(db, &quot;ZZA&quot;) == [(&quot;1900-09-02&quot;, &quot;1.25&quot;), (&quot;1900-09-03&quot;, &quot;1.5&quot;)]
+        assert stored(db, &quot;ZZB&quot;) == [(&quot;1900-09-03&quot;, &quot;2.5&quot;)]
+
+
+def test_fetch_stores_rates_as_published_text(cli_runner) -&gt; None:
+    data = zip_with(&quot;eurofxref-hist.csv&quot;, csv_text([&quot;Date&quot;, &quot;ZZA&quot;], [[&quot;1900-09-04&quot;, &quot;160.0&quot;]]))
+
+    with db_session() as db:
+        with mock.patch(&quot;fxrates_app.fetch.download_archive&quot;, return_value=data):
+            code, _, _ = cli_runner(&quot;fetch&quot;)
+
+        assert code == 0
+        assert stored(db, &quot;ZZA&quot;) == [(&quot;1900-09-04&quot;, &quot;160.0&quot;)]
+
+
+def test_fetch_help_exits_zero_without_downloading(cli_runner) -&gt; None:
+    with mock.patch(&quot;fxrates_app.fetch.download_archive&quot;) as download:
+        code, out, err = cli_runner(&quot;fetch&quot;, &quot;--help&quot;)
+
+    assert code == 0
+    assert out.splitlines()[0] == &quot;usage: fxrates fetch&quot;
+    download.assert_not_called()
+
+
+def test_fetch_with_an_argument_is_a_usage_error(cli_runner) -&gt; None:
+    with mock.patch(&quot;fxrates_app.fetch.download_archive&quot;) as download:
+        code, out, err = cli_runner(&quot;fetch&quot;, &quot;extra.csv&quot;)
+
+    assert code == 2
+    assert out == &quot;&quot;
+    download.assert_not_called()
+
+
+def test_archive_download_is_the_module_attribute_seam() -&gt; None:
+    assert callable(fetch.download_archive)
+    assert fetch.ECB_ARCHIVE_URL.startswith(&quot;https://www.ecb.europa.eu/&quot;)
+</pre></article>
+</main>
+</body>
+</html>

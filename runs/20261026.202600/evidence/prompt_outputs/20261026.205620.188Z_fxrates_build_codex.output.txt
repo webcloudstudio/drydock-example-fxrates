@@ -1,0 +1,12 @@
+RESULT: SUCCESS
+
+FILES CHANGED:
+- bin/test.sh
+- tests/test_load.py
+- tests/test_api.py
+
+SUMMARY:
+Added a POSIX test launcher that preserves pytest’s exit status and logs output. Added offline tests for CSV validation and atomicity, API behavior, decimal rounding, effective dates, and error statuses. `sh bin/test.sh` passed: 29 tests.
+
+BLOCKERS:
+- None

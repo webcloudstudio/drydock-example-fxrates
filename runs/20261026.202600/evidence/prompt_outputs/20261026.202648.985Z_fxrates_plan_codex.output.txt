@@ -1,0 +1,357 @@
+=== BEGIN ARTIFACT TOPOLOGY.md ===
+## Declarations
+
+## story architecture
+summary:      Define application modules and their ownership boundaries.
+type:         foundational
+kind:          capability
+phase:         1
+implements:    ARCHITECTURE.md
+stack:         common.md, python.md
+provides:      application module boundaries
+acceptance:    yes
+instructions: |
+  Define the application module layout and ownership boundaries for configuration, CLI, API,
+  services, and persistence. Application code must use the shipped persistence library and
+  generated relational layer for all database access. Keep ECB parsing and validation in the
+  load workflow, exact decimal arithmetic in the rate service, and HTTP handling in the API
+  layer. Document the selected technologies and their roles from TECHNOLOGY_STACK.md.
+
+## story database
+summary:      Declare the rates schema and generated repository contract.
+type:         foundational
+kind:          capability
+phase:         1
+implements:    DATABASE.md
+stack:         common.md, python.md, persistence.md, sqlite.md
+provides:      rates repository operations
+acceptance:    yes
+instructions: |
+  Declare the rates table with a unique (date, currency) key and text columns for date,
+  currency, and the ECB-published rate. Declare the repository operations required to insert or
+  replace rates, query rates by date, select the effective publication date, count dates and
+  rates, list currencies, retrieve currency history over optional inclusive bounds, and find
+  the latest publication. Use only operations supported by the generated persistence contract.
+  Include executable acceptance for every declared repository operation.
+
+## story app_server
+summary:      Establish the FastAPI application and test client.
+type:         foundational
+kind:          capability
+phase:         1
+implements:    FEATURE-AppServer.md
+stack:         common.md, python.md, fastapi.md
+provides:      create_app(), app_server.testing.web_client()
+acceptance:    yes
+instructions: |
+  Establish app_server.main.create_app() returning a FastAPI application and the module-level
+  app used by uvicorn. Provide app_server.testing.web_client() as the published in-process test
+  client callable. Do not implement endpoints owned by later stories.
+
+## story cli
+summary:      Establish the fxrates executable and CLI entry point.
+type:         foundational
+kind:          capability
+phase:         1
+implements:    FEATURE-CLI.md
+stack:         common.md, python.md, cli.md
+provides:      ./fxrates, ./fxrates init, ./fxrates load, ./fxrates fetch, ./fxrates serve, cli.testing.cli_runner()
+acceptance:    yes
+instructions: |
+  Establish the executable at the application root and the published cli.main(argv) and
+  cli.testing.cli_runner() interfaces. Route commands to their owning capabilities; do not
+  claim command behavior before those stories implement it. Keep diagnostics on standard error.
+  Declare the usage and operational error conventions used by the command implementations.
+
+## story load
+summary:      Validate and load ECB CSV history files atomically.
+type:         service
+kind:          capability
+phase:         1
+implements:    FEATURE-Load.md
+covers:        LOAD-002
+accepts:        st-003
+stack:         common.md, python.md, sqlite.md
+provides:      ./fxrates load, ECB CSV validation and loading
+consumes:       ./fxrates, rates repository operations
+depends:        cli, database
+context:        sources/eurofxref-hist_2025-01.csv, sources/eurofxref-hist_2025-02-03_04.csv, sources/eurofxref-hist_bad.csv
+context_roles: |
+  sources/eurofxref-hist_2025-01.csv: asset
+  sources/eurofxref-hist_2025-02-03_04.csv: asset
+  sources/eurofxref-hist_bad.csv: asset
+acceptance:    yes
+instructions: |
+  Implement load as a complete validation pass followed by writes only if the entire file is
+  valid. Parse the ECB CSV header and rows, ignore the trailing empty field, validate three-letter
+  uppercase currency codes, real non-repeated YYYY-MM-DD dates, exact field counts, and values
+  matching [0-9]+(\.[0-9]+)? that are not zero. Ignore N/A values. Store all other rate strings
+  exactly as published and replace an existing rate for the same date and currency. On rejection,
+  write nothing and return the rejected-file exit status. On success, report the number of dates
+  with at least one stored rate and the number of rates stored from the file.
+
+## story fetch
+summary:      Download and load the ECB history archive.
+type:         service
+kind:          capability
+phase:         1
+implements:    FEATURE-Fetch.md
+covers:        LOAD-003
+accepts:        st-010
+stack:         common.md, python.md, sqlite.md
+provides:      ./fxrates fetch
+consumes:       ./fxrates load, ECB CSV validation and loading
+depends:        load
+acceptance:    yes
+instructions: |
+  Download the ECB history ZIP from the specified ECB URL, extract eurofxref-hist.csv, and
+  process it through the same validation, persistence, and reporting behavior as load. A download
+  failure returns exit status 1, emits no standard output, and writes a diagnostic to standard
+  error. Keep tests offline by replacing the download operation with a stub.
+
+## story init
+summary:      Initialize an empty rates store.
+type:         service
+kind:          capability
+phase:         1
+implements:    FEATURE-Init.md
+covers:        LOAD-001
+stack:         common.md, python.md, sqlite.md
+provides:      ./fxrates init
+consumes:       ./fxrates, rates repository operations
+depends:        cli, database
+acceptance:    yes
+instructions: |
+  Implement init to drop the rates table if present and create it empty using the persistence
+  boundary. It prints nothing on success.
+
+## story api_health
+summary:      Serve the health endpoint.
+type:         service
+kind:          capability
+phase:         1
+implements:    FEATURE-Health.md
+covers:        API-001
+accepts:        st-004
+stack:         common.md, python.md, fastapi.md
+provides:      GET /health
+consumes:       create_app()
+depends:        app_server
+acceptance:    yes
+instructions: |
+  Implement GET /health returning status 200 and the JSON object {"status":"ok"}.
+
+## story api_stats
+summary:      Report stored rate statistics.
+type:         service
+kind:          capability
+phase:         1
+implements:    FEATURE-Stats.md
+covers:        API-002
+accepts:        st-008
+stack:         common.md, python.md, fastapi.md, sqlite.md
+provides:      GET /stats
+consumes:       create_app(), rates repository operations
+depends:        app_server, database
+acceptance:    yes
+instructions: |
+  Implement GET /stats with date and rate counts and the first and last publication dates.
+  Return null bounds when the store contains no publication dates. Derive all values from
+  repository queries.
+
+## story api_currencies
+summary:      List currencies that have stored rates.
+type:         service
+kind:          capability
+phase:         1
+implements:    FEATURE-Currencies.md
+covers:        API-003
+stack:         common.md, python.md, fastapi.md, sqlite.md
+provides:      GET /currencies
+consumes:       create_app(), rates repository operations
+depends:        app_server, database
+acceptance:    yes
+instructions: |
+  Implement GET /currencies with EUR as base and the currencies that have at least one stored
+  rate, sorted in ascending order.
+
+## story api_rates
+summary:      Retrieve rates by effective date.
+type:         service
+kind:          capability
+phase:         1
+implements:    FEATURE-Rates.md
+covers:        API-004
+accepts:        st-005, st-007
+stack:         common.md, python.md, fastapi.md, sqlite.md
+provides:      GET /rates/{date}
+consumes:       create_app(), rates repository operations
+depends:        app_server, database
+acceptance:    yes
+instructions: |
+  Implement GET /rates/{date}. Validate that the path value is a real YYYY-MM-DD date and
+  return 422 for malformed dates. Resolve the latest publication date on or before the request;
+  return 404 if none exists. Return every stored rate for the effective date as its published
+  text, with the requested date and EUR base in the response.
+
+## story api_latest
+summary:      Retrieve rates from the latest publication.
+type:         service
+kind:          capability
+phase:         1
+implements:    FEATURE-LatestRates.md
+covers:        API-005
+stack:         common.md, python.md, fastapi.md, sqlite.md
+provides:      GET /rates/latest
+consumes:       create_app(), rates repository operations
+depends:        app_server, database
+acceptance:    yes
+instructions: |
+  Implement GET /rates/latest using the latest publication and its stored rates. Identify the
+  request as "latest" and return 404 if the store has no publication.
+
+## story convert
+summary:      Convert amounts between currencies.
+type:         service
+kind:          capability
+phase:         1
+implements:    FEATURE-Convert.md
+covers:        CONVERT-001
+accepts:        st-006, st-007
+stack:         common.md, python.md, fastapi.md, sqlite.md
+provides:      GET /convert
+consumes:       create_app(), rates repository operations
+depends:        app_server, database
+acceptance:    yes
+instructions: |
+  Implement GET /convert with required from, to, and amount parameters and an optional date.
+  Validate amount against [0-9]+(\.[0-9]+)? and validate any supplied date as a real
+  YYYY-MM-DD date; malformed or missing parameters return 422. Without a date, use the latest
+  publication. Otherwise resolve the effective publication date on or before the request.
+  Return 404 when there is no effective publication or a requested non-EUR currency lacks a
+  rate on that date. EUR has implicit rate 1. Use Decimal only. Compute the response rate as
+  rate(to) / rate(from), rounded half-even to six decimal places, and compute result directly
+  from the unrounded stored rates and amount, rounded half-even to two decimal places. Emit
+  both values with fixed decimal places and echo the amount text unchanged.
+
+## story history
+summary:      Retrieve currency history and summary statistics.
+type:         service
+kind:          capability
+phase:         1
+implements:    FEATURE-History.md
+covers:        HISTORY-001
+accepts:        st-006, st-007
+stack:         common.md, python.md, fastapi.md, sqlite.md
+provides:      GET /history/{code}
+consumes:       create_app(), rates repository operations
+depends:        app_server, database
+acceptance:    yes
+instructions: |
+  Implement GET /history/{code} with optional inclusive start and end dates. Malformed bounds
+  return 422. Return publication points in ascending date order, preserving stored rate text.
+  For a currency with no stored rate at all, return 404, including EUR. For a currency with
+  history but no points in the selected range, return count zero, null min/max/mean, and an empty
+  points list. Compute min and max by numeric value and compute the exact Decimal mean rounded
+  half-even to six decimal places.
+
+## story cli_errors
+summary:      Report CLI usage and operational errors.
+type:         service
+kind:          capability
+phase:         1
+implements:    FEATURE-CLI-Errors.md
+covers:        CLI-001
+stack:         common.md, python.md, cli.md
+provides:      CLI usage and error exit behavior
+consumes:       ./fxrates
+depends:        cli
+accepts:        yes
+instructions: |
+  Implement shared CLI error behavior: unknown commands, wrong argument counts, and a non-integer
+  port return exit status 2; operational file read failures return 1; rejected CSV files return
+  3. Failed commands produce no standard output and write a diagnostic line to standard error.
+
+## story tests
+summary:      Provide the offline pytest suite and test launcher.
+type:         service
+kind:          test harness
+phase:         1
+implements:    FEATURE-Tests.md
+covers:        TEST-001
+accepts:        st-002, st-009, st-010
+stack:         common.md, python.md
+provides:      bin/test.sh
+consumes:       ./fxrates, cli.testing.cli_runner(), app_server.testing.web_client(), rates repository operations
+depends:        cli, app_server, database, load, fetch, init, api_health, api_stats, api_currencies, api_rates, api_latest, convert, history, cli_errors
+acceptance:    yes
+instructions: |
+  Provide a POSIX-compatible bin/test.sh that runs the project's pytest suite from the application
+  root and exits zero only when every test passes. The suite must run offline and cover commands,
+  CSV validation and atomicity, API endpoints, effective dates, decimal rounding, and error
+  statuses. Stub the fetch download and cover both successful loading and a failed download that
+  returns exit status 1.
+
+## story grader
+summary:      Verify complete supplied grader conformance.
+type:         service
+kind:          test harness
+phase:         1
+implements:    FEATURE-Grader.md
+covers:        TEST-002
+accepts:        st-001
+context:        sources/run.sh
+context_roles: |
+  sources/run.sh: conformance harness
+stack:         common.md, python.md
+provides:      complete supplied grader verification
+depends:        architecture, database, app_server, cli, load, fetch, init, api_health, api_stats, api_currencies, api_rates, api_latest, convert, history, cli_errors, tests
+acceptance:    yes
+instructions: |
+  Run the staged, unmodified sources/run.sh as the terminal project verification. Its exit status
+  is the sole acceptance verdict. Do not filter or reinterpret its checks.
+=== END ARTIFACT ===
+=== BEGIN ARTIFACT DECISIONS.json ===
+[
+  {
+    "id": "Q-001",
+    "type": "choice",
+    "severity": "material",
+    "blueprint": "ARCHITECTURE.md",
+    "story": "architecture",
+    "title": "Application module boundaries",
+    "description": "The sources require a CLI, FastAPI API, service behavior, and generated persistence boundary but do not prescribe module names or layering. The plan assigns a CLI package, app_server package, service layer, and generated persistence package with parsing, HTTP, and database responsibilities kept at their specified boundaries.",
+    "options": [
+      {
+        "value": "single",
+        "label": "Keep all product behavior in one module"
+      },
+      {
+        "value": "layered",
+        "label": "Separate CLI, API, service, and persistence responsibilities"
+      }
+    ],
+    "system_choice": "layered"
+  },
+  {
+    "id": "Q-002",
+    "type": "choice",
+    "severity": "material",
+    "blueprint": "DATABASE.md",
+    "story": "database",
+    "title": "Repository operation surface",
+    "description": "The sources mandate persistence through the generated library but do not specify repository method names. The plan declares focused operations for rate upsert, effective-date lookup, date-rate retrieval, statistics, currency listing, and bounded history so feature code does not issue raw SQL.",
+    "options": [
+      {
+        "value": "focused",
+        "label": "Declare focused typed repository operations"
+      },
+      {
+        "value": "generic",
+        "label": "Use a generic query operation"
+      }
+    ],
+    "system_choice": "focused"
+  }
+]
+=== END ARTIFACT ===

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>build/FxRates/fxrates_app/history.py</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>build/FxRates/fxrates_app/history.py</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../build/FxRates/fxrates_app/history.py">Raw file</a></div></header>
+<article class="doc"><pre>&quot;&quot;&quot;A currency&#x27;s stored rates over a period, ascending by date, returned as the stored text.
+
+Points come from `db.rates.list_currency_history` in one call per request, so a load completed
+before the request is visible to it. Both bounds are optional and inclusive; a start later than the
+end matches nothing. Rates are never converted to a float: the statistics compare and average them
+as `Decimal`, and min and max return the stored text unchanged.
+&quot;&quot;&quot;
+
+from __future__ import annotations
+
+from decimal import ROUND_HALF_EVEN, Decimal
+
+from fxrates_app.config import open_store
+
+MEAN_QUANTUM = Decimal(&quot;0.000001&quot;)
+
+
+class UnknownCurrency(LookupError):
+    &quot;&quot;&quot;A currency has no stored rate anywhere in its history, so the bounds cannot make it known.&quot;&quot;&quot;
+
+
+def history_points(code: str, start: str | None = None, end: str | None = None) -&gt; list[dict[str, str]]:
+    &quot;&quot;&quot;Return {&quot;date&quot;, &quot;rate&quot;} points for `code` from `start` through `end`, ascending by date.
+
+    Raises UnknownCurrency when the whole stored history of `code` is empty; a currency with stored
+    rates but none inside the bounds returns an empty list.
+    &quot;&quot;&quot;
+    arguments: dict[str, str] = {&quot;currency&quot;: code}
+    if start is not None:
+        arguments[&quot;start_date&quot;] = start
+    if end is not None:
+        arguments[&quot;end_date&quot;] = end
+    db = open_store()
+    try:
+        rows = db.rates.list_currency_history(**arguments)
+        if not rows and not db.rates.list_currency_history(currency=code):
+            raise UnknownCurrency(code)
+    finally:
+        db.close()
+    return [{&quot;date&quot;: row.date, &quot;rate&quot;: row.rate} for row in rows]
+
+
+def history_summary(points: list[dict[str, str]]) -&gt; dict[str, int | str | None]:
+    &quot;&quot;&quot;Return count, min, max, and mean over `points`; min and max are stored text, mean has six decimals.
+
+    With no points, count is 0 and min, max, and mean are None.
+    &quot;&quot;&quot;
+    if not points:
+        return {&quot;count&quot;: 0, &quot;min&quot;: None, &quot;max&quot;: None, &quot;mean&quot;: None}
+    total = sum((Decimal(point[&quot;rate&quot;]) for point in points), Decimal(0))
+    mean = (total / len(points)).quantize(MEAN_QUANTUM, rounding=ROUND_HALF_EVEN)
+    return {
+        &quot;count&quot;: len(points),
+        &quot;min&quot;: min(points, key=lambda point: Decimal(point[&quot;rate&quot;]))[&quot;rate&quot;],
+        &quot;max&quot;: max(points, key=lambda point: Decimal(point[&quot;rate&quot;]))[&quot;rate&quot;],
+        &quot;mean&quot;: f&quot;{mean:.6f}&quot;,
+    }
+</pre></article>
+</main>
+</body>
+</html>

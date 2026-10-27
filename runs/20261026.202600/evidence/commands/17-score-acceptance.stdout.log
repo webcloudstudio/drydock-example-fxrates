@@ -1,0 +1,164 @@
+Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
+  ✓ PASS        [1/33]  architecture-service-boundary            architecture    ARCHITECTURE.md
+  ✓ PASS        [2/33]  rates-upsert                             database        DATABASE.md
+  ✓ PASS        [3/33]  rates-by-date                            database        DATABASE.md
+  ✓ PASS        [4/33]  rates-publications-through               database        DATABASE.md
+  ✓ PASS        [5/33]  rates-history                            database        DATABASE.md
+  ✓ PASS        [6/33]  rates-list                               database        DATABASE.md
+  ✓ PASS        [7/33]  app-server-factory                       app_server      FEATURE-AppServer.md
+  ✓ PASS        [8/33]  cli-foundation-interfaces                cli             FEATURE-CLI.md
+  ✓ PASS        [9/33]  load-valid-file                          load            FEATURE-Load.md
+  ✓ PASS        [10/33]  load-rejects-atomically                  load            FEATURE-Load.md
+  ✓ PASS        [11/33]  load-replaces-published-text             load            FEATURE-Load.md
+  ✗ FAIL        [12/33]  init-clears-store                        init            FEATURE-Init.md
+  ✓ PASS        [13/33]  init-rejects-extra-arguments             init            FEATURE-Init.md
+  ✓ PASS        [14/33]  currencies-list-sorted                   api_currencies  FEATURE-Currencies.md
+  ✓ PASS        [15/33]  currencies-base                          api_currencies  FEATURE-Currencies.md
+  ✓ PASS        [16/33]  latest-rates-response                    api_latest      FEATURE-LatestRates.md
+  ✗ FAIL        [17/33]  latest-rates-empty                       api_latest      FEATURE-LatestRates.md
+  ✓ PASS        [18/33]  stats-derive-from-store                  api_stats       FEATURE-Stats.md
+  ✗ FAIL        [19/33]  stats-empty-store                        api_stats       FEATURE-Stats.md
+  ✓ PASS        [20/33]  rates-effective-date                     api_rates       FEATURE-Rates.md
+  ✓ PASS        [21/33]  rates-errors                             api_rates       FEATURE-Rates.md
+  ✓ PASS        [22/33]  history-range-and-statistics             history         FEATURE-History.md
+  ✓ PASS        [23/33]  history-empty-range-and-errors           history         FEATURE-History.md
+  ✓ PASS        [24/33]  convert-decimal-and-rounding             convert         FEATURE-Convert.md
+  ✓ PASS        [25/33]  convert-validation-and-unknown-currency  convert         FEATURE-Convert.md
+  ✓ PASS        [26/33]  health-response                          api_health      FEATURE-Health.md
+  ✓ PASS        [27/33]  health-method                            api_health      FEATURE-Health.md
+  ✓ PASS        [28/33]  cli-usage-errors                         cli_errors      FEATURE-CLI-Errors.md
+  ✓ PASS        [29/33]  cli-operational-errors                   cli_errors      FEATURE-CLI-Errors.md
+  ✓ PASS        [30/33]  fetch-stubbed-success                    fetch           FEATURE-Fetch.md
+  ✓ PASS        [31/33]  fetch-stubbed-failure                    fetch           FEATURE-Fetch.md
+  ✓ PASS        [32/33]  test-suite-passes                        tests           FEATURE-Tests.md
+  ✓ PASS        [33/33]  grader-complete                          grader          FEATURE-Grader.md
+
+Acceptance verification: FxRates  (2026-10-26T21:16:43+00:00)
+  PASS 29   FAIL 3   UNVERIFIED 0   PREPASSED 1   (33 AC)
+
+  ✓ PASS        architecture-service-boundary            architecture    ARCHITECTURE.md
+  ✓ PASS        rates-upsert                             database        DATABASE.md
+  ✓ PASS        rates-by-date                            database        DATABASE.md
+  ✓ PASS        rates-publications-through               database        DATABASE.md
+  ✓ PASS        rates-history                            database        DATABASE.md
+  ✓ PASS        rates-list                               database        DATABASE.md
+  ✓ PASS        app-server-factory                       app_server      FEATURE-AppServer.md
+  ✓ PASS        cli-foundation-interfaces                cli             FEATURE-CLI.md
+  ✓ PASS        load-valid-file                          load            FEATURE-Load.md
+  ✓ PASS        load-rejects-atomically                  load            FEATURE-Load.md
+  ✓ PASS        load-replaces-published-text             load            FEATURE-Load.md
+  ✗ FAIL        init-clears-store                        init            FEATURE-Init.md
+  ✓ PASS        init-rejects-extra-arguments             init            FEATURE-Init.md
+  ✓ PASS        currencies-list-sorted                   api_currencies  FEATURE-Currencies.md
+  ✓ PASS        currencies-base                          api_currencies  FEATURE-Currencies.md
+  ✓ PASS        latest-rates-response                    api_latest      FEATURE-LatestRates.md
+  ✗ FAIL        latest-rates-empty                       api_latest      FEATURE-LatestRates.md
+  ✓ PASS        stats-derive-from-store                  api_stats       FEATURE-Stats.md
+  ✗ FAIL        stats-empty-store                        api_stats       FEATURE-Stats.md
+  ✓ PASS        rates-effective-date                     api_rates       FEATURE-Rates.md
+  ✓ PASS        rates-errors                             api_rates       FEATURE-Rates.md
+  ✓ PASS        history-range-and-statistics             history         FEATURE-History.md
+  ✓ PASS        history-empty-range-and-errors           history         FEATURE-History.md
+  ✓ PASS        convert-decimal-and-rounding             convert         FEATURE-Convert.md
+  ✓ PASS        convert-validation-and-unknown-currency  convert         FEATURE-Convert.md
+  ✓ PASS        health-response                          api_health      FEATURE-Health.md
+  ✓ PASS        health-method                            api_health      FEATURE-Health.md
+  ✓ PASS        cli-usage-errors                         cli_errors      FEATURE-CLI-Errors.md
+  ✓ PASS        cli-operational-errors                   cli_errors      FEATURE-CLI-Errors.md
+  ✓ PASS        fetch-stubbed-success                    fetch           FEATURE-Fetch.md
+  ✓ PASS        fetch-stubbed-failure                    fetch           FEATURE-Fetch.md
+  ~ PREPASSED   test-suite-passes                        tests           FEATURE-Tests.md
+  ✓ PASS        grader-complete                          grader          FEATURE-Grader.md
+
+  ✗ FAIL        init-clears-store
+        intent: The init command succeeds and leaves the rates repository empty.
+        assertion: assert code == 0 → AssertionError
+        raised at: init-clears-store.py:8
+        process exit code: 1
+        values at failure:
+          code = 1
+        criterion code:
+             1 | from cli.testing import cli_runner
+             2 | from persistence.testing import db_session
+             3 |
+             4 | with db_session() as db:
+             5 |     db.rates.upsert(date="2099-06-01", currency="QAF", rate="6.1")
+             6 |
+             7 | code, stdout, stderr = cli_runner("init")
+          >  8 | assert code == 0
+             9 | assert stdout == ""
+            10 |
+            11 | with db_session() as db:
+            12 |     rows = db.rates.list()
+            13 |     assert rows == []
+        check stderr:
+          Traceback (most recent call last):
+            File "init-clears-store.py", line 8, in <module>
+              assert code == 0
+                     ^^^^^^^^^
+          AssertionError
+
+  ✗ FAIL        latest-rates-empty
+        intent: The latest-rates route returns 404 when there is no publication.
+        assertion: assert web_client().get("/rates/latest").status_code == 404 → AssertionError
+        raised at: latest-rates-empty.py:3
+        process exit code: 1
+        criterion code:
+            1 | from app_server.testing import web_client
+            2 |
+          > 3 | assert web_client().get("/rates/latest").status_code == 404
+        check stderr:
+          Traceback (most recent call last):
+            File "latest-rates-empty.py", line 3, in <module>
+              assert web_client().get("/rates/latest").status_code == 404
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+          AssertionError
+
+  ✗ FAIL        stats-empty-store
+        intent: The statistics endpoint reports null date bounds when the rates store is empty.
+        assertion: assert code == 0 → AssertionError
+        raised at: stats-empty-store.py:9
+        process exit code: 1
+        values at failure:
+          code = 1
+        criterion code:
+             1 | from app_server.testing import web_client
+             2 | from persistence.testing import db_session
+             3 |
+             4 | with db_session() as db:
+             5 |     rows = db.rates.list()
+             6 |     if rows:
+             7 |         from cli.testing import cli_runner
+             8 |         code, stdout, stderr = cli_runner("init")
+          >  9 |         assert code == 0
+            10 |
+            11 | client = web_client()
+            12 | response = client.get("/stats")
+            13 | assert response.status_code == 200
+            14 | body = response.json()
+            15 | assert body["dates"] == 0
+            16 | assert body["rates"] == 0
+            17 | assert body["first"] is None
+            18 | assert body["last"] is None
+        check stderr:
+          Traceback (most recent call last):
+            File "stats-empty-store.py", line 9, in <module>
+              assert code == 0
+                     ^^^^^^^^^
+          AssertionError
+
+  ~ PREPASSED   test-suite-passes
+        intent: The project's test launcher completes successfully.
+        green at this block's baseline too, before its code existed — confirm the criterion exercises the story's work
+
+  Run `drydock score ac FxRates --full` for untruncated output per failure.
+
+
+  Proof coverage: 29 of 33 criteria are proof — green here, and observed red before the work that turned them green.
+    1 are not. Each names a story whose acceptance did not test it.
+
+    PREPASSED  test-suite-passes  tests  FEATURE-Tests.md
+               green before its block built
+
+Soundings: /mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.202600/workspace/targets/FxRates/SOUNDINGS.md
+Target - committed project workspace git store

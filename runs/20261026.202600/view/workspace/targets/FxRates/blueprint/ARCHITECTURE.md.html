@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/ARCHITECTURE.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/ARCHITECTURE.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/ARCHITECTURE.md">Raw file</a></div></header>
+<article class="doc"><h1>ARCHITECTURE: FxRates Application</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261026 V1</td></tr><tr><td>Description</td><td>Defines the application modules and ownership boundaries for the FxRates command line and API.</td></tr></tbody></table></div>
+<h2>Module Boundaries</h2>
+<div class="scroll"><table><thead><tr><th>Module</th><th>Owns</th><th>Allowed dependencies</th></tr></thead><tbody><tr><td><code>cli</code></td><td>The <code>fxrates</code> executable, argument handling, command dispatch, and diagnostics.</td><td>Feature services, configuration</td></tr><tr><td><code>app_server</code></td><td>The FastAPI application factory and HTTP route registration.</td><td>Feature services, configuration</td></tr><tr><td><code>services</code></td><td>ECB CSV validation and loading, fetching, store initialization, rate queries, and exact decimal calculations.</td><td><code>persistence</code>, configuration, standard library</td></tr><tr><td><code>persistence</code></td><td>The generated relational layer and shipped database library.</td><td>Database engine and schema</td></tr><tr><td><code>config</code></td><td>Resolving the database location from <code>DATABASE_URL</code>, then <code>DATABASE_PATH</code>, then <code>data/app.db</code>.</td><td>Standard library</td></tr></tbody></table></div>
+<p>HTTP handlers call services. CLI commands call services. Services call the generated persistence operations through the shipped persistence library. Only the persistence boundary reaches the database. No application module opens a database driver directly.</p>
+<p>The load workflow validates the complete input file before its first write. The fetch workflow extracts the archive&#x27;s CSV and passes it through the same validation and loading behavior. Rate calculations use <code>decimal.Decimal</code>; published values remain text in storage and API responses.</p>
+<h2>Technology Stack</h2>
+<div class="scroll"><table><thead><tr><th>Technology</th><th>Use</th></tr></thead><tbody><tr><td>Python 3.11 or newer</td><td>Application, CLI, services, and tests</td></tr><tr><td>FastAPI</td><td>JSON HTTP API</td></tr><tr><td>uvicorn</td><td>Serving the API on <code>127.0.0.1</code></td></tr><tr><td>SQLite</td><td>Local rates store, accessed through the shipped persistence library</td></tr><tr><td>pytest</td><td>Offline automated tests</td></tr><tr><td>FastAPI <code>TestClient</code></td><td>In-process API checks</td></tr></tbody></table></div>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC architecture-service-boundary ===<br>Intent: The application provides an importable services boundary for shared CLI and API behavior.</p>
+<p>import importlib.util</p>
+<p>services_spec = importlib.util.find_spec(&quot;services&quot;) assert services_spec is not None === END AC architecture-service-boundary ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Application code reaches SQLite only through the shipped persistence library and generated relational layer.</li><li>Preserve rates as ECB-published text; use <code>decimal.Decimal</code> for arithmetic and never floating point.</li><li>Keep file validation ahead of the first database write.</li><li>Resolve database configuration in this order: <code>DATABASE_URL</code>, <code>DATABASE_PATH</code>, then <code>data/app.db</code>.</li></ul></article>
+</main>
+</body>
+</html>

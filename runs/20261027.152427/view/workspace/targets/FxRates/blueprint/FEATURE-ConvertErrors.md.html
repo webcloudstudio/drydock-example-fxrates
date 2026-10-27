@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-ConvertErrors.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-ConvertErrors.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-ConvertErrors.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Convert Errors</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261027 V1</td></tr><tr><td>Description</td><td>GET /convert refuses unknown currencies and missing publications with 404 and bad or missing inputs with 422.</td></tr><tr><td>Depends On</td><td>FEATURE-Convert.md</td></tr><tr><td>Provides</td><td>convert error contract</td></tr><tr><td>Consumes</td><td>GET /convert</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Fix the failure statuses of <code>/convert</code>.</p>
+<h2>Behavior</h2>
+<ul><li>404: a currency other than EUR with no rate on the effective date; no publication on or before the requested date; no publication stored at all.</li><li>422 (FastAPI request validation): missing <code>from</code>, <code>to</code>, or <code>amount</code>; <code>amount</code> not matching <code>[0-9]+(\.[0-9]+)?</code>; a malformed or impossible <code>date</code>.</li><li>Error-response bodies are not part of the contract.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC convert-unknown-currency-404 ===<br>Intent: A currency with no stored rate on the effective date answers 404, whichever side it is on.<br>Requires: executable=python3; scope=test<br>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx2; scope=test</p>
+<p>from persistence.testing import db_session from app_server.testing import web_client</p>
+<p>d = &quot;2999-05-01&quot;</p>
+<p>with db_session() as db: db.rates.replace_rate(date=d, currency=&quot;ZZA&quot;, rate=&quot;1.5&quot;) client = web_client() to_unknown = client.get(&quot;/convert&quot;, params={&quot;from&quot;: &quot;ZZA&quot;, &quot;to&quot;: &quot;ZZX&quot;, &quot;amount&quot;: &quot;1&quot;, &quot;date&quot;: d}) assert to_unknown.status_code == 404 from_unknown = client.get(&quot;/convert&quot;, params={&quot;from&quot;: &quot;ZZX&quot;, &quot;to&quot;: &quot;ZZA&quot;, &quot;amount&quot;: &quot;1&quot;, &quot;date&quot;: d}) assert from_unknown.status_code == 404 === END AC convert-unknown-currency-404 ===</p>
+<p>=== AC convert-no-publication-404 ===<br>Intent: A date earlier than every publication answers 404 even for stored currencies.<br>Requires: executable=python3; scope=test<br>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx2; scope=test</p>
+<p>from persistence.testing import db_session from app_server.testing import web_client</p>
+<p>with db_session() as db: db.rates.replace_rate(date=&quot;2999-06-01&quot;, currency=&quot;ZZA&quot;, rate=&quot;1.5&quot;) client = web_client() response = client.get(&quot;/convert&quot;, params={&quot;from&quot;: &quot;ZZA&quot;, &quot;to&quot;: &quot;EUR&quot;, &quot;amount&quot;: &quot;10&quot;, &quot;date&quot;: &quot;0001-01-01&quot;}) assert response.status_code == 404 === END AC convert-no-publication-404 ===</p>
+<p>=== AC convert-validation-422 ===<br>Intent: Missing parameters, a malformed amount, and malformed or impossible dates are all refused with 422.<br>Requires: executable=python3; scope=test<br>Requires: python-package=fastapi; scope=test<br>Requires: python-package=httpx2; scope=test</p>
+<p>from app_server.testing import web_client</p>
+<p>client = web_client() base = {&quot;from&quot;: &quot;USD&quot;, &quot;to&quot;: &quot;GBP&quot;, &quot;amount&quot;: &quot;1&quot;}</p>
+<p>for missing in [&quot;from&quot;, &quot;to&quot;, &quot;amount&quot;]: params = {k: v for k, v in base.items() if k != missing} assert client.get(&quot;/convert&quot;, params=params).status_code == 422, missing</p>
+<p>for bad_amount in [&quot;abc&quot;, &quot;-1&quot;, &quot;1.&quot;, &quot;.5&quot;, &quot;1e3&quot;]: params = dict(base, amount=bad_amount) assert client.get(&quot;/convert&quot;, params=params).status_code == 422, bad_amount</p>
+<p>for bad_date in [&quot;2025-13-01&quot;, &quot;2025-01-31-x&quot;, &quot;yesterday&quot;]: params = dict(base, date=bad_date) assert client.get(&quot;/convert&quot;, params=params).status_code == 422, bad_date === END AC convert-validation-422 ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>Validation statuses come from FastAPI request validation, not hand-built responses.</li><li>Error-response bodies and wording are never part of the contract.</li></ul></article>
+</main>
+</body>
+</html>

@@ -1,0 +1,32 @@
+<reusable-compact filename="DATABASE.md">
+Rates are stored in `rates(id, date, currency, rate)`, with text values and a unique `(date, currency)` key. The generated repository currently exposes `upsert`, `by_date`, `publications_through`, `history`, and `list`; history bounds are inclusive and results use their declared ordering. Application code must use the generated persistence package and resolve the store from `DATABASE_URL`, then `DATABASE_PATH`, then `data/app.db`.
+</reusable-compact>
+
+<reusable-compact filename="ARCHITECTURE.md">
+Python 3.11+, FastAPI, uvicorn, and SQLite. `cli` owns the root executable and dispatch, `app_server` owns the application factory and routes, `services` owns shared behavior, `persistence` owns generated storage access, and `config` owns database location resolution. HTTP handlers and CLI commands call services; only persistence accesses the database. Preserve ECB rates as text and use `Decimal` for arithmetic.
+</reusable-compact>
+
+RESULT: FAILED
+
+FILES CHANGED:
+- `pyproject.toml`
+- `uv.lock`
+- `cli/__init__.py`
+- `cli/testing.py`
+- `cli/__main__.py`
+- `fxrates`
+- `app_server/main.py`
+- `app_server/testing.py`
+- `bin/test.sh`
+- `tests/test_foundations.py`
+- `tests/test_rates_repository.py`
+- `data/logs/test_2026-10-26_163552.log`
+
+SUMMARY:
+Implemented the FastAPI factory and test client, `fxrates` entry point and in-process CLI runner, dependency declarations, and tests for the available repository contract. `sh bin/test.sh` passed: 9 tests.
+
+BLOCKERS:
+- The build instructions require additional rates repository operations, but the persistence contract says its generated package must not be edited by the build agent. The writable `DATABASE.md` declaration and regeneration step are not available in this build directory, so those operations could not be declared or generated.
+
+FAILURE_SUMMARY: Required rates repository operations are missing
+FAILURE_DETAIL: The available generated persistence contract lacks the requested count, currency-list, effective-date, and latest-publication operations. The persistence rules prohibit editing generated files, and no writable DATABASE.md source or generator was supplied. Provide the declaration and run the Drydock database generation step before rerunning.

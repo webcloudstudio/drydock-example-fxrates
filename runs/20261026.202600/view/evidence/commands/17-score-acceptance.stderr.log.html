@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evidence/commands/17-score-acceptance.stderr.log</title>
+<link rel="stylesheet" href="../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>evidence/commands/17-score-acceptance.stderr.log</h1><div class="filenav"><a href="../../../index.html">&larr; Report</a><a href="../../../evidence/commands/17-score-acceptance.stderr.log">Raw file</a></div></header>
+<article class="doc"><pre>error: acceptance verification failed for FxRates: 3 of 33 criteria
+  init-clears-store  init  FEATURE-Init.md  — assertion: assert code == 0 → AssertionError
+  latest-rates-empty  api_latest  FEATURE-LatestRates.md  — assertion: assert web_client().get(&quot;/rates/latest&quot;).status_code == 404 → AssertionError
+  stats-empty-store  api_stats  FEATURE-Stats.md  — assertion: assert code == 0 → AssertionError
+</pre></article>
+</main>
+</body>
+</html>

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>build/FxRates/data/logs/test_2026-10-26_165834.log</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>build/FxRates/data/logs/test_2026-10-26_165834.log</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../build/FxRates/data/logs/test_2026-10-26_165834.log">Raw file</a></div></header>
+<article class="doc"><pre>timestamp=2026-10-26T16:58:34-0400
+arguments=
+working_directory=/mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.202600/build/FxRates
+F............................                                            [100%]
+=================================== FAILURES ===================================
+___________________ test_health_currencies_stats_and_latest ____________________
+
+client_with_rates = &lt;starlette.testclient.TestClient object at 0x7a1e20ee63f0&gt;
+
+    def test_health_currencies_stats_and_latest(client_with_rates):
+        client = client_with_rates
+        assert client.get(&quot;/health&quot;).json() == {&quot;status&quot;: &quot;ok&quot;}
+        currencies = client.get(&quot;/currencies&quot;)
+        assert currencies.status_code == 200
+&gt;       assert currencies.json()[&quot;currencies&quot;] == [&quot;QAX&quot;, &quot;QAY&quot;]
+E       AssertionError: assert [&#x27;QAX&#x27;, &#x27;QAY&#x27;, &#x27;USD&#x27;] == [&#x27;QAX&#x27;, &#x27;QAY&#x27;]
+E         
+E         Left contains one more item: &#x27;USD&#x27;
+E         Use -v to get more diff
+
+tests/test_api.py:34: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_api.py::test_health_currencies_stats_and_latest - Assertion...
+1 failed, 28 passed in 15.94s
+completed=2026-10-26T16:58:58-0400 status=1
+</pre></article>
+</main>
+</body>
+</html>

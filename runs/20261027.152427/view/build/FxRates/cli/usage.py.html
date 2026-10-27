@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>build/FxRates/cli/usage.py</title>
+<link rel="stylesheet" href="../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>build/FxRates/cli/usage.py</h1><div class="filenav"><a href="../../../../index.html">&larr; Report</a><a href="../../../../build/FxRates/cli/usage.py">Raw file</a></div></header>
+<article class="doc"><pre>&quot;&quot;&quot;Argument validation for the fxrates command line.
+
+`validate` runs before dispatch and rejects a malformed invocation with `UsageError`, so the caller
+can exit 2 with empty stdout and one stderr line. It never opens a database or binds a socket.
+&quot;&quot;&quot;
+
+from __future__ import annotations
+
+import re
+from collections.abc import Collection
+
+HELP_FLAG = &quot;--help&quot;
+PORT_FLAG = &quot;--port&quot;
+PORT_MIN = 1
+PORT_MAX = 65535
+
+# Exact positional argument counts for the commands whose stories are in the blueprint table.
+_ARITY: dict[str, int] = {&quot;init&quot;: 0, &quot;load&quot;: 1, &quot;fetch&quot;: 0}
+_SERVE = &quot;serve&quot;
+
+
+class UsageError(Exception):
+    &quot;&quot;&quot;A malformed invocation. The message is one line; its wording is not part of the contract.&quot;&quot;&quot;
+
+
+def validate(argv: list[str], registered: Collection[str] = ()) -&gt; None:
+    &quot;&quot;&quot;Raise UsageError unless `argv` names a known command with well-formed arguments.
+
+    `registered` holds the names of commands with a handler. A command outside the table above
+    and outside `registered` is a usage error; a registered command outside the table is not
+    arity-checked.
+    &quot;&quot;&quot;
+    if not argv:
+        raise UsageError(&quot;no command given; usage: fxrates &lt;command&gt; [arguments...]&quot;)
+    command, rest = argv[0], list(argv[1:])
+    if command == _SERVE:
+        _validate_serve(rest)
+    elif command in _ARITY:
+        _validate_arity(command, rest)
+    elif command not in registered:
+        raise UsageError(f&quot;unknown command: {command}&quot;)
+
+
+def _validate_arity(command: str, rest: list[str]) -&gt; None:
+    if rest == [HELP_FLAG]:
+        return
+    expected = _ARITY[command]
+    if len(rest) != expected:
+        raise UsageError(f&quot;{command} takes {expected} argument(s), got {len(rest)}&quot;)
+
+
+def _validate_serve(rest: list[str]) -&gt; None:
+    if not rest or rest == [HELP_FLAG]:
+        return
+    if len(rest) != 2 or rest[0] != PORT_FLAG:
+        raise UsageError(f&quot;serve takes an optional {PORT_FLAG} &lt;n&gt;&quot;)
+    _validate_port(rest[1])
+
+
+def _validate_port(value: str) -&gt; None:
+    if not re.fullmatch(r&quot;[0-9]+&quot;, value) or not PORT_MIN &lt;= int(value) &lt;= PORT_MAX:
+        raise UsageError(f&quot;{PORT_FLAG} must be an integer from {PORT_MIN} to {PORT_MAX}, got {value!r}&quot;)
+</pre></article>
+</main>
+</body>
+</html>

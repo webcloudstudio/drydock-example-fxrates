@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-CommandHelp.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-CommandHelp.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-CommandHelp.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Command Help</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261027 V1</td></tr><tr><td>Description</td><td>Each fxrates command accepts --help, prints usage and a one-line summary to standard output, and exits 0.</td></tr><tr><td>Depends On</td><td>FEATURE-InitCommand.md, FEATURE-LoadStore.md, FEATURE-Fetch.md, FEATURE-ServeHealth.md</td></tr><tr><td>Provides</td><td>fxrates --help</td></tr><tr><td>Consumes</td><td>fxrates init, fxrates load, fxrates fetch, fxrates serve</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Document every command&#x27;s usage from the command line itself.</p>
+<h2>Behavior</h2>
+<ul><li><code>fxrates &lt;command&gt; --help</code> for <code>init</code>, <code>load</code>, <code>fetch</code>, and <code>serve</code> prints a usage line and a one-line summary to standard output and exits 0.</li><li>Help is handled before the database is opened or a socket is bound, and before argument-count validation, so <code>load --help</code> needs no file argument.</li><li>Nothing is written to standard error.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC help-per-command ===<br>Intent: Each of the four commands exits 0 with non-empty standard output and empty standard error when given --help, including load without its file argument.<br>Requires: executable=python3; scope=test</p>
+<p>from cli.testing import cli_runner</p>
+<p>for command in [&quot;init&quot;, &quot;load&quot;, &quot;fetch&quot;, &quot;serve&quot;]: code, out, err = cli_runner(command, &quot;--help&quot;) assert code == 0, command assert out.strip() != &quot;&quot;, command assert err == &quot;&quot;, command assert command in out, command === END AC help-per-command ===</p>
+<p>=== AC help-has-usage-and-summary ===<br>Intent: Help output has at least two non-blank lines: a usage line and a one-line summary.<br>Requires: executable=python3; scope=test</p>
+<p>from cli.testing import cli_runner</p>
+<p>for command in [&quot;init&quot;, &quot;load&quot;, &quot;fetch&quot;, &quot;serve&quot;]: code, out, err = cli_runner(command, &quot;--help&quot;) assert code == 0, command lines = [line for line in out.splitlines() if line.strip()] assert len(lines) &gt;= 2, command === END AC help-has-usage-and-summary ===</p>
+<p>=== AC help-does-not-touch-rates ===<br>Intent: init --help must not reset the store: a seeded rate is still there afterwards.<br>Requires: executable=python3; scope=test</p>
+<p>from persistence.testing import db_session from cli.testing import cli_runner</p>
+<p>d = &quot;2999-09-01&quot; c = &quot;ZZA&quot; text = &quot;6.5&quot;</p>
+<p>with db_session() as db: db.rates.replace_rate(date=d, currency=c, rate=text) code, out, err = cli_runner(&quot;init&quot;, &quot;--help&quot;) assert code == 0 rows = db.rates.list_currency_history(currency=c, start_date=d, end_date=d) assert [r.rate for r in rows] == [text] === END AC help-does-not-touch-rates ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li><code>--help</code> never opens the database or binds a socket.</li><li>Diagnostics, if any, go to standard error and are never compared.</li></ul></article>
+</main>
+</body>
+</html>

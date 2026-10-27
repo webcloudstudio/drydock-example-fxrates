@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace/targets/FxRates/blueprint/FEATURE-LoadUnreadable.md</title>
+<link rel="stylesheet" href="../../../../../assets/kit.css">
+</head>
+<body>
+<main>
+<header class="fileheader"><div class="kind">Run artifact</div><h1>workspace/targets/FxRates/blueprint/FEATURE-LoadUnreadable.md</h1><div class="filenav"><a href="../../../../../index.html">&larr; Report</a><a href="../../../../../workspace/targets/FxRates/blueprint/FEATURE-LoadUnreadable.md">Raw file</a></div></header>
+<article class="doc"><h1>FEATURE: Load Unreadable File</h1>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Version</td><td>20261027 V1</td></tr><tr><td>Description</td><td>A missing or unreadable file makes <code>fxrates load</code> exit 1 with one stderr line and write nothing.</td></tr><tr><td>Depends On</td><td>FEATURE-LoadStore.md</td></tr><tr><td>Provides</td><td>fxrates load unreadable-file handling</td></tr><tr><td>Consumes</td><td>fxrates load</td></tr></tbody></table></div>
+<h2>Purpose</h2>
+<p>Operational failures reading the input file are distinct from a rejected file. An <code>OSError</code> (missing file, directory, permission) or undecodable content while reading makes <code>load</code> exit <code>1</code>, print nothing to standard output, write exactly one diagnostic line to standard error, and write nothing to the database.</p>
+<h2>Database Interface</h2>
+<ul><li>None — persistence is owned by DATABASE.md.</li></ul>
+<h2>Programmatic Acceptance</h2>
+<p>=== AC load-missing-file ===<br>Intent: Loading a path that does not exist exits 1 with empty stdout and one stderr line, and adds no rows.<br>Requires: executable=python3; scope=test</p>
+<p>import os import tempfile from persistence.testing import db_session from cli.testing import cli_runner</p>
+<p>with db_session() as db: before = len(db.rates.list_all_keys()) with tempfile.TemporaryDirectory() as tmp: path = os.path.join(tmp, &quot;no-such-file.csv&quot;) code, out, err = cli_runner(&quot;load&quot;, path) assert code == 1 assert out == &quot;&quot; assert len(err.splitlines()) == 1 assert len(db.rates.list_all_keys()) == before === END AC load-missing-file ===</p>
+<p>=== AC load-directory-path ===<br>Intent: Loading a directory cannot be read as a file, so it exits 1 with empty stdout and one stderr line.<br>Requires: executable=python3; scope=test</p>
+<p>import tempfile from persistence.testing import db_session from cli.testing import cli_runner</p>
+<p>with db_session() as db: before = len(db.rates.list_all_keys()) with tempfile.TemporaryDirectory() as tmp: code, out, err = cli_runner(&quot;load&quot;, tmp) assert code == 1 assert out == &quot;&quot; assert len(err.splitlines()) == 1 assert len(db.rates.list_all_keys()) == before === END AC load-directory-path ===</p>
+<p>=== AC load-undecodable-file ===<br>Intent: A file whose bytes are not valid text exits 1 with empty stdout and one stderr line, and stores nothing.<br>Requires: executable=python3; scope=test</p>
+<p>import os import tempfile from persistence.testing import db_session from cli.testing import cli_runner</p>
+<p>with db_session() as db: before = len(db.rates.list_all_keys()) with tempfile.TemporaryDirectory() as tmp: path = os.path.join(tmp, &quot;binary.csv&quot;) with open(path, &quot;wb&quot;) as fh: fh.write(b&quot;\xff\xfe\xfa\x80\x81\xff&quot;) code, out, err = cli_runner(&quot;load&quot;, path) assert code == 1 assert out == &quot;&quot; assert len(err.splitlines()) == 1 assert len(db.rates.list_all_keys()) == before === END AC load-undecodable-file ===</p>
+<h2>User Acceptance</h2>
+<ul><li>None.</li></ul>
+<h2>Guardrails</h2>
+<ul><li>An unreadable file is exit 1 and never exit 3; exit 3 is reserved for a rejected file.</li><li>Nothing is written to the database when the file cannot be read.</li></ul></article>
+</main>
+</body>
+</html>

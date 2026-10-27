@@ -1,0 +1,24 @@
+timestamp=2026-10-26T16:59:57-0400
+arguments=
+working_directory=/mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261026.202600/build/FxRates
+...F.........................                                            [100%]
+=================================== FAILURES ===================================
+_____________________ test_history_bounds_and_empty_range ______________________
+
+client_with_rates = (<starlette.testclient.TestClient object at 0x7e4e88c6dca0>, [])
+
+    def test_history_bounds_and_empty_range(client_with_rates):
+        client = client_with_rates[0]
+        body = client.get("/history/QAX", params={"start": "2098-12-01", "end": "2098-12-03"}).json()
+        assert body["count"] == 2
+        assert body["points"] == [{"date": "2098-12-01", "rate": "2.00"}, {"date": "2098-12-03", "rate": "4.00"}]
+        assert body["mean"] == "3.000000"
+>       empty = client_with_rates.get("/history/QAX", params={"start": "2098-12-04"}).json()
+                ^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'tuple' object has no attribute 'get'
+
+tests/test_api.py:68: AttributeError
+=========================== short test summary info ============================
+FAILED tests/test_api.py::test_history_bounds_and_empty_range - AttributeErro...
+1 failed, 28 passed in 16.50s
+completed=2026-10-26T17:00:22-0400 status=1
