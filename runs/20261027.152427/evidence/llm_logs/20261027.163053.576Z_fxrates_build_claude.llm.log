@@ -1,4 +1,0 @@
-  Claude session: start id=5565c188-00ff-47a2-9fda-b6e435524dad
-  Completed CLAUDE/claude-haiku-5-5 (build)  rc=0
-    elapsed=2m 53.6s   provider=2m 51.7s   turns=16   cached=591,503 (100% hit)   uncached=28   write 52,981   out=15,851   cost=$0.0244   tps=91.3
-  tokens: cached=591,503 (100% hit) · uncached=28 · write 52,981 · out=15,851 · cost=$0.0244
