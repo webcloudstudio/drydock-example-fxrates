@@ -1,8 +1,0 @@
-{
-  "version": 1,
-  "import": {
-    "root": "/mnt/c/Users/barlo/projects/drydock/uat/FxRates/runs/20261025.201434/sources",
-    "format": "markdown"
-  },
-  "sources": {}
-}

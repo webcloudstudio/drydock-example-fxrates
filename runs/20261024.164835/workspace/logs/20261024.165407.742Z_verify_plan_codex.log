@@ -1,5 +1,0 @@
-Drydock 0.8.0  Copyright (c) 2026 Web Cloud Studio. All rights reserved.
-plan verify: FxRates
-  34 acceptance criteria in 17 files: every one can run
-  ⚠  FEATURE-API-History.md [history-points-and-statistics]: expects "f'{mean:.6f}'", a value re-typed rather than derived from the input or read back from the system
-  ⚠  FEATURE-CLI-Serve.md [serve-requested-port]: captures a program's output and prints none of it; print its pass/fail counts before asserting so repair can see progress
